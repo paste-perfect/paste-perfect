@@ -43,15 +43,4 @@ updates:
 
     versioning-strategy: increase
 
-    automerge:
-      enabled: true
-      merge-method: squash
-      conditions:
-        - dependency-type: "direct"
-          update-type: "version-update:semver-patch"
-        - dependency-type: "direct"
-          update-type: "version-update:semver-minor"
-        - dependency-type: "indirect"
-          update-type: "version-update:semver-patch"
-
     rebase-strategy: auto
