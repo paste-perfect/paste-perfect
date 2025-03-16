@@ -1,0 +1,86 @@
+@use "variables" as *;
+
+// General Container Styling
+.syntax-highlighter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  overflow: hidden;
+}
+
+// Typography & Colors
+.intro-message {
+  color: var(--p-text-muted-color);
+}
+
+.project-name {
+  color: var(--p-primary-color);
+}
+
+// Input and Settings Section
+.input-section {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+
+  @media (max-width: #{$breakpoint-md}) {
+    // Wrap it into columns on smaller screens
+    flex-direction: column;
+  }
+}
+
+// Output Section
+.output-section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+::ng-deep {
+  // Style the source code card so that it properly fills all available width and height
+  .input-section #source-code-card {
+    // Make the source-code-card fill all remaining space
+    &,
+    app-code-input,
+    .p-card-body,
+    .p-card-content {
+      flex: 1;
+    }
+
+    .p-card {
+      // Ensure that the card is at least as high as the other
+      min-height: 100%;
+    }
+
+    .p-card-content {
+      display: flex;
+    }
+  }
+
+  // Style the configuration card so that it properly shrinks down to the required width and height
+  .input-section #configuration-card {
+    flex: 0;
+  }
+
+  // Style the output section
+  .output-section #highlighted-code-card {
+    // Hide overflow and set the maximum height
+    &,
+    .p-card,
+    .p-card-body,
+    .p-card-content {
+      max-height: 100%;
+      overflow: hidden;
+    }
+
+    // Make everything flex to the maximum size
+    app-code-output,
+    .p-card-content,
+    .code-output {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+  }
+}

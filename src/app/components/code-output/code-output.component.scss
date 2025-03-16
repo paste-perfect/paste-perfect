@@ -1,0 +1,21 @@
+.highlighted-code-container {
+  position: relative;
+  overflow: hidden; /* Hide overflow */
+  flex: 1; // Fill all available space
+
+  pre#highlighted-code-wrapper {
+    margin: 0;
+    padding: var(--spacing-md);
+    max-height: 100%;
+    overflow: auto; /* Make overflow scrollable */
+    border-radius: var(--p-border-radius-md);
+  }
+
+  /* Position the copy-button on the top-right of the parent */
+  #copy-clipboard-button {
+    position: absolute;
+    right: var(--spacing-sm);
+    top: var(--spacing-sm);
+    z-index: 99;
+  }
+}

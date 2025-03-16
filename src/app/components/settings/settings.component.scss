@@ -1,0 +1,61 @@
+@use "variables" as *;
+
+// Container
+.settings-container {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(2, 1fr);
+
+  @media (max-width: #{$breakpoint-sm}) {
+    /** Single column layout on smaller screens */
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+// Each individual settings item
+.settings-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+
+  label {
+    text-wrap: nowrap; // Prevent labels from wrapping
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-sm);
+    align-items: center;
+  }
+}
+
+// Labels with popover information
+.label-with-popover {
+  // Style the popover trigger icon
+  .popover-trigger-icon {
+    color: var(--p-primary-color);
+    cursor: pointer;
+    transition: color var(--p-transition-duration);
+
+    &:hover {
+      color: var(--p-primary-hover-color);
+    }
+  }
+}
+
+// Styles for popovers, ensuring clarity and consistency
+.popover-content {
+  // Max. 30rem or 75% of the window width to ensure proper readability
+  max-width: min(max(10rem, 50vw), 30rem);
+  padding: var(--spacing-sm);
+  background: var(--p-background);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+
+  .popover-title {
+    font-weight: bold;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .popover-text {
+    color: var(--p-text-muted-color);
+  }
+}

@@ -1,0 +1,111 @@
+<!-- Container for all settings -->
+<div class="settings-container">
+  <!-- Language Selector -->
+  <div class="settings-item">
+    <label for="language-selector">Language</label>
+    <p-select
+      inputId="language-selector"
+      [filter]="true"
+      filterBy="title,value,filterAlias"
+      [options]="groupedAvailableLanguages"
+      [group]="true"
+      optionLabel="title"
+      [(ngModel)]="languageService.selectedLanguage"
+    >
+      <!-- Style the group heading -->
+      <ng-template let-group #group>
+        <div class="group-heading">
+          <!-- Display an icon conditionally -->
+          @if (group.value === "common") {
+            <i class="pi pi-code"></i>
+          } @else if (group.value === "others") {
+            <i class="pi pi-bars"></i>
+          }
+          <!-- Group label -->
+          <span>{{ group.label }}</span>
+        </div>
+      </ng-template>
+    </p-select>
+  </div>
+
+  <!-- Indentation Size -->
+  <div class="settings-item">
+    <label for="indentation-size" class="label-with-popover">
+      <span>Indentation Size</span>
+      <i
+        class="pi pi-question-circle popover-trigger-icon"
+        (click)="indentationSizePopover.toggle($event)"
+        (keyup.enter)="indentationSizePopover.toggle($event)"
+        (keyup.space)="indentationSizePopover.toggle($event)"
+        tabindex="0"
+      ></i>
+    </label>
+    <p-inputNumber
+      inputId="indentation-size"
+      [showButtons]="true"
+      [(ngModel)]="indentationSize"
+      [min]="MIN_INDENTATION"
+      [max]="MAX_INDENTATION"
+    ></p-inputNumber>
+  </div>
+
+  <!-- Theme Selector -->
+  <div class="settings-item">
+    <label for="theme-selector">Theme</label>
+    <p-select
+      inputId="theme-selector"
+      [options]="availableThemes"
+      optionLabel="label"
+      [(ngModel)]="themeService.selectedTheme"
+    ></p-select>
+  </div>
+
+  <!-- Indentation Mode -->
+  <div class="settings-item">
+    <label for="indent-mode" class="label-with-popover">
+      <span>Indentation Mode</span>
+      <i
+        class="pi pi-question-circle popover-trigger-icon"
+        (click)="indentationModePopover.toggle($event)"
+        (keyup.enter)="indentationModePopover.toggle($event)"
+        (keyup.space)="indentationModePopover.toggle($event)"
+        tabindex="0"
+      ></i>
+    </label>
+    <p-select
+      inputId="indent-mode"
+      [options]="availableIndentationModes"
+      optionLabel="label"
+      optionValue="value"
+      [(ngModel)]="selectedIndentationMode"
+    ></p-select>
+  </div>
+</div>
+
+<!-- Popover for Indentation Size -->
+<p-popover #indentationSizePopover>
+  <div class="popover-content">
+    <span class="popover-title">Indentation Size</span>
+    <p class="popover-text">
+      Defines the number of spaces used for indentation. If tabs were previously
+      used, this value determines how many spaces should replace each tab, and
+      vice versa.
+    </p>
+  </div>
+</p-popover>
+
+<!-- Popover for Indentation Mode -->
+<p-popover #indentationModePopover>
+  <div class="popover-content">
+    <span class="popover-title">Indentation Mode</span>
+    <div class="popover-text text-muted">
+      <p>Choose an indentation character based on your format</p>
+      <ul class="info-list">
+        <li><strong>Word:</strong> Use <em>spaces</em> or <em>tabs</em>.</li>
+        <li>
+          <strong>PowerPoint:</strong> Use <em>nonbreaking spaces (NBSP)</em>.
+        </li>
+      </ul>
+    </div>
+  </div>
+</p-popover>

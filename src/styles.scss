@@ -1,0 +1,65 @@
+/* Global Imports */
+@import "primeicons/primeicons.css";
+@import "prismjs/plugins/line-numbers/prism-line-numbers.min.css";
+@import "prismjs/plugins/toolbar/prism-toolbar.min.css";
+
+/* Root Variables */
+:root {
+  /* Typography */
+  --font-family:
+    ui-sans-serif, -apple-system, system-ui, Segoe UI, Helvetica,
+    Apple Color Emoji, Arial, sans-serif, Segoe UI Emoji, Segoe UI Symbol;
+  --font-size-base: 14px;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+
+  /* Spacing */
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+}
+
+/* Global Styles */
+html {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+}
+
+body {
+  margin: var(--spacing-md);
+  height: calc(100dvh - 2 * var(--spacing-md));
+  overflow: hidden;
+  background: var(--p-surface-50);
+}
+
+/* Heading */
+h1 {
+  margin: var(--spacing-sm) 0;
+  font-size: var(--font-size-xl);
+}
+
+#language-selector,
+#theme-selector {
+  // Minimum width for language and theme selection
+  min-width: 10rem;
+}
+
+#indentation-size,
+#indent-mode {
+  // Set indentation size and mode to the required width
+  width: 100%;
+}
+
+/* Style the group headings of select components */
+.group-heading {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  color: var(--p-primary-color);
+
+  span {
+    text-wrap: nowrap;
+  }
+}
