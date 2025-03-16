@@ -18,17 +18,6 @@ export class LanguageService {
   /** Service for persisting the language in localstorage */
   private storageService: StorageService = inject(StorageService);
 
-  // /** List of available languages */
-  // private readonly common_languages: AvailableLanguage[] = Object.entries(COMMON_LANGUAGES_MAP).map(([label, value]) => ({
-  //   label: label as LanguageKey,
-  //   value: value as LanguageValue
-  // }));
-  //
-  // private readonly other_languages: AvailableLanguage[] = Object.entries(OTHER_LANGUAGE_MAP).map(([label, value]) => ({
-  //   label: label as LanguageKey,
-  //   value: value as LanguageValue
-  // }));
-
   /** Signal for the selected language */
   private _selectedLanguage: WritableSignal<LanguageDefinition> = signal(
     this.loadInitialLanguage()
@@ -43,17 +32,6 @@ export class LanguageService {
   public set selectedLanguage(language: LanguageDefinition) {
     this.storageService.setItem(LANGUAGE_STORAGE_KEY, language.value);
     this._selectedLanguage.set(language);
-  }
-
-  /** Retrieves all available languages, grouped by common and other */
-  public getAllLanguages(): {
-    common: LanguageDefinition[];
-    other: LanguageDefinition[];
-  } {
-    return {
-      common: this.getCommonLanguages(),
-      other: this.getOtherLanguages(),
-    };
   }
 
   /** Retrieves only common languages */
