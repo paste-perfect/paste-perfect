@@ -2,7 +2,6 @@ name: Build App
 
 on:
   push:  # Trigger on all pushes (all branches)
-  pull_request:  # Trigger on merge requests
 
 permissions:
   contents: read
