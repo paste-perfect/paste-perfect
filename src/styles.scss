@@ -19,6 +19,14 @@
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
+
+  --ground-background: var(--p-surface-50);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground-background: var(--p-surface-950);
+  }
 }
 
 /* Global Styles */
@@ -31,7 +39,7 @@ body {
   margin: var(--spacing-md);
   height: calc(100dvh - 2 * var(--spacing-md));
   overflow: hidden;
-  background: var(--p-surface-50);
+  background: var(--ground-background);
 }
 
 /* Heading */
