@@ -21,6 +21,7 @@
             "outputPath": "dist/paste-perfect",
             "index": "src/index.html",
             "browser": "src/main.ts",
+            "baseHref": "/paste-perfect/",
             "polyfills": [
               "zone.js"
             ],
@@ -46,8 +47,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1MB",
+                  "maximumError": "1.5MB"
                 },
                 {
                   "type": "anyComponentStyle",
