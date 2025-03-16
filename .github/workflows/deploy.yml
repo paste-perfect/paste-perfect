@@ -2,7 +2,7 @@ name: Deploy App
 
 on:
   workflow_run:
-    workflows: ["Build Angular App"]
+    workflows: ["Build App"]  # Corrected name
     types:
       - completed
     branches:
