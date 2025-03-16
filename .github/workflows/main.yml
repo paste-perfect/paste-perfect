@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts' # Use the latest LTS version
+          node-version: 'lts/*' # Use the latest LTS version
 
       - name: Install dependencies
         run: npm ci  # Uses package-lock.json for reproducible installs
