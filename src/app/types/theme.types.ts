@@ -25,7 +25,6 @@ type LightThemeValue = (typeof LIGHT_THEME_MAP)[LightThemeKey];
  */
 export type LightThemes = Record<LightThemeKey, LightThemeValue>;
 
-
 /**
  * Type representing the key of a dark theme from DARK_THEME_MAP.
  */
@@ -40,7 +39,6 @@ export type DarkThemes = Record<DarkThemeKey, DarkThemeValue>;
  * Type representing the value of a dark theme from DARK_THEME_MAP.
  */
 type DarkThemeValue = (typeof DARK_THEME_MAP)[DarkThemeKey];
-
 
 /**
  * Represents the key of a theme from either LIGHT_THEME_MAP or DARK_THEME_MAP.

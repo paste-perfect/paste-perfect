@@ -9,7 +9,7 @@ import {
   ThemeValue,
 } from "@types";
 import { getEntries } from "@utils/utils";
-import { MessageService } from 'primeng/api';
+import { MessageService } from "primeng/api";
 
 /**
  * Service to manage application themes, including retrieving available themes,
@@ -70,7 +70,9 @@ export class ThemeService {
 
   /** Applies the selected theme by updating or creating the stylesheet link */
   private applyTheme(theme: AvailableTheme): void {
-    let linkElement: HTMLLinkElement = document.getElementById(this.PRISM_STYLESHEET_ID) as HTMLLinkElement;
+    let linkElement: HTMLLinkElement = document.getElementById(
+      this.PRISM_STYLESHEET_ID
+    ) as HTMLLinkElement;
 
     if (!linkElement) {
       // Create the link element if it does not exist
@@ -86,8 +88,8 @@ export class ThemeService {
     // Handle error in case the stylesheet fails to load
     linkElement.onerror = () => {
       this.messageService.add({
-        severity: 'error',
-        summary: 'Theme Load Failed',
+        severity: "error",
+        summary: "Theme Load Failed",
         detail: `Failed to load theme: ${theme.value}`,
       });
       console.error(`Failed to load theme: ${theme.value}`);
