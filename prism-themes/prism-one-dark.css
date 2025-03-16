@@ -33,7 +33,7 @@ pre[class*="language-"] {
 	background: hsl(220, 13%, 18%);
 	color: hsl(220, 14%, 71%);
 	text-shadow: 0 1px rgba(0, 0, 0, 0.3);
-	font-family: "Fira Code", "Fira Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 	direction: ltr;
 	text-align: left;
 	white-space: pre;
@@ -227,7 +227,7 @@ pre[class*="language-"] {
 .language-markdown .token.strike .token.content,
 .language-markdown .token.strike .token.punctuation,
 .language-markdown .token.list.punctuation,
-.language-markdown .token.popover-title.important > .token.punctuation {
+.language-markdown .token.title.important > .token.punctuation {
 	color: hsl(355, 65%, 65%);
 }
 
