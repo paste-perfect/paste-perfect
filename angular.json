@@ -8,7 +8,7 @@
     }
   },
   "projects": {
-    "syntax-highlighter": {
+    "paste-perfect": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -18,7 +18,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/syntax-highlighter",
+            "outputPath": "dist/paste-perfect",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -69,10 +69,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "syntax-highlighter:build:production"
+              "buildTarget": "paste-perfect:build:production"
             },
             "development": {
-              "buildTarget": "syntax-highlighter:build:development"
+              "buildTarget": "paste-perfect:build:development"
             }
           },
           "defaultConfiguration": "development"
