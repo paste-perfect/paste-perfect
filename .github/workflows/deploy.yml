@@ -2,7 +2,7 @@ name: Deploy App
 
 on:
   workflow_run:
-    workflows: ["Build App"]  # Corrected name
+    workflows: ["Build App"]
     types:
       - completed
     branches:
