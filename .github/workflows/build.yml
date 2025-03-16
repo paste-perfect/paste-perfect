@@ -1,0 +1,34 @@
+name: Build App
+
+on:
+  push:  # Trigger on all pushes (all branches)
+  pull_request:  # Trigger on merge requests
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and Validate Angular App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'  # Use latest LTS version
+
+      - name: Install dependencies
+        run: npm ci  # Uses package-lock.json for reproducible installs
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run format check
+        run: npm run format:check
+
+      - name: Build Angular app
+        run: npm run build
