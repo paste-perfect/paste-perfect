@@ -16,7 +16,7 @@ Check out the [**Paste Perfect Website**](https://nikacc.github.io/paste-perfect
 
 
 Here’s a quick look at Paste Perfect in action:
-![Paste Perfect Screenshot](samples/sample-123.png)
+![Paste Perfect Screenshot](samples/sample-highlightings.gif)
 
 ## Table of Contents
 
