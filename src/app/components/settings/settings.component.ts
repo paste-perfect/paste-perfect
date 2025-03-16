@@ -7,11 +7,7 @@ import { Popover } from "primeng/popover";
 import { ThemeService } from "@services/theme.service";
 import { LanguageService } from "@services/language.service";
 import { SettingsService } from "@services/settings.service";
-import {
-  AvailableIndentationMode,
-  AvailableTheme,
-  IndentationModeValue,
-} from "@types";
+import { AvailableIndentationMode, IndentationModeValue } from "@types";
 import { SelectItemGroup } from "primeng/api";
 
 @Component({
@@ -43,7 +39,8 @@ export class SettingsComponent {
   private settingsService: SettingsService = inject(SettingsService);
 
   /**
-   * List of available programming languages that the user can select.
+   * List of available programming languages that the user can select,
+   * grouped into popular languages and other languages.
    */
   protected groupedAvailableLanguages: SelectItemGroup[] = [
     {
@@ -59,10 +56,21 @@ export class SettingsComponent {
   ];
 
   /**
-   * List of available themes that the user can choose from.
+   * List of available themes that the user can choose from,
+   * grouped into light themes and dark themes.
    */
-  protected availableThemes: AvailableTheme[] =
-    this.themeService.getAvailableThemes();
+  protected groupedAvailableThemes: SelectItemGroup[] = [
+    {
+      label: "Light Themes",
+      value: "light",
+      items: this.themeService.getLightThemes(),
+    },
+    {
+      label: "Dark Themes",
+      value: "dark",
+      items: this.themeService.getDarkThemes(),
+    },
+  ];
 
   /**
    * List of available indentation modes (e.g., spaces or tabs) for the editor.

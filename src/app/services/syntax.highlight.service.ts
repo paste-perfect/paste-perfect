@@ -134,11 +134,11 @@ export class SyntaxHighlightService {
     // Clone the node
     const clonedElement = codeContainer.cloneNode(true) as HTMLPreElement;
 
-    // Fix leading spaces in the first text node
-    this.normalizeFirstCodeBlockIndentation(clonedElement);
-
     // Wrap all text nodes in a span element so that we can apply inline styles
     this.wrapTextNodesWithSpan(clonedElement);
+
+    // Fix leading spaces in the first text node
+    this.normalizeFirstCodeBlockIndentation(clonedElement);
 
     // Apply inline styles to ensure color/font are carried over
     this.applyMinimalInlineStyles(codeContainer, clonedElement, true);
@@ -224,7 +224,8 @@ export class SyntaxHighlightService {
    * leading spaces after newlines with non-breaking spaces.
    */
   private wrapTextWithSpan(textNode: Text): HTMLElement {
-    const span = document.createElement(SHC.SPAN_TAG);
+    const span: HTMLSpanElement = document.createElement(SHC.SPAN_TAG);
+    // Assign the node value as text content
     span.textContent = this.replaceLeadingWhitespaceWithMarkers(
       textNode.nodeValue
     );
