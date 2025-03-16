@@ -1,0 +1,57 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"  # Root directory with package.json
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    open-pull-requests-limit: 10
+
+    labels:
+      - "dependencies"
+      - "angular"
+
+    reviewers:
+      - "NikAcc"
+    assignees:
+      - "NikAcc"
+
+    groups:
+      angular-core:
+        patterns:
+          - "@angular/*"
+          - "zone.js"
+          - "rxjs"
+      primeng:
+        patterns:
+          - "primeng"
+          - "@primeng/themes"
+          - "primeicons"
+      linting-formatting:
+        patterns:
+          - "eslint"
+          - "typescript-eslint"
+          - "angular-eslint"
+          - "prettier"
+
+    # Uncomment the following if we want to ignore major updates
+    #ignore:
+    #  - dependency-name: "*"
+    #    update-types: ["version-update:semver-major"]
+
+    versioning-strategy: increase
+
+    automerge:
+      enabled: true
+      merge-method: squash
+      conditions:
+        - dependency-type: "direct"
+          update-type: "version-update:semver-patch"
+        - dependency-type: "direct"
+          update-type: "version-update:semver-minor"
+        - dependency-type: "indirect"
+          update-type: "version-update:semver-patch"
+
+    rebase-strategy: auto
