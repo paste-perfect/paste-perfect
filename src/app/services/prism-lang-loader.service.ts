@@ -63,8 +63,10 @@ export class PrismLangLoaderService {
       }
 
       if (!Prism.languages[dependency.value]) {
-        await this.importLanguage(dependency);
+        // First import all required dependencies
         await this.loadDependencies(dependency);
+        // Then import the actual language
+        await this.importLanguage(dependency);
       }
     }
   }
@@ -76,7 +78,11 @@ export class PrismLangLoaderService {
    */
   private async importLanguage(lang: LanguageDefinition): Promise<void> {
     try {
-      await import(`../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
+      if (lang.customImportPath) {
+        await import(/* @vite-ignore */ `${lang.customImportPath}`);
+      } else {
+        await import(/* @vite-ignore */ `../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
+      }
       // Note: The following import method does not work for some reason
       // await import( /* @vite-ignore */  prismjs/components/prism-${lang}.min.js);
     } catch (error) {

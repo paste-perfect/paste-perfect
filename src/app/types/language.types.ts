@@ -10,4 +10,6 @@ export interface LanguageDefinition {
   dependencies: string[];
   /** Alternative names or aliases for filtering purposes. */
   filterAlias: string[];
+  /** Define a custom import path (for custom languages */
+  customImportPath?: string;
 }
