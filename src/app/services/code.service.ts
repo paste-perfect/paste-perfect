@@ -1,10 +1,4 @@
-import {
-  effect,
-  inject,
-  Injectable,
-  signal,
-  WritableSignal,
-} from "@angular/core";
+import { effect, inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { SyntaxHighlightService } from "./syntax.highlight.service";
 import { LanguageService } from "./language.service";
 
@@ -17,16 +11,13 @@ import { LanguageService } from "./language.service";
 })
 export class CodeService {
   /** Injected service for syntax highlighting */
-  private readonly syntaxHighlightService: SyntaxHighlightService = inject(
-    SyntaxHighlightService
-  );
+  private readonly syntaxHighlightService: SyntaxHighlightService = inject(SyntaxHighlightService);
 
   /** Injected service for managing the selected programming language */
   private readonly languageService: LanguageService = inject(LanguageService);
 
   /** Default message when no code is provided */
-  private readonly noCode: string =
-    "<span>The highlighted code will appear here after pasting some code!</span>";
+  private readonly noCode: string = "<span>The highlighted code will appear here after pasting some code!</span>";
 
   /** Writable signal to store raw source code */
   private _rawCode: WritableSignal<string> = signal("");
@@ -73,11 +64,9 @@ export class CodeService {
   constructor() {
     effect(() => {
       // Update the highlighted code whenever either the raw code or the selected language changes
-      this.syntaxHighlightService
-        .highlightCode(this.rawCode, this.languageService.selectedLanguage)
-        .then((result) => {
-          this.highlightedCode = result.trim() === "" ? this.noCode : result;
-        });
+      this.syntaxHighlightService.highlightCode(this.rawCode, this.languageService.selectedLanguage).then((result) => {
+        this.highlightedCode = result.trim() === "" ? this.noCode : result;
+      });
     });
   }
 }

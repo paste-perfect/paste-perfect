@@ -1,13 +1,7 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
-import { DARK_THEME_MAP, LIGHT_THEME_MAP, THEME_STORAGE_KEY } from "@const";
-import {
-  AvailableTheme,
-  DarkThemes,
-  LightThemes,
-  ThemeKey,
-  ThemeValue,
-} from "@types";
+import { DARK_THEME_MAP, LIGHT_THEME_MAP, THEME_STORAGE_KEY } from "../constants";
+import { AvailableTheme, DarkThemes, LightThemes, ThemeKey, ThemeValue } from "@types";
 import { getEntries } from "@utils/utils";
 import { MessageService } from "primeng/api";
 
@@ -28,18 +22,12 @@ export class ThemeService {
   /** PrimeNGs messages service for displaying toasts to the user   */
   private messageService: MessageService = inject(MessageService);
 
-  constructor() {
-    document.addEventListener(
-      "DOMContentLoaded",
-      () => this.applyTheme(this.selectedTheme),
-      { once: true }
-    );
-  }
-
   /** Signal for the selected theme */
-  private _selectedTheme: WritableSignal<AvailableTheme> = signal(
-    this.loadInitialTheme()
-  );
+  private _selectedTheme: WritableSignal<AvailableTheme> = signal(this.loadInitialTheme());
+
+  constructor() {
+    document.addEventListener("DOMContentLoaded", () => this.applyTheme(this.selectedTheme), { once: true });
+  }
 
   /** Gets the currently selected theme */
   public get selectedTheme(): AvailableTheme {
@@ -70,9 +58,7 @@ export class ThemeService {
 
   /** Applies the selected theme by updating or creating the stylesheet link */
   private applyTheme(theme: AvailableTheme): void {
-    let linkElement: HTMLLinkElement = document.getElementById(
-      this.PRISM_STYLESHEET_ID
-    ) as HTMLLinkElement;
+    let linkElement: HTMLLinkElement = document.getElementById(this.PRISM_STYLESHEET_ID) as HTMLLinkElement;
 
     if (!linkElement) {
       // Create the link element if it does not exist
@@ -98,14 +84,9 @@ export class ThemeService {
 
   /** Loads the initial theme from storage or defaults to the first available theme */
   private loadInitialTheme(): AvailableTheme {
-    const storedThemeValue: string =
-      this.storageService.getItem<string>(THEME_STORAGE_KEY) || "";
+    const storedThemeValue: string = this.storageService.getItem<string>(THEME_STORAGE_KEY) || "";
     const allThemes: AvailableTheme[] = this.getAllThemes();
-    return (
-      allThemes.find(
-        (theme: AvailableTheme): boolean => theme.value === storedThemeValue
-      ) ?? allThemes[0]
-    );
+    return allThemes.find((theme: AvailableTheme): boolean => theme.value === storedThemeValue) ?? allThemes[0];
   }
 
   /**
@@ -122,8 +103,6 @@ export class ThemeService {
           value: value,
         })
       )
-      .sort((a: AvailableTheme, b: AvailableTheme): number =>
-        a.label.localeCompare(b.label)
-      );
+      .sort((a: AvailableTheme, b: AvailableTheme): number => a.label.localeCompare(b.label));
   }
 }

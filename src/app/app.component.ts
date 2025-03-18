@@ -8,8 +8,8 @@ import { SettingsComponent } from "@components/settings/settings.component";
 import { CodeInputComponent } from "@components/code-input/code-input.component";
 import { CodeOutputComponent } from "@components/code-output/code-output.component";
 import { Tooltip } from "primeng/tooltip";
-import { DEFAULT_TOOLTIP_OPTIONS } from "@const";
 import { TooltipOptions } from "primeng/api";
+import { DEFAULT_TOOLTIP_OPTIONS } from "./constants";
 
 /**
  * Standalone Angular component for demonstrating code syntax highlighting
@@ -18,16 +18,7 @@ import { TooltipOptions } from "primeng/api";
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [
-    FormsModule,
-    DropdownModule,
-    SettingsComponent,
-    CodeInputComponent,
-    CodeOutputComponent,
-    Card,
-    Toast,
-    Tooltip,
-  ],
+  imports: [FormsModule, DropdownModule, SettingsComponent, CodeInputComponent, CodeOutputComponent, Card, Toast, Tooltip],
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })

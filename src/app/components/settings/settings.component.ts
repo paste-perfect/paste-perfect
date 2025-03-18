@@ -75,8 +75,7 @@ export class SettingsComponent {
   /**
    * List of available indentation modes (e.g., spaces or tabs) for the editor.
    */
-  protected availableIndentationModes: AvailableIndentationMode[] =
-    this.settingsService.getAvailableIndentationModes();
+  protected availableIndentationModes: AvailableIndentationMode[] = this.settingsService.getAvailableIndentationModes();
 
   /**
    * Gets the current indentation size setting from the editor settings.
