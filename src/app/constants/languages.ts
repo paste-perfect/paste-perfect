@@ -10,21 +10,37 @@ import { LanguageDefinition } from "@types";
  * The reduce function constructs an object mapping language keys to their definitions,
  * including their title, value, dependencies, and alias titles.
  */
-export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = getEntries(prismComponents.languages)
-  .filter(([key]): boolean => key !== "meta") // Exclude metadata entry
-  .reduce((acc: Record<string, LanguageDefinition>, [key, value]) => {
-    acc[key] = {
-      // Use provided title, or fallback to key
-      title: value.title || key,
-      // Language identifier
-      value: key,
-      // Collect dependencies, ensuring they are arrays
-      dependencies: [...normalizeToArray(value.require), ...normalizeToArray(value.modify), ...normalizeToArray(value.optional)],
-      // Extract alias titles
-      filterAlias: Object.values(value.aliasTitles || {}),
-    };
-    return acc;
-  }, {});
+export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = {
+  ...getEntries(prismComponents.languages)
+    .filter(([key]): boolean => key !== "meta") // Exclude metadata entry
+    .reduce((acc: Record<string, LanguageDefinition>, [key, value]) => {
+      acc[key] = {
+        // Use provided title, or fallback to key
+        title: value.title || key,
+        // Language identifier
+        value: key,
+        // Collect dependencies, ensuring they are arrays
+        dependencies: [...normalizeToArray(value.require), ...normalizeToArray(value.modify), ...normalizeToArray(value.optional)],
+        // Extract alias titles
+        filterAlias: Object.values(value.aliasTitles || {}),
+      };
+      return acc;
+    }, {}),
+  angular: {
+    title: "Angular",
+    value: "angular",
+    dependencies: ["typescript", "css", "javascript", "json", "markup"],
+    filterAlias: ["Angular", "Typescript"],
+    customImportPath: "/custom-languages/angular-grammar.js",
+  },
+  vue: {
+    title: "Vue",
+    value: "vue",
+    dependencies: ["typescript", "css", "javascript", "json", "markup"],
+    filterAlias: ["Vue", "Typescript"],
+    customImportPath: "/custom-languages/vue-grammar.js",
+  },
+};
 
 /**
  * Set of commonly used programming languages.
