@@ -31,8 +31,8 @@ Here’s a quick look at Paste Perfect in action:
 
 - **Seamless Copy** – Retain syntax highlighting and indentation when copying to Word or PowerPoint.
 - **Persistence** – Settings (language, theme, indentation, etc.) are remembered between sessions.
-- *Dynamic Loading** – Only load the Prism.js language definitions you actually need.
-- *Support for Different Indentation Modes** – Choose spaces, tabs, or non-breaking spaces (NBSP), depending on your target application.
+- **Dynamic Loading** – Only load the Prism.js language definitions you actually need.
+- **Support for Different Indentation Modes** – Choose spaces, tabs, or non-breaking spaces (NBSP), depending on your target application.
 
 ## Usage
 

@@ -1,4 +1,4 @@
-import { INDENTATION_MODE_MAP } from "@const";
+import { INDENTATION_MODE_MAP } from "../constants";
 
 /**
  * Represents a selectable indentation mode.
@@ -18,8 +18,7 @@ export type IndentationModeKey = keyof typeof INDENTATION_MODE_MAP;
 /**
  * Represents the value of an indentation mode from the INDENTATION_MODE_MAP object.
  */
-export type IndentationModeValue =
-  (typeof INDENTATION_MODE_MAP)[IndentationModeKey];
+export type IndentationModeValue = (typeof INDENTATION_MODE_MAP)[IndentationModeKey];
 
 /**
  * Represents the settings for syntax highlighting.

@@ -1,4 +1,4 @@
-import { DARK_THEME_MAP, LIGHT_THEME_MAP } from "@const";
+import { DARK_THEME_MAP, LIGHT_THEME_MAP } from "../constants";
 
 /**
  * Represents a selectable syntax theme.

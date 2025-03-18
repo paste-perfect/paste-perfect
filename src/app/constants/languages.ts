@@ -10,18 +10,18 @@ import { LanguageDefinition } from "@types";
  * The reduce function constructs an object mapping language keys to their definitions,
  * including their title, value, dependencies, and alias titles.
  */
-export const ALL_LANGUAGES_MAP = getEntries(prismComponents.languages)
-  .filter(([key]) => key !== "meta") // Exclude metadata entry
+export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = getEntries(prismComponents.languages)
+  .filter(([key]): boolean => key !== "meta") // Exclude metadata entry
   .reduce((acc: Record<string, LanguageDefinition>, [key, value]) => {
     acc[key] = {
-      title: value.title || key, // Use provided title, or fallback to key
-      value: key, // Language identifier
-      dependencies: [
-        ...normalizeToArray(value.require),
-        ...normalizeToArray(value.modify),
-        ...normalizeToArray(value.optional),
-      ], // Collect dependencies, ensuring they are arrays
-      filterAlias: Object.values(value.aliasTitles || {}), // Extract alias titles
+      // Use provided title, or fallback to key
+      title: value.title || key,
+      // Language identifier
+      value: key,
+      // Collect dependencies, ensuring they are arrays
+      dependencies: [...normalizeToArray(value.require), ...normalizeToArray(value.modify), ...normalizeToArray(value.optional)],
+      // Extract alias titles
+      filterAlias: Object.values(value.aliasTitles || {}),
     };
     return acc;
   }, {});
@@ -51,9 +51,7 @@ export const POPULAR_LANGUAGES = new Set([
  * If it's already an array, return it as is.
  * If undefined or any other type, return an empty array.
  */
-function normalizeToArray(
-  value: string | string[] | null | undefined
-): string[] {
+function normalizeToArray(value: string | string[] | null | undefined): string[] {
   if (Array.isArray(value)) return value;
   if (typeof value === "string") return [value];
   return [];

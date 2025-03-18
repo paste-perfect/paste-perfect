@@ -1,5 +1,5 @@
 import { LanguageDefinition } from "@types";
-import { ALL_LANGUAGES_MAP } from "@const";
+import { ALL_LANGUAGES_MAP } from "../constants";
 import { MessageService } from "primeng/api";
 import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
@@ -29,10 +29,7 @@ export class PrismLangLoaderService {
 
       await this.importLanguage(language);
     } catch (error) {
-      console.error(
-        `Failed to load PrismJS language: ${language.value}`,
-        error
-      );
+      console.error(`Failed to load PrismJS language: ${language.value}`, error);
       this.messageService.add({
         severity: "error",
         summary: "Language loading failed",
@@ -79,9 +76,7 @@ export class PrismLangLoaderService {
    */
   private async importLanguage(lang: LanguageDefinition): Promise<void> {
     try {
-      await import(
-        `../../../node_modules/prismjs/components/prism-${lang.value}.min.js`
-      );
+      await import(`../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
       // Note: The following import method does not work for some reason
       // await import( /* @vite-ignore */  prismjs/components/prism-${lang}.min.js);
     } catch (error) {

@@ -12,5 +12,4 @@ import { Entries } from "@types";
  * const entries = getEntries(obj);
  * // entries: [ ['a', 1], ['b', 2] ]
  */
-export const getEntries = <T extends object>(obj: T): Entries<T> =>
-  Object.entries(obj) as Entries<T>;
+export const getEntries = <T extends object>(obj: T): Entries<T> => Object.entries(obj) as Entries<T>;

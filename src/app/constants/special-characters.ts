@@ -1,0 +1,23 @@
+/** Enum containing special characters */
+export enum SpecialCharacters {
+  MARKER = "\u001F",
+  SPAN_TAG = "span",
+  VERTICAL_TAB = "\u000b",
+  TAB = "\t",
+  NEWLINE = "\n",
+  SPACE = "\u0020",
+  NON_BREAKING_SPACE = "\u00A0",
+  LINE_BREAK = "<br>",
+  EMPTY_STRING = "",
+  HYPHEN = "-",
+  SOFT_HYPHEN = "\u00AD",
+  ZERO_WIDTH_SPACE = "\u200B",
+  EN_DASH = "\u2013",
+  EM_DASH = "\u2014",
+  LEFT_SINGLE_QUOTE = "\u2018",
+  RIGHT_SINGLE_QUOTE = "\u2019",
+  LEFT_DOUBLE_QUOTE = "\u201C",
+  RIGHT_DOUBLE_QUOTE = "\u201D",
+  APOSTROPHE = "'",
+  QUOTATION_MARK = '"',
+}

@@ -1,6 +1,3 @@
-import { ApplicationConfig } from "@angular/core";
-import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
-import { providePrimeNG } from "primeng/config";
 import Aura from "@primeng/themes/aura";
 import { definePreset } from "@primeng/themes";
 
@@ -391,24 +388,20 @@ export const MyPreset = definePreset(Aura, {
     overlay: {
       select: {
         borderRadius: "{border.radius.md}",
-        shadow:
-          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+        shadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
       },
       popover: {
         borderRadius: "{border.radius.md}",
         padding: "0.75rem",
-        shadow:
-          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+        shadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
       },
       modal: {
         borderRadius: "{border.radius.xl}",
         padding: "1.25rem",
-        shadow:
-          "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+        shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
       },
       navigation: {
-        shadow:
-          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+        shadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
       },
     },
     colorScheme: {
@@ -665,14 +658,3 @@ export const MyPreset = definePreset(Aura, {
     },
   },
 });
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideAnimationsAsync(),
-    providePrimeNG({
-      theme: {
-        preset: MyPreset,
-      },
-    }),
-  ],
-};

@@ -2,7 +2,7 @@ import { Component, inject } from "@angular/core";
 import { Button } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { TooltipOptions } from "primeng/api";
-import { DEFAULT_TOOLTIP_OPTIONS } from "@const";
+import { DEFAULT_TOOLTIP_OPTIONS } from "../../constants";
 import { SyntaxHighlightService } from "@services/syntax.highlight.service";
 import { CodeService } from "@services/code.service";
 import { LanguageService } from "@services/language.service";
@@ -26,9 +26,7 @@ export class CodeOutputComponent {
   /**
    * Service for handling syntax highlighting and clipboard copy functionality.
    */
-  private readonly syntaxHighlightService: SyntaxHighlightService = inject(
-    SyntaxHighlightService
-  );
+  private readonly syntaxHighlightService: SyntaxHighlightService = inject(SyntaxHighlightService);
 
   /**
    * Service for managing code content and highlighted output.

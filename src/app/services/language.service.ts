@@ -1,11 +1,7 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
 import { LanguageDefinition } from "@types";
-import {
-  ALL_LANGUAGES_MAP,
-  LANGUAGE_STORAGE_KEY,
-  POPULAR_LANGUAGES,
-} from "@const";
+import { ALL_LANGUAGES_MAP, LANGUAGE_STORAGE_KEY, POPULAR_LANGUAGES } from "../constants";
 
 /**
  * Service to manage application languages, including retrieving available languages,
@@ -19,9 +15,7 @@ export class LanguageService {
   private storageService: StorageService = inject(StorageService);
 
   /** Signal for the selected language */
-  private _selectedLanguage: WritableSignal<LanguageDefinition> = signal(
-    this.loadInitialLanguage()
-  );
+  private _selectedLanguage: WritableSignal<LanguageDefinition> = signal(this.loadInitialLanguage());
 
   /** Gets the currently selected language */
   public get selectedLanguage(): LanguageDefinition {
@@ -50,10 +44,7 @@ export class LanguageService {
 
   /** Loads the initial language from storage or defaults to the first available language */
   private loadInitialLanguage(): LanguageDefinition {
-    const storedLanguageValue =
-      this.storageService.getItem<string>(LANGUAGE_STORAGE_KEY) || "";
-    return (
-      ALL_LANGUAGES_MAP[storedLanguageValue] ?? this.getCommonLanguages()[0]
-    );
+    const storedLanguageValue = this.storageService.getItem<string>(LANGUAGE_STORAGE_KEY) || "";
+    return ALL_LANGUAGES_MAP[storedLanguageValue] ?? this.getCommonLanguages()[0];
   }
 }
