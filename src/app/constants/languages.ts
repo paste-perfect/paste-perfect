@@ -31,14 +31,14 @@ export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = {
     value: "angular",
     dependencies: ["typescript", "css", "javascript", "json", "markup"],
     filterAlias: ["Angular", "Typescript"],
-    customImportPath: "/custom-languages/angular-grammar.js",
+    customImportPath: "custom-languages/angular-grammar.js",
   },
   vue: {
     title: "Vue",
     value: "vue",
     dependencies: ["typescript", "css", "javascript", "json", "markup"],
     filterAlias: ["Vue", "Typescript"],
-    customImportPath: "/custom-languages/vue-grammar.js",
+    customImportPath: "custom-languages/vue-grammar.js",
   },
 };
 
