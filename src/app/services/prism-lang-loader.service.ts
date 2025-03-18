@@ -79,7 +79,7 @@ export class PrismLangLoaderService {
   private async importLanguage(lang: LanguageDefinition): Promise<void> {
     try {
       if (lang.customImportPath) {
-        await import(/* @vite-ignore */ `${lang.customImportPath}`);
+        await import(/* @vite-ignore */ `./${lang.customImportPath}`);
       } else {
         await import(/* @vite-ignore */ `../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
       }
