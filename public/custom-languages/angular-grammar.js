@@ -65,7 +65,7 @@
         },
         'event-binding': {
           pattern: /=\s*(["'`])[^"'`]+\1/,
-          inside: Prism.languages.javascript
+          inside: Prism.languages.typescript,
         }
       }
     },
@@ -79,7 +79,7 @@
         },
         'property-binding': {
           pattern: /=\s*(["'`])[^"'`]+\1/,
-          inside: Prism.languages.javascript
+          inside: Prism.languages.typescript,
         }
       }
     },
@@ -93,7 +93,7 @@
         },
         'style-binding': {
           pattern: /=\s*(["'`])[^"'`]+\1/,
-          inside: Prism.languages.javascript
+          inside: Prism.languages.typescript,
         }
       }
     },
@@ -102,7 +102,7 @@
       pattern: /(<style[^>]*>)[\s\S]*?(?=<\/style>)/i,
       lookbehind: true,
       greedy: true,
-      inside: Prism.languages.css
+      inside: Prism.languages.scss,
     },
     'angular-css-tag': {
       pattern: /<\/?style[^>]*>/i,
@@ -156,7 +156,7 @@
         // If there's a (...) after the keyword, highlight within it as JS.
         'condition': {
           pattern: /\([^)]*\)/,
-          inside: Prism.languages.javascript
+          inside: Prism.languages.typescript,
         },
         // The braces content: highlight recursively as Angular HTML
         'inner-block': {
@@ -197,6 +197,18 @@
 
   // 7) Inline templates in .ts: template: `...`
   Prism.languages.insertBefore('angular', 'string', {
+    "angular-html-block": {
+      pattern: /<template[\s\S]*?>[\s\S]*?<\/template>/i,
+      greedy: true,
+      inside: Prism.languages.angularHtml,
+    },
+
+    "angular-css-block": {
+      pattern: /<style[\s\S]*?>[\s\S]*?<\/style>/i,
+      greedy: true,
+      inside: Prism.languages.scss,
+    },
+
     'angular-inline-template': {
       pattern: /\btemplate\s*:\s*(["'`])[\s\S]*?\1/,
       greedy: true,
@@ -216,7 +228,7 @@
             },
             'interpolation-content': {
               pattern: /[\s\S]+/,
-              inside: Prism.languages.javascript
+              inside: Prism.languages.typescript,
             }
           }
         },
@@ -241,10 +253,23 @@
               pattern: /^["'`]|["'`]$/,
               alias: 'string'
             },
-            'rest': Prism.languages.css
+            "rest": Prism.languages.scss,
           }
         }
       }
+    }
+  });
+
+  // 9) If the entire code is an HTML snippet, highlight it as Angular HTML.
+  Prism.languages.insertBefore('angular', 'comment', {
+    'angular-entire-file-as-html': {
+      /**
+       * Match the entire snippet IF:
+       *  1) It starts with < or @  (very likely HTML/@if block).
+       *  2) It does NOT contain common TypeScript keywords (import|export|class|function|const|let).
+       */
+      pattern: /<[^>]+\/?>|@(?:if|else\s+if|else|for|empty|switch|case|default)\b[\s\S]*?\{[\s\S]*?\}/,
+      inside: Prism.languages.angularHtml
     }
   });
 })(Prism);
