@@ -3,6 +3,7 @@ import { ALL_LANGUAGES_MAP } from "../constants";
 import { MessageService } from "primeng/api";
 import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
+import { LocationStrategy } from "@angular/common";
 
 @Injectable({
   providedIn: "root",
@@ -13,6 +14,10 @@ export class PrismLangLoaderService {
    */
   private messageService: MessageService = inject(MessageService);
 
+  /**
+   * Inject location strategy to get the base href configured in angular.json
+   */
+  private locationStrategy: LocationStrategy = inject(LocationStrategy);
   /**
    * Dynamically loads the Prism.js language component for the given language.
    *
@@ -79,7 +84,7 @@ export class PrismLangLoaderService {
   private async importLanguage(lang: LanguageDefinition): Promise<void> {
     try {
       if (lang.customImportPath) {
-        await import(/* @vite-ignore */ `./${lang.customImportPath}`);
+        await import(/* @vite-ignore */ `${this.locationStrategy.getBaseHref()}${lang.customImportPath}`);
       } else {
         await import(/* @vite-ignore */ `../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
       }
