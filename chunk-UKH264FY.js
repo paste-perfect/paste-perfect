@@ -1,0 +1,1 @@
+import{I as o}from"./chunk-FNVWSYXI.js";var a=class r{setItem(e,t){localStorage.setItem(e,JSON.stringify(t))}getItem(e){let t=localStorage.getItem(e);return t?JSON.parse(t):null}static \u0275fac=function(t){return new(t||r)};static \u0275prov=o({token:r,factory:r.\u0275fac,providedIn:"root"})};export{a};
