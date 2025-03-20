@@ -88,11 +88,11 @@ jobs:
         with:
           image-ref: "ghcr.io/anotherstranger/paste-perfect:sha-${{ github.sha }}"
           format: 'sarif'
-          output: "trivy-results.sarif"
+          output: "trivy-results-docker.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@5f8171a638ada777af81d42b55959a643bb29017 # v3
         if: ${{ github.event_name != 'pull_request' }}
         with:
-          sarif_file: "trivy-results.sarif"
+          sarif_file: "trivy-results-docker.sarif"
