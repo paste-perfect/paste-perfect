@@ -5,4 +5,3 @@ services:
       dockerfile: docker/Dockerfile
     ports:
       - "4200:80"
-

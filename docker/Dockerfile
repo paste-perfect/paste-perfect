@@ -2,7 +2,7 @@ FROM node:lts AS builder
 
 RUN mkdir /app
 WORKDIR /app
-COPY ./package-lock.json ./package.json /app
+COPY ./package-lock.json ./package.json /app/
 
 RUN npm ci
 
