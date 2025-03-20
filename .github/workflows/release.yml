@@ -32,4 +32,6 @@ jobs:
         with:
           node-version: "lts/*"
       - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx --package @semantic-release/git semantic-release
