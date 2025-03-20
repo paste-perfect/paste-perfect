@@ -1,0 +1,8 @@
+services:
+  paste-perfect:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    ports:
+      - "4200:80"
+
