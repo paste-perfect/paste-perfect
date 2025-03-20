@@ -1,6 +1,6 @@
 services:
   paste-perfect:
-    image: horaceworblehat/paste-perfect:latest
+    image: ghcr.io/AnotherStranger/paste-perfect:latest
     build:
       context: ../
       dockerfile: docker/Dockerfile
