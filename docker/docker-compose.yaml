@@ -1,8 +1,8 @@
 services:
   paste-perfect:
-    image: ghcr.io/AnotherStranger/paste-perfect:latest
+    image: ghcr.io/anotherstranger/paste-perfect:latest
     build:
       context: ../
       dockerfile: docker/Dockerfile
     ports:
-      - "4200:80"
+      - "4200:8080"
