@@ -105,7 +105,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         if: ${{ github.event_name != 'pull_request' }}
         with:
-          image-ref: "ghcr.io/anotherstranger/borg-server:sha-${{ github.sha }}"
+          image-ref: "ghcr.io/anotherstranger/paste-perfect-${{ github.sha }}"
           format: 'sarif'
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
