@@ -9,6 +9,6 @@ RUN npm ci
 COPY ./ /app
 RUN npm run build-docker
 
-FROM nginx:alpine AS runtime
+FROM nginx:alpine-slim AS runtime
 
 COPY --from=builder /app/dist/paste-perfect/browser /usr/share/nginx/html
