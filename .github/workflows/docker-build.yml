@@ -86,7 +86,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         if: ${{ github.event_name != 'pull_request' }}
         with:
-          image-ref: "ghcr.io/anotherstranger/paste-perfect:sha-${{ github.sha }}"
+          image-ref: "ghcr.io/${{ github.repository }}:sha-${{ github.sha }}"
           format: 'sarif'
           output: "trivy-results-docker.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
