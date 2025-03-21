@@ -1,0 +1,56 @@
+default_stages:
+- commit
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-added-large-files
+- repo: https://github.com/commitizen-tools/commitizen
+  rev: v4.4.1
+  hooks:
+  - id: commitizen
+    stages:
+    - commit-msg
+- repo: meta
+  hooks:
+  - id: check-useless-excludes
+- repo: https://github.com/hadolint/hadolint
+  rev: v2.13.1-beta
+  hooks:
+  - id: hadolint-docker
+    args:
+    - -t
+    - warning
+- repo: https://github.com/igorshubovych/markdownlint-cli
+  rev: v0.44.0
+  hooks:
+  - id: markdownlint-fix
+    args:
+      - "--fix"
+      - "--disable"
+      - "MD013"
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
+- repo: https://github.com/renovatebot/pre-commit-hooks
+  rev: 39.205.1
+  hooks:
+    - id: renovate-config-validator
+- repo: local
+  hooks:
+      - id: npm-lint
+        name: Running Node linter
+        description: Lints the project using the command defined in package.json
+        entry: npm run lint
+        language: node
+        always_run: true
+        pass_filenames: false
+      - id: npm-check-formatting
+        name: Running Node format check
+        entry: npm run format:check
+        language: node
+        always_run: true
+        pass_filenames: false

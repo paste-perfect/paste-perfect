@@ -7,10 +7,12 @@ Contributions are more than welcome! To get started:
 1. **Fork** this repository and create a new **branch** for your feature or bug fix.
 2. **Commit** your changes with clear and concise commit messages.
 3. Ensure that the code adheres to the project's style guidelines:
+
    ```bash
    npm run lint
    npm run format:check
    ```
+
 4. **Submit a Pull Request (PR)** with a detailed description of your changes and their purpose.
 
 ## Local Installation
@@ -18,22 +20,25 @@ Contributions are more than welcome! To get started:
 To set up Paste Perfect locally:
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/YourUsername/paste-perfect.git
    cd paste-perfect
    ```
 
 2. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 3. **Run the application locally**:
+
    ```bash
    npm start
    ```
-   This will launch the development server at [http://localhost:4200](http://localhost:4200) by default.
 
+   This will launch the development server at [http://localhost:4200](http://localhost:4200) by default.
 
 ## Technical Details
 
@@ -41,33 +46,33 @@ This project is built in **Angular**, enhanced by **Prism.js** for syntax highli
 
 ### Components
 
-1. **`code-input.component`**  
+1. **`code-input.component`**
    Lets users type or paste source code. It then hands off this raw code to the core services for processing.
 
-2. **`settings.component`**  
+2. **`settings.component`**
    Offers controls for language selection, theme, indentation style (tabs, spaces, etc.), and indentation size. These preferences are saved to the browser’s storage for convenience.
 
-3. **`code-output.component`**  
+3. **`code-output.component`**
    Receives the highlighted code from Prism.js and displays it. It also provides a one-click button to copy the code with all of its colors and indentation settings intact.
 
 ### Services
 
-- **`code.service.ts`**  
+- **`code.service.ts`**
   Holds both the original (raw) code and the fully highlighted version.
 
-- **`language.service.ts`**  
+- **`language.service.ts`**
   Manages available languages and the user’s current choice. It uses `storage.service.ts` behind the scenes to store this preference in `localStorage`.
 
-- **`theme.service.ts` & `settings.service.ts`**  
+- **`theme.service.ts` & `settings.service.ts`**
   Handle visual themes and other editor options—again persisting them via `storage.service.ts`.
 
-- **`prism-lang-loader.service.ts`**  
+- **`prism-lang-loader.service.ts`**
   Dynamically fetches the necessary Prism.js language definitions only when needed (for example, C++ needs C first). This prevents loading all languages at once.
 
-- **`storage.service.ts`**  
+- **`storage.service.ts`**
   Provides straightforward read/write methods for the browser’s `localStorage`.
 
-- **`syntax-highlight.service.ts`**  
+- **`syntax-highlight.service.ts`**
   The **heart of the application**, responsible for turning raw code into a highlighted snippet and allowing for a properly formatted clipboard copy. It offers two primary methods:
 
   1. **`highlightCode(code: string, language: LanguageDefinition)`**
@@ -81,7 +86,6 @@ This project is built in **Angular**, enhanced by **Prism.js** for syntax highli
      - Replaces the placeholder markers with the desired indentation characters (tabs, multiple spaces, or non-breaking spaces).
      - Copies two versions to the clipboard—an `text/html` snippet (with inline styling) and a simpler `text/plain` version—making sure the syntax colors and indentation remain intact in various editors (Word, PowerPoint, etc.).
 
-
 # Contributing & Local Installation
 
 ## Contributing
@@ -91,10 +95,12 @@ Contributions are always welcome! To get started:
 1. **Fork** this repository and create a new **branch** for your feature or bug fix.
 2. **Commit** your changes with clear and concise commit messages.
 3. Ensure that the code adheres to the project's style guidelines:
+
    ```bash
    npm run lint
    npm run format:check
    ```
+
 4. **Submit a Pull Request (PR)** with a detailed description of your changes and their purpose.
 
 ## Local Installation
@@ -102,20 +108,24 @@ Contributions are always welcome! To get started:
 To set up Paste Perfect locally:
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/YourUsername/paste-perfect.git
    cd paste-perfect
    ```
 
 2. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 3. **Run the application locally**:
+
    ```bash
    npm start
    ```
+
    This will launch the development server at [http://localhost:4200](http://localhost:4200) by default.
 
 ## Technical Details
@@ -125,33 +135,35 @@ This project is built with **Angular**, enhanced by **Prism.js** for syntax high
 ### Components
 
 1. **`code-input.component`**
-  - Allows users to enter or paste source code.
-  - Sends raw code to the core services for processing.
+
+- Allows users to enter or paste source code.
+- Sends raw code to the core services for processing.
 
 2. **`settings.component`**
-  - Provides controls for language selection, theme, and indentation settings.
-  - Saves preferences in the browser’s storage for persistence.
+
+- Provides controls for language selection, theme, and indentation settings.
+- Saves preferences in the browser’s storage for persistence.
 
 3. **`code-output.component`**
-  - Displays highlighted code from Prism.js.
-  - Offers a one-click button to copy the formatted code.
+
+- Displays highlighted code from Prism.js.
+- Offers a one-click button to copy the formatted code.
 
 ### Services & Utilities
 
-
-- **`code.service.ts`**  
+- **`code.service.ts`**
   Holds both the original (raw) code and the fully highlighted version.
 
-- **`language.service.ts`**  
+- **`language.service.ts`**
   Manages available languages and the user’s current choice. It uses `storage.service.ts` behind the scenes to store this preference in `localStorage`.
 
-- **`theme.service.ts` & `settings.service.ts`**  
+- **`theme.service.ts` & `settings.service.ts`**
   Handle visual themes and other editor options—again persisting them via `storage.service.ts`.
 
-- **`prism-lang-loader.service.ts`**  
+- **`prism-lang-loader.service.ts`**
   Dynamically fetches the necessary Prism.js language definitions only when needed (for example, C++ needs C first). This prevents loading all languages at once.
 
-- **`storage.service.ts`**  
+- **`storage.service.ts`**
   Provides straightforward read/write methods for the browser’s `localStorage`.
 
 - **`syntax-highlight.service.ts`** (Main Highlighting Service)
@@ -159,10 +171,7 @@ This project is built with **Angular**, enhanced by **Prism.js** for syntax high
   - Handles syntax highlighting via Prism.js.
   - Uses `NodeUtils`, `InlineStyleApplier`, and `IndentationFormatter` for better modularity.
 
-
-
 ### Utilities
-
 
 - **`indentation-formatter.ts`**
   - Manages indentation formatting.
@@ -180,8 +189,6 @@ This project is built with **Angular**, enhanced by **Prism.js** for syntax high
 
 - **`utils.ts`**
   - Provides generic utility functions like retrieving object entries.
-
-
 
 ### Clipboard Copy Process
 
@@ -204,4 +211,3 @@ Copying highlighted code requires multiple steps for accuracy:
    - Copies two versions to the clipboard:
      - `text/html`: Preserves syntax highlighting and formatting.
      - `text/plain`: Ensures clean, unformatted text for plaintext applications.
-

@@ -1,10 +1,15 @@
 name: Build App
 
 on:
-  push:  # Trigger on all pushes (all branches)
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   build:
@@ -13,10 +18,24 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # 0.30.0
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results-fs.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@5f8171a638ada777af81d42b55959a643bb29017 # v3
+        with:
+          sarif_file: 'trivy-results-fs.sarif'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
         with:
           node-version: 'lts/*'  # Use latest LTS version
 
