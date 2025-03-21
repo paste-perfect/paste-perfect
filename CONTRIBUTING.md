@@ -75,16 +75,34 @@ This project is built in **Angular**, enhanced by **Prism.js** for syntax highli
 - **`syntax-highlight.service.ts`**
   The **heart of the application**, responsible for turning raw code into a highlighted snippet and allowing for a properly formatted clipboard copy. It offers two primary methods:
 
-  1. **`highlightCode(code: string, language: LanguageDefinition)`**
-     - Loads the right Prism.js file if necessary.
-     - Applies syntax highlighting and returns the resulting HTML.
+  1. **`highlightCode(code: string, language: LanguageDefinition): Promise<string>`**
+
+     - Sanitizes input (e.g., replaces unsupported characters).
+     - Dynamically loads Prism.js language definitions if needed.
+     - Returns HTML with syntax-highlighted code using Prism.
 
   2. **`copyToClipboard()`**
-     - Wraps every text node in `<span>` elements so inline styles can be accurately transferred.
-     - Converts leading spaces/tabs into placeholder markers, ensuring consistent indentation after copying.
-     - Applies minimal inline CSS by reading and setting only the essential style properties needed (e.g., color, font size).
-     - Replaces the placeholder markers with the desired indentation characters (tabs, multiple spaces, or non-breaking spaces).
-     - Copies two versions to the clipboard—an `text/html` snippet (with inline styling) and a simpler `text/plain` version—making sure the syntax colors and indentation remain intact in various editors (Word, PowerPoint, etc.).
+
+     - Locates the highlighted `<pre><code>` block in the DOM.
+     - Clones and processes the node structure to preserve:
+       - Inline formatting (e.g., font styles, colors).
+       - Line breaks and indentation (tabs or spaces).
+     - Converts structure into `<p>` and `<span>` blocks for rich formatting.
+     - Outputs two clipboard formats:
+       - `text/html`: Styled for pasting into Word, PowerPoint, etc.
+       - `text/plain`: Clean text with accurate indentation.
+
+#### Utils
+
+- **IndentationFormatter** – Masks and unmasks indentation
+- **InlineStyleApplier** – Captures and reapplies essential font-related styles for inline use.
+- **LinesCollector** – Transforms the DOM structure into styled line-by-line paragraphs, while:
+  - Masking leading whitespace,
+  - Rebuilding indentation with accurate styling (via `IndentationFormatter`),
+  - Ensuring Office-friendly formatting (via `OfficeUtils`).
+- **NodeUtils** - Reusable utility methods such as generating DOM nodes, add attributes, etc.
+- **OfficeUtils** - Utility methods for proper office formatting (i.e., for adding mso-spacerun:yes to preserve whitespaces)
+- **Sanitizer** - Sanitizes input and output strings to replace invalid characters
 
 # Contributing & Local Installation
 

@@ -44,4 +44,14 @@ export class RegexPatterns {
    * Matches lines that contain only whitespace or are empty at the beginning or end of a string.
    */
   public static BLANK_LINES_REGEX = new RegExp(/^\s*\n+|\n+\s*$/g, RegexFlags.GLOBAL);
+
+  /**
+   * Regular expression to match both Windows (\r\n) and Unix (\n) style newlines.
+   */
+  public static NEWLINE_REGEX = new RegExp(/\r?\n/, RegexFlags.GLOBAL);
+
+  /**
+   * Regular expression to match one or more marker characters at the beginning of a string.
+   */
+  public static MARKER_ONLY_REGEX = new RegExp(`^${SpecialCharacters.MARKER}+`);
 }

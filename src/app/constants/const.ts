@@ -38,5 +38,4 @@ export const HTML_CODE_SELECTOR = "code.highlighted-code";
 export const INDENTATION_MODE_MAP = {
   Spaces: "spaces",
   Tabs: "tabs",
-  NBSP: "nbsp",
 } as const;
