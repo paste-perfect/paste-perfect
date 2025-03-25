@@ -8,7 +8,7 @@ import { IndentationModeValue, LanguageDefinition } from "@types";
 import { PrismLangLoaderService } from "@services/prism-lang-loader.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
-import { LinesProcessor } from "@utils/line-collector";
+import { LinesCollector } from "@utils/line-collector";
 
 /**
  * A service responsible for syntax highlighting and clipboard copying of code snippets.
@@ -146,7 +146,7 @@ export class SyntaxHighlightService {
 
     // We gather "root" computed styles from the original <pre>, to apply to newly created spans/paragraphs
     InlineStyleApplier.captureRootStyles(originalPre);
-    const linesCollector = new LinesProcessor(mode, tabSize);
+    const linesCollector = new LinesCollector(mode, tabSize);
     linesCollector.collectLinesFromNodes(originalPre, clonedPre);
 
     // Done — the structure is now fully processed
