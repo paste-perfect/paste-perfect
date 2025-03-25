@@ -6,10 +6,9 @@ import { SettingsService } from "./settings.service";
 import { MessageService } from "primeng/api";
 import { IndentationModeValue, LanguageDefinition } from "@types";
 import { PrismLangLoaderService } from "@services/prism-lang-loader.service";
-import { NodeUtils } from "@utils/node-utils";
-import { InlineStyleApplier } from "@utils/inline-style-applier";
-import { IndentationFormatter } from "@utils/indentation-formatter";
 import { SanitizerWrapper } from "@utils/sanitizer";
+import { InlineStyleApplier } from "@utils/inline-style-applier";
+import { LinesProcessor } from "@utils/line-collector";
 
 /**
  * A service responsible for syntax highlighting and clipboard copying of code snippets.
@@ -83,27 +82,15 @@ export class SyntaxHighlightService {
       return;
     }
 
-    // Clone the node
-    const clonedElement: HTMLPreElement = preElement.cloneNode(true) as HTMLPreElement;
+    // 1) Preprocess in a single pass
+    const processedClone: HTMLPreElement = this.preprocessForClipboard(preElement);
 
-    // Mask the indentation
-    IndentationFormatter.maskIndentation(clonedElement, this.tabSize());
+    // 2) Extract final HTML and plain text
+    const htmlSnippet: string = SanitizerWrapper.sanitizeOutput(processedClone.outerHTML);
+    // Use the original element for the text-only snippet (non-formatted)
+    const textSnippet: string = preElement.outerText;
 
-    // Wrap all text nodes in a span element so that we can apply inline styles
-    NodeUtils.wrapAllTextNodesWithSpan(clonedElement);
-
-    // Apply inline styles to ensure color/font are carried over
-    InlineStyleApplier.applyMinimalInlineStyles(preElement, clonedElement, true);
-
-    // Replace the markers
-    IndentationFormatter.replaceMarkers(clonedElement, this.mode(), this.tabSize());
-
-    // Extract and sanitize HTML
-    const htmlSnippet: string = SanitizerWrapper.sanitizeOutput(clonedElement.outerHTML);
-    // Extract plain text as fallback
-    const textSnippet: string = clonedElement.outerText;
-
-    // Write to clipboard in both 'text/html' and 'text/plain' forms
+    // 3) Copy to clipboard in both text/html and text/plain forms
     navigator.clipboard
       .write([
         new ClipboardItem({
@@ -126,5 +113,43 @@ export class SyntaxHighlightService {
         });
         console.error("Failed to copy:", err);
       });
+  }
+
+  /**
+   * Prepares a cloned `<pre>` element for clipboard copying by applying structural
+   * and stylistic transformations in a single pass.
+   *
+   * Steps performed:
+   *  1. Clones the original `<pre>` element.
+   *  2. Captures and stores root-level computed styles from the original element.
+   *  3. Uses `LinesProcessor` to:
+   *     - Traverse both original and cloned nodes in parallel,
+   *     - Collect content line-by-line while preserving indentation,
+   *     - Apply minimal inline styles to maintain formatting,
+   *     - Wrap lines in `<p>` elements and text in `<span>` elements,
+   *     - Replace indentation with properly styled visual equivalents.
+   *
+   * This ensures that the final HTML structure:
+   *  - Maintains visual fidelity (color, font, indentation),
+   *  - Is optimized for clipboard pasting (including into rich-text editors),
+   *  - Does not rely on external CSS.
+   *
+   * @param originalPre The original `<pre>` DOM element containing the syntax-highlighted code.
+   * @returns A fully processed and styled clone of the original `<pre>` element.
+   */
+  private preprocessForClipboard(originalPre: HTMLPreElement): HTMLPreElement {
+    const mode = this.mode();
+    const tabSize = this.tabSize();
+
+    // Clone node
+    const clonedPre: HTMLPreElement = originalPre.cloneNode(true) as HTMLPreElement;
+
+    // We gather "root" computed styles from the original <pre>, to apply to newly created spans/paragraphs
+    InlineStyleApplier.captureRootStyles(originalPre);
+    const linesCollector = new LinesProcessor(mode, tabSize);
+    linesCollector.collectLinesFromNodes(originalPre, clonedPre);
+
+    // Done — the structure is now fully processed
+    return clonedPre;
   }
 }

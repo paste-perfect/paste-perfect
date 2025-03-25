@@ -23,6 +23,6 @@ export const INPUT_SANITIZE_MAP: Partial<Record<SpecialCharacters, SpecialCharac
  * This is primarily used for converting characters like newline into appropriate display formats.
  */
 export const OUTPUT_SANITIZE_MAP: Partial<Record<SpecialCharacters, SpecialCharacters>> = {
-  [SpecialCharacters.NEWLINE]: SpecialCharacters.LINE_BREAK, // Newline -> <br>
+  // [SpecialCharacters.NEWLINE]: SpecialCharacters.LINE_BREAK, // Newline -> <br>
   // Add more output replacements as needed
 };
