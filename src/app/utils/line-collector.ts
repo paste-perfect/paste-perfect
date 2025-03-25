@@ -15,7 +15,7 @@ import { OfficeUtils } from "@utils/office-utils";
  * This preserves the structure of lines, applying indentation (spaces/tabs)
  * while removing unnecessary attributes from cloned nodes.
  */
-export class LinesProcessor {
+export class LinesCollector {
   private readonly lines: Node[][]; // Stores arrays of Node objects, each representing a single line
   private readonly tabSize: number; // Number of spaces to use in place of a single tab
   private readonly indentationMode: IndentationModeValue; // Whether we want to use spaces or tabs for indentation
