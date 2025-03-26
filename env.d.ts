@@ -14,6 +14,12 @@ declare namespace NodeJS {
      */
     PLAYWRIGHT_BASE_URL?: string;
 
+    /**
+     * Indicates if the environment is running in Continuous Integration (CI).
+     * Used to adjust behavior such as skipping server reuse or enabling headless mode.
+     */
+    CI?: boolean;
+
     // Add more custom environment variables below as needed.
   }
 }
