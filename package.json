@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "update-snapshots": "npx playwright test --update-snapshots",
     "build": "ng build",
     "build-docker": "ng build --base-href /",
     "watch": "ng build --watch --configuration development",
