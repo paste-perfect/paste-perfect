@@ -9,6 +9,6 @@ RUN npm ci
 COPY ./ /app
 RUN npm run build-docker
 
-FROM docker.io/nginxinc/nginx-unprivileged:alpine-slim@sha256:b2c6b4854a9bee724de2437b4030a18f213ef6801f1efbc8dad6bbe2c2fdb02c AS runtime
+FROM docker.io/nginxinc/nginx-unprivileged:alpine-slim@sha256:481b0a56c562d8689a16099c40e4f0408dec09fd1269c59852f5a7274496412e AS runtime
 EXPOSE 8080
 COPY --from=builder /app/dist/paste-perfect/browser /usr/share/nginx/html
