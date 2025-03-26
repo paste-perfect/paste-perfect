@@ -50,7 +50,7 @@ const FIXTURES_DIR = "fixtures";
  * Sets up the editor with language, theme, indentation, and fills in code.
  */
 async function setupEditor(page: Page, language: string, theme: string, indentMode: string, indentationSize: string, rawCodePath: string) {
-  await page.goto("http://localhost:4200");
+  await page.goto("./");
 
   const code = fs.readFileSync(rawCodePath, "utf-8");
 

@@ -16,21 +16,11 @@
     "target": "ES2022",
     "module": "ES2022",
     "paths": {
-      "@components/*": [
-        "./src/app/components/*"
-      ],
-      "@const": [
-        "./src/app/const/index"
-      ],
-      "@services/*": [
-        "./src/app/services/*"
-      ],
-      "@types": [
-        "./src/app/types/index"
-      ],
-      "@utils/*": [
-        "./src/app/utils/*"
-      ]
+      "@components/*": ["./src/app/components/*"],
+      "@const": ["./src/app/const/index"],
+      "@services/*": ["./src/app/services/*"],
+      "@types": ["./src/app/types/index"],
+      "@utils/*": ["./src/app/utils/*"]
     }
   },
   "angularCompilerOptions": {
@@ -38,5 +28,6 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "include": ["env.d.ts", "playwright.config.ts", "tests/**/*"]
 }
