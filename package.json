@@ -4,15 +4,19 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "update-snapshots": "npx playwright test --update-snapshots",
     "build": "ng build",
     "build-docker": "ng build --base-href /",
-    "watch": "ng build --watch --configuration development",
-    "test": "npx playwright test",
-    "lint": "ng lint",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "jest --verbose",
+    "test:unit:watch": "jest --verbose --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "npx playwright test",
+    "test:e2e:update-snapshots": "npx playwright test --update-snapshots",
+    "lint:check": "ng lint",
     "lint:fix": "ng lint --fix",
-    "format": "prettier --write 'src/**/*.{ts,js,json,html,scss}'",
-    "format:check": "prettier --check 'src/**/*.{ts,js,json,html,scss}'"
+    "format:check": "prettier --check 'src/**/*.{ts,js,json,html,scss}'",
+    "format:fix": "prettier --write 'src/**/*.{ts,js,json,html,scss}'",
+    "prepare": "husky"
   },
   "private": true,
   "dependencies": {
@@ -44,13 +48,29 @@
     "@semantic-release/github": "11.0.1",
     "@semantic-release/npm": "12.0.1",
     "@semantic-release/release-notes-generator": "14.0.3",
+    "@types/jest": "^29.5.14",
     "@types/node": "22.13.10",
     "angular-eslint": "19.2.1",
     "conventional-changelog-conventionalcommits": "8.0.0",
     "eslint": "9.22.0",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "jest-preset-angular": "^14.5.3",
+    "lint-staged": "^15.5.0",
     "prettier": "3.5.3",
     "semantic-release": "24.2.3",
-    "typescript": "5.8.2",
+    "ts-jest": "^29.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2",
     "typescript-eslint": "8.27.0"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{html,json,css,scss,md}": [
+      "prettier --write"
+    ]
   }
 }
