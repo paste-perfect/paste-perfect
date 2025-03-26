@@ -2,7 +2,9 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:best-practices",
-    ":semanticCommitTypeAll(refactor)"
+    ":semanticCommitTypeAll(refactor)",
+    ":automergeMinor",
+    ":automergeLinters"
   ],
   "baseBranches": [
     "dev"
@@ -23,9 +25,5 @@
     "docker-compose.yml"
   ],
   "ignoreUnstable": true,
-  "minimumReleaseAge": "7 days",
-  "lockFileMaintenance": {
-    "enabled": true,
-    "automerge": true
-  }
+  "minimumReleaseAge": "7 days"
 }

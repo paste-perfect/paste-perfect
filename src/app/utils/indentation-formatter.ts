@@ -1,33 +1,25 @@
-import { IndentationModeValue } from "@types";
 import { RegexPatterns } from "../regex/regex-patterns";
-import { HTML_CODE_SELECTOR, INDENTATION_MODE_MAP, SpecialCharacters } from "../constants";
+import { SpecialCharacters } from "../constants";
 import { RegexFlags } from "../regex/regex-flags";
 
 /**
- * Provides utilities for handling indentation in highlighted code by masking and replacing indentation markers.
+ * Utility for masking and formatting code indentation.
  *
- * This class helps standardize indentation formatting by:
- * - Masking leading whitespace and tab characters in highlighted code with special markers.
- * - Replacing those markers with the correct indentation format based on the specified mode (Tabs, Spaces, or Non-Breaking Spaces).
+ * Converts leading spaces/tabs to markers and vice versa,
+ * useful for preserving formatting in highlighted or rendered code.
  */
 export class IndentationFormatter {
   /**
-   * Masks indentation by replacing:
-   *  - Each leading whitespace character with one {@link MARKER}.
-   *  - Each leading tab character with "tabSize"-many {@link MARKER}`.
+   * Masks leading spaces and tabs with special markers.
    *
-   * @param preElement The highlighted code container.
-   * @param tabSize The number of spaces per tab.
+   * @param text - Code input.
+   * @param tabSize - Number of markers to represent a tab.
+   * @returns Text with indentation replaced by markers.
    */
-  public static maskIndentation(preElement: HTMLPreElement | null | undefined, tabSize: number): void {
-    const codeElement: HTMLElement = preElement?.querySelector(HTML_CODE_SELECTOR) as HTMLElement;
-
-    if (!preElement || !codeElement) return;
-
-    // Match all leading whitespaces or tabs
-    codeElement.innerHTML = codeElement.innerHTML.replace(RegexPatterns.INDENTATION_REGEX, (match: string): string =>
+  public static maskIndentation(text: string, tabSize: number): string {
+    return text.replace(RegexPatterns.INDENTATION_REGEX, (match: string): string =>
       match
-        // Replace all leading whitespaces
+        // Replace all leading spaces
         .replace(RegexPatterns.WHITESPACE_REGEX, SpecialCharacters.MARKER)
         // Replace all leading tabs
         .replace(RegexPatterns.TAB_REGEX, SpecialCharacters.MARKER.repeat(tabSize))
@@ -35,32 +27,31 @@ export class IndentationFormatter {
   }
 
   /**
-   * Replaces special markers in highlighted code to maintain correct indentation.
+   * Replaces markers with tabs for display.
    *
-   * @param node The highlighted code container.
-   * @param mode The indentation mode (Tabs, Spaces, Non-Breaking Spaces).
-   * @param tabSize The number of spaces per tab.
+   * @param text - Text with masked indentation.
+   * @returns Text with visual indentation restored.
    */
-  public static replaceMarkers(node: HTMLElement, mode: IndentationModeValue, tabSize: number): void {
-    let replacementSymbol;
-    if (mode === INDENTATION_MODE_MAP.Tabs) {
-      // Special handling for tabs
-      const tabRegex = new RegExp(`(${SpecialCharacters.MARKER}){${tabSize}}`, RegexFlags.GLOBAL);
-      node.innerHTML = node.innerHTML
-        // Replace "tabSize" markers with one tab
-        .replace(tabRegex, SpecialCharacters.TAB)
-        // Replace remaining markers with spaces
-        .replace(RegexPatterns.MARKER_REGEX, SpecialCharacters.SPACE);
-    } else {
-      if (mode === INDENTATION_MODE_MAP.Spaces) {
-        // Replace each marker with a space
-        replacementSymbol = SpecialCharacters.SPACE;
-      } else {
-        // INDENTATION_MODE_MAP.NON_BREAKING_SPACES
-        // Replace each marker with a non-breaking space
-        replacementSymbol = SpecialCharacters.NON_BREAKING_SPACE;
-      }
-      node.innerHTML = node.innerHTML.replace(RegexPatterns.MARKER_REGEX, replacementSymbol);
-    }
+  public static unmaskIndentationWithTabs(text: string, tabSize: number): string {
+    // Create a RegExp to match sequences of marker characters
+    const groupRegex = new RegExp(`(${SpecialCharacters.MARKER}{${tabSize}})`, RegexFlags.GLOBAL);
+
+    // Step 1: Replace every group of tabSize markers with one tab
+    let result = text.replace(groupRegex, SpecialCharacters.TAB);
+
+    // Step 2: Replace any remaining markers with spaces
+    result = result.replace(RegexPatterns.MARKER_REGEX, SpecialCharacters.SPACE);
+
+    return result;
+  }
+
+  /**
+   * Replaces markers with non-breaking spaces for display.
+   *
+   * @param text - Text with masked indentation.
+   * @returns Text with visual indentation restored.
+   */
+  public static unmaskIndentationWithNbsp(text: string): string {
+    return text.replace(RegexPatterns.MARKER_REGEX, SpecialCharacters.NON_BREAKING_SPACE);
   }
 }
