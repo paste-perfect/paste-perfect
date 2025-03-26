@@ -2,16 +2,16 @@
 
 > Easily highlight and copy your code with HTML formatting for seamless pasting into Word, PowerPoint, or plain text. Enjoy clean, professional-looking code in just a few clicks!
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/NikAcc/paste-perfect/build.yml?logo=github&label=Build-CI)](https://github.com/NikAcc/paste-perfect/actions/workflows/build.yml)
-[![Deploy Status](https://img.shields.io/github/actions/workflow/status/NikAcc/paste-perfect/deploy.yml?logo=github&label=Deploy-CI)](https://github.com/NikAcc/paste-perfect/actions/workflows/deploy.yml)
-[![GitHub Stars](https://img.shields.io/github/stars/NikAcc/paste-perfect?logo=github)](https://github.com/NikAcc/paste-perfect/stargazers)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/paste-perfect/paste-perfect/build.yml?logo=github&label=Build-CI)](https://github.com/paste-perfect/paste-perfect/actions/workflows/build.yml)
+[![Deploy Status](https://img.shields.io/github/actions/workflow/status/paste-perfect/paste-perfect/deploy.yml?logo=github&label=Deploy-CI)](https://github.com/paste-perfect/paste-perfect/actions/workflows/deploy.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/paste-perfect/paste-perfect?logo=github)](https://github.com/paste-perfect/paste-perfect/stargazers)
 
-[![Issues](https://img.shields.io/github/issues/NikAcc/paste-perfect?label=Open%20Issues)](https://github.com/NikAcc/paste-perfect/issues)
+[![Issues](https://img.shields.io/github/issues/paste-perfect/paste-perfect?label=Open%20Issues)](https://github.com/paste-perfect/paste-perfect/issues)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Visit Paste Perfect
 
-Check out the [**Paste Perfect Website**](https://nikacc.github.io/paste-perfect/) to start with the formatting
+Check out the [**Paste Perfect Website**](https://paste-perfect.github.io/paste-perfect/) to start with the formatting
 
 Here’s a quick look at Paste Perfect in action:
 ![Paste Perfect Screenshot](samples/sample-highlightings.gif)
