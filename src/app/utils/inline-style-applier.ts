@@ -1,16 +1,12 @@
-import { NodeUtils } from "@utils/node-utils";
 import { StyleProperties } from "@types";
 import { getEntries } from "@utils/utils";
 
 /**
- * This class is necessary because when copying HTML to the clipboard, styles must be applied as inline styles manually.
- * Otherwise, they won't have any effect. This process is not done automatically due to performance reasons — assigning all
- * inline styles to all elements would create a significant overhead. Instead, we manually apply only the essential styles,
- * primarily font-related ones such as font-family and color, while stripping away all others.
+ * Applies essential inline styles to HTML elements for clipboard copying.
  *
- * Additionally, since some text nodes have been converted into span nodes (which would typically inherit properties from
- * their parent), we store the root styles (i.e., styles of the root element) and apply them to these converted text nodes.
- * This ensures that text appearance remains consistent even after transformation.
+ * Since stylesheets aren't preserved in clipboard content, only key font-related
+ * styles are manually inlined (e.g., font-family, color). Layout and background styles
+ * are excluded to keep the copied HTML lightweight and readable.
  */
 export class InlineStyleApplier {
   /**
@@ -23,7 +19,8 @@ export class InlineStyleApplier {
   private static rootStyleProperties: StyleProperties = {};
 
   /**
-   * Defines the subset of styles that are copied inline when creating the final snippet. We can also provide default values for which inline styles do not get applied for (i.e., the default font style is "normal" and we don't have to repeat that for every single element)
+   * Defines the subset of styles that are copied inline when creating the final snippet.
+   * We can also provide default values for which inline styles do not get applied for (i.e., the default font style is "normal" and we don't have to repeat that for every single element)
    *
    * Mostly font-related properties are retained, while background colors, margins, paddings,
    * and other layout styles are excluded. This keeps the copied content lightweight while
@@ -39,32 +36,19 @@ export class InlineStyleApplier {
   };
 
   /**
-   * Recursively applies minimal inline font styling (color, font-size, etc.) from the original node to the cloned node.
-   *
-   *  - Only properties specified in `RELEVANT_STYLE_PROPERTIES` are considered to avoid unnecessary inline styles.
-   *  - If the node is the root, its computed styles are stored for application to child nodes that require them.
-   *  - Converted text nodes (now span elements) are styled explicitly to maintain visual consistency.
-   *
-   * @param original - The original DOM node to extract computed styles from.
-   * @param cloned - The cloned DOM node to apply styles to.
-   * @param [isRoot=false] - Indicates if this is the top-level call (used to store root styles).
+   * Extracts and stores root-level styles to apply to converted text elements.
    */
-  static applyMinimalInlineStyles(original: Node, cloned: Node, isRoot = false): void {
-    if (isRoot) {
-      // Reset root-level styles before processing
-      this.rootStyleProperties = {};
-    }
+  public static captureRootStyles(element: HTMLElement): void {
+    // Retrieve computed style for the original element
+    const computedStyle: CSSStyleDeclaration = window.getComputedStyle(element);
 
-    if (NodeUtils.isHtmlElement(original) && NodeUtils.isHtmlElement(cloned)) {
-      this.applyElementStyles(original, cloned, isRoot);
-    } else if (NodeUtils.isHtmlElement(cloned) && !isRoot) {
-      this.applyStoredRootStyles(cloned);
-    }
+    // Apply only relevant styles
+    getEntries(this.RELEVANT_STYLE_PROPERTIES).forEach(([propKey, defaultValue]) => {
+      const value: string = computedStyle.getPropertyValue(propKey);
 
-    // Recursively apply styles to child nodes
-    cloned.childNodes.forEach((child: ChildNode, index: number): void => {
-      if (NodeUtils.isHtmlElement(child)) {
-        this.applyMinimalInlineStyles(original.childNodes[index], child);
+      if (value !== defaultValue) {
+        // Store root-level styles for later use in child elements
+        this.rootStyleProperties[propKey] = value;
       }
     });
   }
@@ -72,18 +56,10 @@ export class InlineStyleApplier {
   /**
    * Extracts and applies computed styles from the original element to the cloned element.
    *
-   * - All class attributes are removed since they won't be included in the copied snippet.
-   * - Only relevant styles (font and text-related) are applied as inline styles.
-   * - If the element is the root, its styles are stored for application to converted text nodes.
-   *
    * @param original - The original HTML element from which styles are extracted.
    * @param cloned - The cloned HTML element to which styles will be applied.
-   * @param isRoot - Boolean indicating if this element is the root.
    */
-  private static applyElementStyles(original: HTMLElement, cloned: HTMLElement, isRoot: boolean): void {
-    // Remove classes as they are useless (because only inline styles are copied to clipboard, no stylesheets)
-    cloned.removeAttribute("class");
-
+  public static applyElementStyles(original: HTMLElement, cloned: HTMLElement): void {
     // Retrieve computed style for the original element
     const computedStyle: CSSStyleDeclaration = window.getComputedStyle(original);
 
@@ -91,13 +67,8 @@ export class InlineStyleApplier {
     getEntries(this.RELEVANT_STYLE_PROPERTIES).forEach(([propKey, defaultValue]) => {
       const value: string = computedStyle.getPropertyValue(propKey);
 
-      if (isRoot) {
-        // Store root-level styles for later use in child elements
-        this.rootStyleProperties[propKey] = value;
-      }
-
       // Apply style only if it's different from the default
-      if (value && value !== String(defaultValue)) {
+      if (value && value !== defaultValue) {
         cloned.style.setProperty(propKey, value);
       }
     });
@@ -112,7 +83,7 @@ export class InlineStyleApplier {
    *
    * @param element - The HTML element to which stored root styles will be applied.
    */
-  private static applyStoredRootStyles(element: HTMLElement): void {
+  public static applyStoredRootStyles(element: HTMLElement): void {
     // Apply stored root properties to non-root elements that require explicit styling
     getEntries(this.rootStyleProperties).forEach(([propKey, propValue]) => {
       if (propValue && propValue !== this.RELEVANT_STYLE_PROPERTIES[propKey]) {

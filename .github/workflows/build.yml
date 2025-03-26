@@ -1,7 +1,11 @@
 name: Build App
 
 on:
-  push:  # Trigger on all pushes (all branches)
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
 
 permissions:
   contents: read
@@ -23,7 +27,7 @@ jobs:
           ignore-unfixed: true
           format: 'sarif'
           output: 'trivy-results-fs.sarif'
-          severity: 'CRITICAL'
+          severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@5f8171a638ada777af81d42b55959a643bb29017 # v3

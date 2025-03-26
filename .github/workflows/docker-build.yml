@@ -32,13 +32,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
+      - name: Set IMAGE_NAME
+        run: echo "IMAGE_NAME=ghcr.io/${REPO,,}" >> $GITHUB_ENV
+        env:
+          REPO: '${{ github.repository }}'
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5
         with:
           # list of Docker images to use as base name for tags
           images: |
-            ghcr.io/AnotherStranger/paste-perfect
+            ${{ env.IMAGE_NAME }}
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule,value=latest
@@ -86,7 +91,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         if: ${{ github.event_name != 'pull_request' }}
         with:
-          image-ref: "ghcr.io/anotherstranger/paste-perfect:sha-${{ github.sha }}"
+          image-ref: "${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
           format: 'sarif'
           output: "trivy-results-docker.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"

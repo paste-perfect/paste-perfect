@@ -2,6 +2,8 @@
 export enum SpecialCharacters {
   MARKER = "\u001F",
   SPAN_TAG = "span",
+  PARAGRAPH_TAG = "p",
+  STYLE_TAG = "style",
   VERTICAL_TAB = "\u000b",
   TAB = "\t",
   NEWLINE = "\n",

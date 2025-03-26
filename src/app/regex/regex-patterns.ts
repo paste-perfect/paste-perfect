@@ -38,10 +38,20 @@ export class RegexPatterns {
    * Regular expression to match any non-ASCII character.
    * Matches characters outside the printable ASCII range (0x20 to 0x7E), excluding newline characters.
    */
-  public static NON_ASCII_CHARACTERS_REGEX = new RegExp(/[^\x20-\x7E\n]/g, RegexFlags.GLOBAL);
+  public static NON_ASCII_CHARACTERS_REGEX = new RegExp(/[^\x20-\x7E\n\u00A0\t]/g, RegexFlags.GLOBAL);
   /**
    * Regular expression to match blank lines.
    * Matches lines that contain only whitespace or are empty at the beginning or end of a string.
    */
   public static BLANK_LINES_REGEX = new RegExp(/^\s*\n+|\n+\s*$/g, RegexFlags.GLOBAL);
+
+  /**
+   * Regular expression to match both Windows (\r\n) and Unix (\n) style newlines.
+   */
+  public static NEWLINE_REGEX = new RegExp(/\r?\n/, RegexFlags.GLOBAL);
+
+  /**
+   * Regular expression to match one or more marker characters at the beginning of a string.
+   */
+  public static MARKER_ONLY_REGEX = new RegExp(`^${SpecialCharacters.MARKER}+`);
 }
