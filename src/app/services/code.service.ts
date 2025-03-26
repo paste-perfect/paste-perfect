@@ -58,6 +58,14 @@ export class CodeService {
   }
 
   /**
+   * Determines whether meaningful highlighted code is present.
+   * @returns True if highlighted code exists and is not the default placeholder.
+   */
+  public isUsingDefaultHighlight(): boolean {
+    return this.highlightedCode === this.noCode;
+  }
+
+  /**
    * Constructor initializes an effect that automatically updates highlighted code
    * when raw code or the selected language changes.
    */

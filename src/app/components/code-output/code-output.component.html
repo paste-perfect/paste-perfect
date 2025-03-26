@@ -1,10 +1,13 @@
+@let isDefault = codeService.isUsingDefaultHighlight();
+
 <div class="highlighted-code-container">
   <!-- Copy Button -->
   <p-button
     id="copy-clipboard-button"
     icon="pi pi-copy"
-    pTooltip="Click to copy highlighted code"
+    [pTooltip]="isDefault ? 'Please enter code before copying' : 'Click to copy highlighted code'"
     [tooltipOptions]="tooltipOptions"
+    [disabled]="isDefault"
     (click)="copyToClipboard()"
   ></p-button>
   <!-- Preformatted text where the highlighted code gets inserted -->
