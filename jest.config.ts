@@ -18,8 +18,21 @@ const config: Config = {
   coverageDirectory: "coverage",
   coverageProvider: "v8",
 
+  // An array of glob patterns indicating a set of files for which coverage information should be collected
+  collectCoverageFrom: [
+    "src/app/**/*.ts",
+    // Ignore constants, regex and types as there is not much to test
+    "!src/app/**/constants/**",
+    "!src/app/**/regex/**",
+    "!src/app/**/types/**",
+    "!src/app/**/*.spec.ts", // exclude spec/test files
+  ],
+
+  // A list of reporter names that Jest uses when writing coverage reports
+  coverageReporters: ["json", "text", "lcov", "clover"],
+
   // Where Jest should look for test files
-  roots: ["src"],
+  roots: ["src/app"],
 
   // Transform TypeScript using ts-jest
   transform: {
@@ -49,17 +62,6 @@ const config: Config = {
 
   // The directory where Jest should store its cached dependency information
   // cacheDirectory: "/private/var/folders/q3/gt860f6s6_vf8ry7t9668x_w0000gp/T/jest_dy",
-
-  // An array of glob patterns indicating a set of files for which coverage information should be collected
-  // collectCoverageFrom: undefined,
-
-  // A list of reporter names that Jest uses when writing coverage reports
-  // coverageReporters: [
-  //   "json",
-  //   "text",
-  //   "lcov",
-  //   "clover"
-  // ],
 
   // An object that configures minimum threshold enforcement for coverage results
   // coverageThreshold: undefined,

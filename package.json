@@ -8,6 +8,7 @@
     "build-docker": "ng build --base-href /",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "jest --verbose",
+    "test:unit:watch": "jest --verbose --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "npx playwright test",
     "test:e2e:update-snapshots": "npx playwright test --update-snapshots",
