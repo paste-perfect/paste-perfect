@@ -4,7 +4,7 @@ const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`
 
 test.describe("Code Highlighter E2E Smoke", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("./");
+    await page.goto("/");
   });
 
   test("should update highlighted output when code is entered", async ({ page }) => {
