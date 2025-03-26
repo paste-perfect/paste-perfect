@@ -17,5 +17,10 @@ test.describe('Code Highlighter E2E Smoke', () => {
 
     // Wait for async highlight
     await expect(output).toContainText(sampleCode);
+
+    // Screenshot Testing
+    await expect(page).toHaveScreenshot('smoke-highlighted-output-fullpage.png', {
+      fullPage: true,
+    });
   });
 });
