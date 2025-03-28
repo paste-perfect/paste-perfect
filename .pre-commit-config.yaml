@@ -44,7 +44,7 @@ repos:
       - id: npm-lint
         name: Running Node linter
         description: Lints the project using the command defined in package.json
-        entry: npm run lint
+        entry: npm run lint:check
         language: node
         always_run: true
         pass_filenames: false

@@ -43,7 +43,7 @@ jobs:
         run: npm ci  # Uses package-lock.json for reproducible installs
 
       - name: Run linting
-        run: npm run lint
+        run: npm run lint:check
 
       - name: Run format check
         run: npm run format:check

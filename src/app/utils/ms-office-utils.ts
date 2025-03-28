@@ -6,7 +6,7 @@ import { SpecialCharacters } from "../constants";
  * when content is pasted into Microsoft Office applications (e.g., Word, Outlook).
  * These styles ensure spacing, margins, and tabbing behave as expected in Office environments.
  */
-export class OfficeUtils {
+export class MsOfficeUtils {
   /**
    * Creates a `<span>` element containing a non-breaking space, with styles
    * that ensure it is preserved when rendered in Microsoft Office applications.
