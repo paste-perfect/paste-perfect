@@ -24,6 +24,5 @@
   "ignorePaths": [
     "docker-compose.yml"
   ],
-  "ignoreUnstable": true,
-  "minimumReleaseAge": "7 days"
+  "ignoreUnstable": true
 }

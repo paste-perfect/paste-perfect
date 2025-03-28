@@ -9,7 +9,7 @@ Contributions are more than welcome! To get started:
 3. Ensure that the code adheres to the project's style guidelines:
 
    ```bash
-   npm run lint
+   npm run lint:check
    npm run format:check
    ```
 
@@ -39,6 +39,23 @@ To set up Paste Perfect locally:
    ```
 
    This will launch the development server at [http://localhost:4200](http://localhost:4200) by default.
+
+## Available Scripts
+
+Here are the relevant `npm` scripts available for development and contribution:
+
+- `npm run start` – Runs the app locally with `ng serve`.
+- `npm run build` – Builds the Angular project.
+- `npm run build-docker` – Builds the app with a base href for Docker deployment.
+- `npm run test` – Runs both unit and end-to-end tests.
+- `npm run test:unit` – Runs unit tests.
+- `npm run test:e2e` – Runs Playwright end-to-end tests.
+- `npm run test:e2e:update-snapshots` – Updates Playwright snapshots.
+- `npm run lint:check` – Checks for linting issues.
+- `npm run lint:fix` – Automatically fixes linting issues.
+- `npm run format:check` – Checks code formatting with Prettier.
+- `npm run format:fix` – Automatically formats code with Prettier.
+- `npm run prepare` – Sets up Git hooks via Husky.
 
 ## Technical Details
 
@@ -115,7 +132,7 @@ Contributions are always welcome! To get started:
 3. Ensure that the code adheres to the project's style guidelines:
 
    ```bash
-   npm run lint
+   npm run lint:check
    npm run format:check
    ```
 
@@ -192,17 +209,21 @@ This project is built with **Angular**, enhanced by **Prism.js** for syntax high
 ### Utilities
 
 - **`indentation-formatter.ts`**
+
   - Manages indentation formatting.
   - Converts leading spaces/tabs into placeholder markers.
 
 - **`inline-style-applier.ts`**
+
   - Ensures proper inline styling when copying to the clipboard.
 
 - **`node-utils.ts`**
+
   - Processes DOM nodes.
   - Wraps standalone text nodes inside `<span>` elements.
 
 - **`sanitizer.ts`**
+
   - Sanitizes input and output for proper formatting and security.
 
 - **`utils.ts`**
@@ -213,16 +234,20 @@ This project is built with **Angular**, enhanced by **Prism.js** for syntax high
 Copying highlighted code requires multiple steps for accuracy:
 
 1. **Highlighting Code (`syntax-highlight.service.ts`)**
+
    - Loads Prism.js syntax definitions.
    - Applies syntax highlighting and generates HTML output.
 
 2. **Formatting Indentation (`indentation-formatter.ts`)**
+
    - Replaces indentation characters (tabs, spaces) with placeholder markers for consistency.
 
 3. **Applying Inline Styles (`inline-style-applier.ts`)**
+
    - Converts necessary styles into inline properties to retain formatting upon pasting.
 
 4. **Processing Nodes (`node-utils.ts`)**
+
    - Ensures text nodes are wrapped inside `<span>` elements for structured styling.
 
 5. **Clipboard Copy Execution**

@@ -4,7 +4,7 @@ import { INDENTATION_MODE_MAP } from "../constants";
 import { IndentationModeValue } from "@types";
 import { IndentationFormatter } from "@utils/indentation-formatter";
 import { RegexPatterns } from "../regex/regex-patterns";
-import { OfficeUtils } from "@utils/office-utils";
+import { MsOfficeUtils } from "@utils/ms-office-utils";
 
 /**
  * A utility class that:
@@ -73,11 +73,11 @@ export class LinesCollector {
       const p: HTMLParagraphElement = NodeUtils.createParagraph();
       InlineStyleApplier.applyStoredRootStyles(p);
       // Remove line spacing (margins)
-      OfficeUtils.applyNoMarginStyle(p);
+      MsOfficeUtils.applyNoMarginStyle(p);
 
       // If there's nothing in this line, we still append an empty paragraph
       if (lineNodes.length === 0) {
-        p.appendChild(OfficeUtils.createEmptyLineSpan());
+        p.appendChild(MsOfficeUtils.createEmptyLineSpan());
         parent.appendChild(p);
         continue;
       }
@@ -222,12 +222,12 @@ export class LinesCollector {
       markerSpan.textContent = IndentationFormatter.unmaskIndentationWithTabs(markerText, this.tabSize);
       const tabCount = Math.floor(markerCount / this.tabSize);
       // MS Office syntax required to properly indent the line with a number of tabs
-      OfficeUtils.applyTabSpacing(markerSpan, tabCount);
+      MsOfficeUtils.applyTabSpacing(markerSpan, tabCount);
     } else {
       // Convert marker characters to actual spaces
       markerSpan.textContent = IndentationFormatter.unmaskIndentationWithNbsp(markerText);
       // MS Office syntax required to keep multiple leading spaces
-      OfficeUtils.preserveWhiteSpace(markerSpan);
+      MsOfficeUtils.preserveWhiteSpace(markerSpan);
     }
 
     return markerSpan;
