@@ -1,29 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices",
-    ":semanticCommitTypeAll(refactor)",
-    ":automergeMinor",
-    ":automergeLinters"
-  ],
-  "baseBranches": [
-    "dev"
-  ],
+  "extends": ["config:best-practices", ":semanticCommitTypeAll(refactor)", ":automergeMinor", ":automergeLinters", ":preserveSemverRanges"],
+  "baseBranches": ["dev"],
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "^Dockerfile$"
-      ],
+      "fileMatch": ["^Dockerfile$"],
       "matchStrings": [
         "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\sARG .*?_VERSION=\"(?<currentValue>.*)\"\\s"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
   ],
-  "ignorePaths": [
-    "docker-compose.yml"
-  ],
-  "ignoreUnstable": true,
-  "minimumReleaseAge": "7 days"
+  "ignorePaths": ["docker-compose.yml"],
+  "ignoreUnstable": true
 }
