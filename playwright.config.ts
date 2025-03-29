@@ -6,6 +6,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:4200/paste-perfect/",
     headless: process.env.CI ? true : HEADLESS, // always headless in CI
+    viewport: { width: 1280, height: 720 }, // consistent resolution for screenshots
   },
   testDir: "e2e-tests",
   snapshotPathTemplate: "{testDir}/snapshots/{testFilePath}/{arg}{ext}",
