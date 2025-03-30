@@ -1,17 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`;
 
 test.describe("Code Highlighter E2E Smoke", () => {
   test.beforeEach(async ({ page }) => {
-    // Override the font to have Arial as default (for cross-browser comparison)
-    await page.addStyleTag({
-      content: `
-      :root {
-        --font-family: 'Arial', sans-serif !important;
-      }
-    `,
-    });
     await page.goto("/");
   });
 
@@ -20,7 +12,7 @@ test.describe("Code Highlighter E2E Smoke", () => {
     const output = page.locator("#highlighted-code-wrapper code");
 
     await input.fill(sampleCode);
-
+    await page.pause();
     // Wait for async highlight
     await expect(output).toContainText(sampleCode);
 
