@@ -4,6 +4,14 @@ const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`
 
 test.describe("Code Highlighter E2E Smoke", () => {
   test.beforeEach(async ({ page }) => {
+    // Override the font to have Arial as default (for cross-browser comparison)
+    await page.addStyleTag({
+      content: `
+      :root {
+        --font-family: 'Arial', sans-serif !important;
+      }
+    `,
+    });
     await page.goto("/");
   });
 
