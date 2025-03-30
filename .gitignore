@@ -3,6 +3,7 @@
 
 # Playwright
 test-results/
+playwright-report/
 
 ### Angular ###
 ## Angular ##
