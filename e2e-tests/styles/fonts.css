@@ -1,0 +1,12 @@
+/* Load Roboto locally */
+@font-face {
+  font-family: "Roboto";
+  src: url("./fonts/Roboto-Var-Font.ttf") format("truetype");
+  font-weight: 100 900; /* Supports all variable weights */
+  font-display: swap;
+}
+
+html {
+  /* Use local Roboto font for comparable screenshot testing */
+  font-family: "Roboto", serif !important;
+}

@@ -3,22 +3,13 @@
 @import "prismjs/plugins/line-numbers/prism-line-numbers.min.css";
 @import "prismjs/plugins/toolbar/prism-toolbar.min.css";
 
-/* Load Roboto locally */
-@font-face {
-  font-family: "Roboto";
-  src: url("/fonts/Roboto-Var-Font.ttf") format("truetype");
-  font-weight: 100 900; /* Supports all variable weights */
-  font-display: swap;
-}
-
 /* Root Variables */
 :root {
   /* Typography */
   // TODO: Load and include "Roboto-VariableFont_wdth,wght.ttf" from the public directory
 
   --font-family:
-    "Roboto", ui-sans-serif, -apple-system, system-ui, Segoe UI, Helvetica, Apple Color Emoji, Arial, sans-serif, Segoe UI Emoji,
-    Segoe UI Symbol;
+    ui-sans-serif, -apple-system, system-ui, Segoe UI, Helvetica, Apple Color Emoji, Arial, sans-serif, Segoe UI Emoji, Segoe UI Symbol;
   --font-size-base: 14px;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
