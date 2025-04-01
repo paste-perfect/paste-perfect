@@ -18,3 +18,9 @@ jobs:
         name: JEST Tests                  # Name of the check run which will be created
         path: '*.xml'                     # Path to test results (inside artifact .zip)
         reporter: jest-junit              # Format of test results
+    - uses: dorny/test-reporter@v2
+      with:
+        artifact: playwright-report            # artifact name
+        name: E2E Tests                  # Name of the check run which will be created
+        path: 'playwright-report.xml'                     # Path to test results (inside artifact .zip)
+        reporter: jest-junit              # Format of test results

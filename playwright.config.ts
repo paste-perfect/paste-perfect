@@ -24,7 +24,7 @@ export default defineConfig({
   ],
   forbidOnly: !!process.env.CI,
   fullyParallel: true,
-  reporter: "html",
+  reporter: [["junit", { outputFile: "playwright-report.xml" }], ["github"], ["list"], ["html", { outputFolder: "playwright-report" }]],
   retries: 0,
   testDir: "e2e-tests",
   snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",
