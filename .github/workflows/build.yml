@@ -1,4 +1,4 @@
-name: Build App
+name: 'Build App'
 
 on:
   push:
@@ -20,20 +20,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Run Trivy vulnerability scanner in repo mode
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # 0.30.0
-        with:
-          scan-type: 'fs'
-          ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy-results-fs.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@1b549b9259bda1cb5ddde3b41741a82a2d15a841 # v3
-        with:
-          sarif_file: 'trivy-results-fs.sarif'
-
       - name: Set up Node.js
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
         with:
@@ -50,3 +36,31 @@ jobs:
 
       - name: Build Angular app
         run: npm run build
+
+      - run: npm run test:unit:ci
+
+      - uses: actions/upload-artifact@v4  # upload test results
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          name: test-results
+          path: reports/report.xml
+
+      - name: Install playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run e2e Tests
+        run: npm run test:e2e
+
+      - name: Upload test result artifacts
+        if: always()  # Ensures it runs even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-html
+          path: playwright-report/
+
+      - name: Upload test result junit artifacts
+        if: always()  # Ensures it runs even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report.xml
