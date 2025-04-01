@@ -8,7 +8,7 @@
     "build": "ng build",
     "build-docker": "ng build --base-href /",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit:ci": "jest --ci --coverage --reporters=default --reporters=jest-junit",
+    "test:unit:ci": "jest --ci --reporters=jest-junit",
     "test:unit": "jest --verbose",
     "test:unit:watch": "jest --verbose --watch",
     "test:coverage": "jest --coverage",
