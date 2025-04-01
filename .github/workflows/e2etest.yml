@@ -1,8 +1,12 @@
 name: Run End to End Tests
 
 on:
-  pull_request:
   push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
 permissions:
   contents: read
   actions: read
