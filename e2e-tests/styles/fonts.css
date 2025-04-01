@@ -1,0 +1,4 @@
+html {
+  /* Use local Roboto font for comparable screenshot testing */
+  font-family: "Arial", serif !important;
+}

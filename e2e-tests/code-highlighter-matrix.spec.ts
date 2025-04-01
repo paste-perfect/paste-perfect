@@ -1,13 +1,8 @@
-import { expect, Page, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-
-declare global {
-  interface Window {
-    // Add the clipboard item type for testing purposes only
-    __copiedClipboardItem: ClipboardItem | null;
-  }
-}
+import { CodeHighlighterPage } from "./pages/code-highlighter.page";
+import { test } from "./pages/code-highlighter.page";
 
 const testCases = [
   {
@@ -49,22 +44,19 @@ const FIXTURES_DIR = "fixtures";
 /**
  * Sets up the editor with language, theme, indentation, and fills in code.
  */
-async function setupEditor(page: Page, language: string, theme: string, indentMode: string, indentationSize: string, rawCodePath: string) {
-  await page.goto("/");
-
-  const code = fs.readFileSync(rawCodePath, "utf-8");
-
-  await page.locator("#language-selector").click();
-  await page.locator(`li span:text-is("${language}")`).click();
-
-  await page.locator("#indentation-size").fill(indentationSize);
-  await page.locator("#indent-mode").click();
-  await page.locator(`li span:text-is("${indentMode}")`).click();
-
-  await page.locator("#theme-selector").click();
-  await page.locator(`li span:text-is("${theme}")`).click();
-
-  await page.locator("#source-code").fill(code);
+async function setupEditorWithUtils(
+  page: CodeHighlighterPage,
+  language: string,
+  theme: string,
+  indentMode: string,
+  indentationSize: string,
+  rawFilePath: string
+) {
+  await page.setLanguage(language);
+  await page.setTheme(theme);
+  await page.setIndentMode(indentMode);
+  await page.setIndentationSize(indentationSize);
+  await page.enterCodeFromFile(rawFilePath);
 }
 
 for (const mode of modes) {
@@ -75,45 +67,21 @@ for (const mode of modes) {
       test(`should render syntax highlighting correctly [${baseName}]`, async ({ page }) => {
         const rawCodePath = path.join(__dirname, FIXTURES_DIR, "raw", rawFilename);
 
-        await setupEditor(page, language, mode.theme, mode.indentMode, mode.indentationSize, rawCodePath);
+        await setupEditorWithUtils(page, language, mode.theme, mode.indentMode, mode.indentationSize, rawCodePath);
 
-        await expect(page).toHaveScreenshot(`${baseName}-fullpage.png`, {
-          fullPage: true,
-        });
+        await page.expectScreenshot(`${baseName}-fullpage.png`);
       });
 
       test(`should copy correct plain and HTML content to clipboard [${baseName}]`, async ({ page }) => {
         const rawCodePath = path.join(__dirname, FIXTURES_DIR, "raw", rawFilename);
 
-        await setupEditor(page, language, mode.theme, mode.indentMode, mode.indentationSize, rawCodePath);
+        await setupEditorWithUtils(page, language, mode.theme, mode.indentMode, mode.indentationSize, rawCodePath);
 
-        const copyButton = page.locator("#copy-clipboard-button");
-        const output = page.locator("#highlighted-code-wrapper code");
+        await page.mockClipboardWrite();
+        await page.clickCopyButton();
 
-        await page.evaluate(() => {
-          window.__copiedClipboardItem = null;
-          navigator.clipboard.write = (items) => {
-            window.__copiedClipboardItem = items[0];
-            return Promise.resolve();
-          };
-        });
-
-        await copyButton.click();
-
-        const clipboardContent = await page.evaluate(async () => {
-          if (!window.__copiedClipboardItem) return null;
-
-          const item = window.__copiedClipboardItem;
-          const plainBlob = await item.getType("text/plain");
-          const htmlBlob = await item.getType("text/html");
-
-          return {
-            plainText: (await plainBlob.text()).trim(),
-            htmlText: (await htmlBlob.text()).trim(),
-          };
-        });
-
-        const expectedText = (await output.innerText()).trim();
+        const clipboardContent = await page.getClipboardContent();
+        const expectedText = (await page.getHighlightedCodeText()).trim();
         expect(clipboardContent?.plainText).toBe(expectedText);
 
         const expectedHtmlPath = path.join(__dirname, FIXTURES_DIR, mode.fixtureDir, fixture);
