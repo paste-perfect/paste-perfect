@@ -1,9 +1,11 @@
 name: 'Test Report'
+
 on:
   workflow_run:
-    workflows: ['Build App']                     # runs after CI workflow
+    workflows: ['build']                     # runs after CI workflow
     types:
       - completed
+
 permissions:
   contents: read
   actions: read
