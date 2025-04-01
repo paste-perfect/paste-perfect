@@ -1,0 +1,41 @@
+name: Run Unit Tests
+
+on:
+  pull_request:
+  push:
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
+jobs:
+  build:
+    name: Run Jest Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
+        with:
+          node-version: 'lts/*'  # Use latest LTS version
+
+      - name: Install dependencies
+        run: npm ci  # Uses package-lock.json for reproducible installs
+
+      - name: Install playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Unit Tests
+        run: npm run test:unit:ci
+
+      - name: Test Report
+        uses: dorny/test-reporter@v2
+        if: success() || failure()    # run this step even if previous step failed
+        with:
+          name: JEST Tests            # Name of the check run which will be created
+          path: juint.xml    # Path to test results
+          reporter: jest-junit        # Format of test results
+          badge-title: 'unittests'
