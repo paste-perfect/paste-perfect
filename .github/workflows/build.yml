@@ -50,3 +50,11 @@ jobs:
 
       - name: Build Angular app
         run: npm run build
+
+      - run: npm run test:unit:ci
+
+      - uses: actions/upload-artifact@v4  # upload test results
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          name: test-results
+          path: reports/report.xml
