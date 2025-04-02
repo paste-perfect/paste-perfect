@@ -25,13 +25,13 @@ export function createAssertions(page: Page): CodeHighlighterAssertions {
       await expect(page.locator("p-button[aria-label='Open Settings'] button")).toBeVisible();
     },
     async expectSettingsDialogVisible() {
-      await expect(page.locator("p-dialog > div")).toBeVisible();
+      await expect(page.locator("#highlighting-settings-dialog > div")).toBeVisible();
     },
     async expectSettingsDialogHidden() {
-      await expect(page.locator("p-dialog > div")).toBeHidden();
+      await expect(page.locator("#highlighting-settings-dialog > div")).toBeHidden();
     },
     async expectSettingsDialogContains(text: string) {
-      await expect(page.locator("p-dialog > div")).toContainText(text);
+      await expect(page.locator("#highlighting-settings-dialog > div")).toContainText(text);
     },
   };
 }

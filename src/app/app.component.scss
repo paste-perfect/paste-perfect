@@ -9,6 +9,18 @@
   overflow: hidden;
 }
 
+::ng-deep #highlighting-settings-dialog {
+  .p-dialog-content {
+    overflow-y: visible;
+  }
+
+  .p-dialog {
+    width: 80vw;
+    max-width: calc(100vw - 2 * var(--spacing-md));
+    min-width: fit-content;
+  }
+}
+
 .title {
   display: flex;
   justify-content: space-between;
