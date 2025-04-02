@@ -10,6 +10,8 @@ import { CodeOutputComponent } from "@components/code-output/code-output.compone
 import { Tooltip } from "primeng/tooltip";
 import { TooltipOptions } from "primeng/api";
 import { DEFAULT_TOOLTIP_OPTIONS } from "./constants";
+import { Dialog } from "primeng/dialog";
+import { Button } from "primeng/button";
 
 /**
  * Standalone Angular component for demonstrating code syntax highlighting
@@ -18,10 +20,15 @@ import { DEFAULT_TOOLTIP_OPTIONS } from "./constants";
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [FormsModule, DropdownModule, SettingsComponent, CodeInputComponent, CodeOutputComponent, Card, Toast, Tooltip],
+  imports: [FormsModule, DropdownModule, SettingsComponent, CodeInputComponent, CodeOutputComponent, Card, Toast, Tooltip, Dialog, Button],
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
   protected tooltipOptions: TooltipOptions = DEFAULT_TOOLTIP_OPTIONS;
+  protected settingsDialogVisible = false;
+
+  protected showDialog(): void {
+    this.settingsDialogVisible = true;
+  }
 }

@@ -1,4 +1,10 @@
+<!-- Toast for displaying messages -->
 <p-toast preventOpenDuplicates />
+
+<!-- Dialog for showing the app settings on mobile devices -->
+<p-dialog header="Highlighting Settings" [modal]="true" [(visible)]="settingsDialogVisible">
+  <app-settings></app-settings>
+</p-dialog>
 
 <div class="syntax-highlighter-container">
   <!-- Title -->
@@ -7,7 +13,13 @@
       Syntax Highlighting with
       <span class="project-name">PastePerfect <i class="pi pi-code"></i></span>
     </h1>
-    <div>
+    <div class="button-menu">
+      <!-- Settings Cog Link (on small devices) -->
+      <p-button (click)="showDialog()" class="show-sm" severity="secondary" pTooltip="Settings" [tooltipOptions]="tooltipOptions">
+        <i class="pi pi-cog"></i>
+      </p-button>
+
+      <!-- GitHub Link -->
       <a
         href="https://github.com/NikAcc/paste-perfect"
         target="_blank"
@@ -36,8 +48,8 @@
       <app-code-input></app-code-input>
     </p-card>
 
-    <!-- Configuration -->
-    <p-card id="configuration-card" header="Settings">
+    <!-- Configuration (on large devices) -->
+    <p-card id="configuration-card" header="Settings" class="hide-sm">
       <app-settings></app-settings>
     </p-card>
   </div>
