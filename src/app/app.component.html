@@ -15,7 +15,14 @@
     </h1>
     <div class="button-menu">
       <!-- Settings Cog Link (on small devices) -->
-      <p-button (click)="showDialog()" class="show-sm" severity="secondary" pTooltip="Settings" [tooltipOptions]="tooltipOptions">
+      <p-button
+        aria-label="Open Settings"
+        (click)="showDialog()"
+        class="show-sm"
+        severity="secondary"
+        pTooltip="Settings"
+        [tooltipOptions]="tooltipOptions"
+      >
         <i class="pi pi-cog"></i>
       </p-button>
 

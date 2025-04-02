@@ -9,7 +9,7 @@ export const LIGHT_THEME_MAP = {
 
 /** Dark Themes */
 export const DARK_THEME_MAP = {
-  "A11y Dark": "a11y-dark.min",
+  "a11y Dark": "a11y-dark.min",
   "Prism Coldark Dark": "prism-coldark-dark.min",
   "One Dark": "prism-one-dark.min",
   "VS Code Dark": "prism-vsc-dark.min",

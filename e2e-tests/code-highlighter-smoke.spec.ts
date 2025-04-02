@@ -5,10 +5,11 @@ const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`
 
 test.describe("Code Highlighter E2E Smoke", () => {
   test("should update highlighted output when code is entered", async ({ page }) => {
-    await page.enterCode(sampleCode);
+    await page.assertions.expectHasDesktopSettings();
+    await page.actions.enterCode(sampleCode);
 
     // Wait for async highlight
-    expect(await page.getHighlightedCodeText()).toContain(sampleCode);
+    expect(await page.utils.getHighlightedCodeText()).toContain(sampleCode);
 
     // Screenshot Testing
     await page.expectScreenshot("smoke-highlighted-output-fullpage.png");
