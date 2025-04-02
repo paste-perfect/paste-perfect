@@ -1,3 +1,5 @@
+@use "variables" as *;
+
 /* Global Imports */
 @import "primeicons/primeicons.css";
 @import "prismjs/plugins/line-numbers/prism-line-numbers.min.css";
@@ -25,6 +27,24 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --ground-background: var(--p-surface-950);
+  }
+}
+
+// Show on small screens only
+.show-sm {
+  display: none;
+
+  @media (max-width: #{$breakpoint-md}) {
+    display: inline-block;
+  }
+}
+
+// Hide on small screens (show on large)
+.hide-sm {
+  display: inline-block;
+
+  @media (max-width: #{$breakpoint-md}) {
+    display: none;
   }
 }
 
