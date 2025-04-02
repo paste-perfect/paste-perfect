@@ -15,7 +15,7 @@ const config: Config = {
   // Collect code coverage
   collectCoverage: true,
   // The directory where Jest should output its coverage files
-  coverageDirectory: "coverage",
+  coverageDirectory: "reports/jest/coverage",
   coverageProvider: "v8",
 
   // An array of glob patterns indicating a set of files for which coverage information should be collected
@@ -128,7 +128,11 @@ const config: Config = {
   // projects: undefined,
 
   // Use this configuration option to add custom reporters to Jest
-  reporters: [["jest-junit", { outputDirectory: "reports", outputName: "report.xml" }], ["github-actions", { silent: false }], "summary"],
+  reporters: [
+    ["jest-junit", { outputDirectory: "reports/jest", outputName: "report.xml" }],
+    ["github-actions", { silent: false }],
+    "summary",
+  ],
 
   // Automatically reset mock state before every test
   // resetMocks: false,

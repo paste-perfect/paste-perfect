@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const HEADLESS = true;
+const HEADLESS = false;
 export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:4200/paste-perfect/";
 
 export default defineConfig({
@@ -35,7 +35,12 @@ export default defineConfig({
   ],
   forbidOnly: !!process.env.CI,
   fullyParallel: true,
-  reporter: [["junit", { outputFile: "playwright-report.xml" }], ["github"], ["list"], ["html", { outputFolder: "playwright-report" }]],
+  reporter: [
+    ["junit", { outputFile: "reports/playwright/report.xml" }],
+    ["github"],
+    ["list"],
+    ["html", { outputFolder: "reports/playwright/html-report" }],
+  ],
   retries: 0,
   testDir: "e2e-tests",
   snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",
@@ -44,6 +49,7 @@ export default defineConfig({
     launchOptions: {
       timeout: 120 * 1000, // 2 mins
     },
+    actionTimeout: 5 * 1000, // 5 seconds for actions (i.e., click, goto)
   },
   webServer: {
     command: "npm run serve",
