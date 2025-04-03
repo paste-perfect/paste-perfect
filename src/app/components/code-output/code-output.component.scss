@@ -9,6 +9,7 @@
     max-height: 100%;
     overflow: auto; /* Make overflow scrollable */
     border-radius: var(--p-border-radius-md);
+    border: 1px solid var(--p-select-border-color);
   }
 
   /* Position the copy-button on the top-right of the parent */
