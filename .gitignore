@@ -3,6 +3,7 @@
 
 # Test reports (jest & playwright)
 reports/
+test-results/
 
 ### Angular ###
 ## Angular ##

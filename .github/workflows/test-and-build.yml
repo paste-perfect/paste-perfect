@@ -1,0 +1,49 @@
+name: 'Test and Build'
+
+# Run on every push and every pull request
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    name: Test and Build PastePerfect
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
+        with:
+          node-version: 'lts/*'  # Use latest LTS version
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci  # Uses package-lock.json for reproducible installs
+
+      - name: Lint code
+        run: npm run lint:check
+
+      - name: Check code formatting
+        run: npm run format:check
+
+      - name: Run unit tests
+        run: npm run test:unit:ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4  # upload test results
+        if: always()        # run this step even if previous step failed
+        with:
+          name: test-reports
+          path: reports/
