@@ -1,26 +1,40 @@
 name: 'Test Report'
 on:
   workflow_run:
-    workflows: ['Build App']                     # runs after CI workflow
+    workflows: ['Test and Build'] # runs after CI workflow
+    branches:
+      - dev
+      - main
     types:
       - completed
+
 permissions:
   contents: read
   actions: read
   checks: write
+
 jobs:
   report:
+    # Only run if the workflow_run succeeded AND it was triggered by a PR
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+
+    name: Generate Test Reports
     runs-on: ubuntu-latest
+
     steps:
-    - uses: dorny/test-reporter@v2
+    - name: Generate JEST test report
+      uses: dorny/test-reporter@v2
       with:
-        artifact: test-results            # artifact name
-        name: JEST Tests                  # Name of the check run which will be created
-        path: '*.xml'                     # Path to test results (inside artifact .zip)
-        reporter: jest-junit              # Format of test results
-    - uses: dorny/test-reporter@v2
+        artifact: test-reports
+        name: JEST Tests
+        path: 'reports/jest/report.xml'
+        reporter: jest-junit
+    - name: Generate E2E test report
+      uses: dorny/test-reporter@v2
       with:
-        artifact: playwright-report            # artifact name
-        name: E2E Tests                  # Name of the check run which will be created
-        path: 'playwright-report.xml'                     # Path to test results (inside artifact .zip)
-        reporter: jest-junit              # Format of test results
+        artifact: test-reports
+        name: E2E Tests
+        path: 'reports/playwright/report.xml'
+        reporter: jest-junit

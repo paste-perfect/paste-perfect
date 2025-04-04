@@ -2,7 +2,7 @@ name: Deploy App
 
 on:
   workflow_run:
-    workflows: ["Build App"]
+    workflows: ["Test and Build"]
     types:
       - completed
     branches:
