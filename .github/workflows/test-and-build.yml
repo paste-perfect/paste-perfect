@@ -1,7 +1,11 @@
 name: 'Test and Build'
 
-# Run on every push and every pull request
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
 
 permissions:
   contents: read
