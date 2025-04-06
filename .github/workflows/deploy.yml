@@ -34,7 +34,7 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
-        if:  ! contains(steps.vars.outputs.tag, "rc")
+        if:  ! contains(steps.vars.outputs.tag, 'rc')
         with:
           branch: gh-pages  # Deploy to `gh-pages` branch
           folder: dist/paste-perfect/browser
@@ -43,7 +43,7 @@ jobs:
 
       - name: Deploy to GitHub Pages (Review Env)
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
-        if:  contains(steps.vars.outputs.tag, "rc")
+        if:  contains(steps.vars.outputs.tag, 'rc')
         with:
           repository-name: paste-perfect/paste-perfect-test
           branch: main
