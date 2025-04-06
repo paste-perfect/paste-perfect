@@ -12,13 +12,13 @@ jobs:
   report:
     runs-on: ubuntu-latest
     steps:
-    - uses: dorny/test-reporter@v2
+    - uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # v2
       with:
         artifact: test-results            # artifact name
         name: JEST Tests                  # Name of the check run which will be created
         path: '*.xml'                     # Path to test results (inside artifact .zip)
         reporter: jest-junit              # Format of test results
-    - uses: dorny/test-reporter@v2
+    - uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # v2
       with:
         artifact: playwright-report            # artifact name
         name: E2E Tests                  # Name of the check run which will be created

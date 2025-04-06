@@ -38,7 +38,7 @@ jobs:
 
       - run: npm run test:unit:ci
 
-      - uses: actions/upload-artifact@v4  # upload test results
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4  # upload test results
         if: success() || failure()        # run this step even if previous step failed
         with:
           name: test-results
@@ -52,14 +52,14 @@ jobs:
 
       - name: Upload test result artifacts
         if: always()  # Ensures it runs even if tests fail
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-report-html
           path: playwright-report/
 
       - name: Upload test result junit artifacts
         if: always()  # Ensures it runs even if tests fail
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-report
           path: playwright-report.xml
