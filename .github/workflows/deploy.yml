@@ -1,12 +1,9 @@
 name: Deploy App
 
 on:
-  workflow_run:
-    workflows: ["Build App"]
-    types:
-      - completed
-    branches:
-      - main  # Only run on main branch
+  push:
+    tags:
+      - 'v[0-9].[0-9].*'
 
 permissions:
   contents: write
@@ -32,9 +29,26 @@ jobs:
       - name: Build Angular app
         run: npm run build
 
+      - name: Get tag name
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
+        if:  ${{!contains(steps.vars.outputs.tag, "rc")}}
         with:
           branch: gh-pages  # Deploy to `gh-pages` branch
           folder: dist/paste-perfect/browser
           clean: true
+          env: gh-pages
+
+      - name: Deploy to GitHub Pages (Review Env)
+        uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
+        if:  ${{contains(steps.vars.outputs.tag, "rc")}}
+        with:
+          repository-name: paste-perfect/paste-perfect-test
+          branch: main
+          folder: dist/paste-perfect/browser
+          clean: true
+          env: gh-pages-review
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
