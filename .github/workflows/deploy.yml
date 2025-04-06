@@ -1,13 +1,6 @@
 name: Deploy App
 
 on:
-  release:
-    types:
-      - published
-      - created
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.*'
   create:
       tags:
       - 'v[0-9]+.[0-9]+.*'
@@ -35,13 +28,9 @@ jobs:
       - name: Build Angular app
         run: npm run build
 
-      - name: Get tag name
-        id: vars
-        run: echo "SOURCE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
-        if:  ! contains(env.SOURCE_TAG, 'rc')
+        if:  ! contains(github.event.ref , 'rc')
         with:
           branch: gh-pages  # Deploy to `gh-pages` branch
           folder: dist/paste-perfect/browser
@@ -50,7 +39,7 @@ jobs:
 
       - name: Deploy to GitHub Pages (Review Env)
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
-        if:  contains(env.SOURCE_TAG, 'rc')
+        if:  contains(github.event.ref , 'rc')
         with:
           repository-name: paste-perfect/paste-perfect-test
           branch: main
