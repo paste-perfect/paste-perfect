@@ -2,9 +2,6 @@ name: 'Test Report'
 on:
   workflow_run:
     workflows: ['Test and Build'] # runs after CI workflow
-    branches:
-      - dev
-      - main
     types:
       - completed
 
@@ -15,11 +12,6 @@ permissions:
 
 jobs:
   report:
-    # Only run if the workflow_run succeeded AND it was triggered by a PR
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request'
-
     name: Generate Test Reports
     runs-on: ubuntu-latest
 
