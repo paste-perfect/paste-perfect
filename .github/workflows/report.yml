@@ -17,14 +17,14 @@ jobs:
 
     steps:
     - name: Generate JEST test report
-      uses: dorny/test-reporter@v2
+      uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # v2
       with:
         artifact: test-reports
         name: JEST Tests
         path: 'reports/jest/report.xml'
         reporter: jest-junit
     - name: Generate E2E test report
-      uses: dorny/test-reporter@v2
+      uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # v2
       with:
         artifact: test-reports
         name: E2E Tests
