@@ -1,0 +1,74 @@
+name: 'Test and Build'
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    name: Test and Build PastePerfect
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 'lts/*'  # Use latest LTS version
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci  # Uses package-lock.json for reproducible installs
+
+      - name: Lint code
+        run: npm run lint:check
+
+      - name: Check code formatting
+        run: npm run format:check
+
+      - name: Run unit tests
+        run: npm run test:unit:ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4  # upload test results
+        if: always()        # run this step even if previous step failed
+        with:
+          name: test-reports
+          path: reports/
+
+  report:
+    name: Generate Test Reports
+    runs-on: ubuntu-latest
+    needs: test-and-build
+
+    steps:
+    - name: Generate JEST tet
+      uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # v2
+      with:
+        artifact: test-reports
+        name: JEST Tests
+        path: 'jest/report.xml'
+        reporter: jest-junit
+    - name: Generate E2E test report
+      uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # v2
+      with:
+        artifact: test-reports
+        name: E2E Tests
+        path: 'playwright/report.xml'
+        reporter: jest-junit

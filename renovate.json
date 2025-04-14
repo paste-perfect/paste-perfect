@@ -8,7 +8,7 @@
     ":automergeMinor",
     ":automergeLinters",
     ":preserveSemverRanges",
-    ":workarounds:all",
+    "workarounds:all",
     ":configMigration",
     "security:openssf-scorecard",
     "replacements:all",
