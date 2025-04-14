@@ -1,9 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/Angular,Node
 # Edit at https://www.toptal.com/developers/gitignore?templates=Angular,Node
 
-# Playwright
+# Test reports (jest & playwright)
+reports/
 test-results/
-playwright-report/
 
 ### Angular ###
 ## Angular ##
