@@ -30,7 +30,7 @@ jobs:
         run: npm ci  # Ensure dependencies are installed
 
       - name: Build Angular app
-        run: npm run build
+        run: npm run build-preview
 
       - name: Deploy to GitHub Pages (Review Env)
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
