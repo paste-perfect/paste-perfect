@@ -15,6 +15,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
+    environment: gh-pages-review
 
     steps:
       - name: Checkout repository
@@ -38,5 +39,4 @@ jobs:
           branch: gh-pages
           folder: dist/paste-perfect/browser
           clean: true
-          env: gh-pages-review
           ssh-key: ${{ secrets.DEPLOY_KEY }}
