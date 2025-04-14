@@ -35,7 +35,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
         with:
           repository-name: paste-perfect/paste-perfect-test
-          branch: main
+          branch: gh-pages
           folder: dist/paste-perfect/browser
           clean: true
           env: gh-pages-review
