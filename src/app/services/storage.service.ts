@@ -24,6 +24,6 @@ export class StorageService {
    */
   public getItem<T>(key: string): T | null {
     const data: string | null = localStorage.getItem(key);
-    return data ? (JSON.parse(data) as T) : null;
+    return data && data !== "undefined" ? (JSON.parse(data) as T) : null;
   }
 }

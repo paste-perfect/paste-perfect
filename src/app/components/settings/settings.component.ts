@@ -7,12 +7,13 @@ import { Popover } from "primeng/popover";
 import { ThemeService } from "@services/theme.service";
 import { LanguageService } from "@services/language.service";
 import { SettingsService } from "@services/settings.service";
-import { AvailableIndentationMode, IndentationModeValue } from "@types";
+import { AvailableIndentationMode, IndentationModeValue, LanguageDefinition } from "@types";
 import { SelectItemGroup } from "primeng/api";
+import { ToggleSwitch } from "primeng/toggleswitch";
 
 @Component({
   selector: "app-settings",
-  imports: [DropdownModule, FormsModule, InputNumber, Select, Popover],
+  imports: [DropdownModule, FormsModule, InputNumber, Select, Popover, ToggleSwitch],
   templateUrl: "./settings.component.html",
   styleUrl: "./settings.component.scss",
 })
@@ -46,14 +47,21 @@ export class SettingsComponent {
     {
       label: "Popular Languages",
       value: "common",
-      items: this.languageService.getCommonLanguages(),
+      items: this.mapWithPrettier(this.languageService.getCommonLanguages()),
     },
     {
       label: "Other Languages",
       value: "others",
-      items: this.languageService.getOtherLanguages(),
+      items: this.mapWithPrettier(this.languageService.getOtherLanguages()),
     },
   ];
+
+  private mapWithPrettier(languages: LanguageDefinition[]): LanguageDefinition[] {
+    return languages.map((language) => ({
+      ...language,
+      title: language.title + (language.prettier ? "*" : ""),
+    }));
+  }
 
   /**
    * List of available themes that the user can choose from,
@@ -105,5 +113,20 @@ export class SettingsComponent {
    */
   set selectedIndentationMode(mode: IndentationModeValue) {
     this.settingsService.updateSettings({ indentationMode: mode });
+  }
+
+  /**
+   * Gets the current formatting enabled setting.
+   */
+  get formattingEnabled(): boolean {
+    return this.settingsService.editorSettings.enableFormatting;
+  }
+
+  /**
+   * Updates the formatting enabled setting.
+   * @param enabled - Whether formatting should be enabled.
+   */
+  set formattingEnabled(enabled: boolean) {
+    this.settingsService.updateSettings({ enableFormatting: enabled });
   }
 }

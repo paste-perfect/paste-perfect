@@ -1,6 +1,7 @@
 import { effect, inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { SyntaxHighlightService } from "./syntax.highlight.service";
 import { LanguageService } from "./language.service";
+import { PrettierService } from "@services/prettier.service";
 
 /**
  * CodeService is responsible for managing and processing source code,
@@ -15,6 +16,9 @@ export class CodeService {
 
   /** Injected service for managing the selected programming language */
   private readonly languageService: LanguageService = inject(LanguageService);
+
+  /** Injected service for code formatting */
+  private readonly prettierService: PrettierService = inject(PrettierService);
 
   /** Default message when no code is provided */
   private readonly noCode: string = "<span>The highlighted code will appear here after pasting some code!</span>";
@@ -61,8 +65,8 @@ export class CodeService {
    * Determines whether meaningful highlighted code is present.
    * @returns True if highlighted code exists and is not the default placeholder.
    */
-  public isUsingDefaultHighlight(): boolean {
-    return this.highlightedCode === this.noCode;
+  public hasCode(): boolean {
+    return this.rawCode.trim() !== "";
   }
 
   /**
@@ -70,10 +74,20 @@ export class CodeService {
    * when raw code or the selected language changes.
    */
   constructor() {
-    effect(() => {
-      // Update the highlighted code whenever either the raw code or the selected language changes
-      this.syntaxHighlightService.highlightCode(this.rawCode, this.languageService.selectedLanguage).then((result) => {
-        this.highlightedCode = result.trim() === "" ? this.noCode : result;
+    effect(async () => {
+      if (!this.hasCode()) {
+        this.highlightedCode = this.noCode;
+        return;
+      }
+
+      const selectedLanguage = this.languageService.selectedLanguage;
+
+      // Format the code using the PrettierService
+      const formattedCode = await this.prettierService.formatCode(this.rawCode, selectedLanguage);
+
+      // Update the highlighted code
+      this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage).then((result) => {
+        this.highlightedCode = result;
       });
     });
   }

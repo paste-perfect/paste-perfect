@@ -12,6 +12,10 @@
   }
 }
 
+.full-width {
+  grid-column: 1 / -1;
+}
+
 // Each individual settings item
 .settings-item {
   display: flex;
