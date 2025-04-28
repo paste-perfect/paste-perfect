@@ -36,7 +36,6 @@
     "jest-junit": "^16.0.0",
     "ngx-clipboard": "^16.0.0",
     "prettier": "^3.5.3",
-    "prettier-plugin-java": "^2.6.7",
     "primeicons": "^7.0.0",
     "primeng": "^19.0.9",
     "prismjs": "^1.30.0",

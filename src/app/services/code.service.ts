@@ -27,7 +27,7 @@ export class CodeService {
   private _rawCode: WritableSignal<string> = signal("");
 
   /** Writable signal to store highlighted code */
-  private _highlightedCode: WritableSignal<string> = signal("");
+  private _highlightedCode: WritableSignal<string> = signal(this.noCode);
 
   /**
    * Setter for raw code.
@@ -75,20 +75,15 @@ export class CodeService {
    */
   constructor() {
     effect(async () => {
-      if (!this.hasCode()) {
-        this.highlightedCode = this.noCode;
-        return;
-      }
-
       const selectedLanguage = this.languageService.selectedLanguage;
 
       // Format the code using the PrettierService
       const formattedCode = await this.prettierService.formatCode(this.rawCode, selectedLanguage);
 
       // Update the highlighted code
-      this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage).then((result) => {
-        this.highlightedCode = result;
-      });
+      const result = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
+
+      this.highlightedCode = this.hasCode() ? result : this.noCode;
     });
   }
 }
