@@ -46,7 +46,8 @@ export class PrettierService {
       // Format the code with the appropriate parser and plugins
       return await prettier.format(code, {
         parser,
-        plugins: plugins,
+        plugins,
+        // plugins: [tmpPlugin],
         printWidth: 140,
         tabWidth: settings.indentationSize,
         useTabs: settings.indentationMode === "tabs",
@@ -57,8 +58,9 @@ export class PrettierService {
         arrowParens: "always",
         endOfLine: "lf",
       });
-    } catch (error) {
-      console.warn("Code formatting failed:", error);
+    } catch {
+      // console.warn("Code formatting failed:", error);
+      console.warn("Code has issues, formatting failed.");
       // Return the original code if formatting fails
       return code;
     }

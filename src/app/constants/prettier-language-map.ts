@@ -43,4 +43,7 @@ export const PRETTIER_LANGUAGE_MAP: Record<string, LanguageDefinition["prettier"
   // GraphQL
   graphql: { parser: "graphql", plugins: ["graphql"] },
   gql: { parser: "graphql", plugins: ["graphql"] },
+
+  // Java
+  java: { parser: "java", plugins: ["java"], external: true },
 };

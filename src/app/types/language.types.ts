@@ -16,5 +16,6 @@ export interface LanguageDefinition {
   prettier?: {
     parser: string;
     plugins: string[];
+    external?: boolean;
   };
 }

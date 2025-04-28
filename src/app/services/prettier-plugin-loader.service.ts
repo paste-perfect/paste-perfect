@@ -1,5 +1,3 @@
-// prettier-plugin-loader.service.ts
-
 import { inject, Injectable } from "@angular/core";
 import { MessageService } from "primeng/api";
 import { LanguageDefinition } from "@types";
@@ -23,21 +21,46 @@ export class PrettierPluginLoaderService {
   private readonly loadedPlugins = new Map<string, PrettierPlugin>();
 
   /**
+   * Mapping of external plugin names to their import paths
+   */
+  private readonly externalPluginPaths: Record<string, string> = {
+    java: "../../../node_modules/prettier-plugin-java/dist/index.js",
+  };
+
+  /**
    * Loads a Prettier plugin dynamically
    *
    * @param pluginName - The name of the plugin to load (e.g., 'babel', 'typescript')
+   * @param isExternal - Whether the plugin is external to Prettier core
    * @returns A Promise that resolves to the loaded plugin
    * @throws Error if plugin loading fails
    */
-  public async loadPlugin(pluginName: string): Promise<PrettierPlugin> {
+  public async loadPlugin(pluginName: string, isExternal = false): Promise<PrettierPlugin> {
     // Return from cache if already loaded
     if (this.loadedPlugins.has(pluginName)) {
       return this.loadedPlugins.get(pluginName)!;
     }
 
     try {
-      // Use dynamic import for all plugins
-      const plugin = await import(/* @vite-ignore */ `../../../node_modules/prettier/plugins/${pluginName}.mjs`);
+      let plugin;
+
+      if (isExternal) {
+        // Load external plugin from its specific path
+        const pluginPath = this.externalPluginPaths[pluginName];
+
+        if (!pluginPath) {
+          throw new Error(`No import path defined for external plugin: ${pluginName}`);
+        }
+
+        // Load the plugin dynamically
+        const pluginModule = await import(/* @vite-ignore */ `../../../node_modules/prettier-plugin-java`);
+
+        // Extract the plugin from the module
+        plugin = pluginModule.default || pluginModule;
+      } else {
+        // Load built-in Prettier plugin
+        plugin = await import(/* @vite-ignore */ `../../../node_modules/prettier/plugins/${pluginName}.mjs`);
+      }
 
       // Store in cache
       this.loadedPlugins.set(pluginName, plugin);
@@ -76,11 +99,12 @@ export class PrettierPluginLoaderService {
     }
 
     const requiredPlugins = [];
+    const isExternal = config.external === true;
 
     // Load all required plugins
     for (const plugin of config.plugins) {
       try {
-        requiredPlugins.push(await this.loadPlugin(plugin));
+        requiredPlugins.push(await this.loadPlugin(plugin, isExternal));
       } catch (error) {
         console.warn(`Failed to load plugin ${plugin}, continuing with available plugins`, error);
       }
