@@ -90,8 +90,6 @@ export class SyntaxHighlightService {
     // Use the original element for the text-only snippet (non-formatted)
     const textSnippet: string = preElement.outerText;
 
-    console.log("Copy: ", textSnippet, htmlSnippet);
-
     // 3) Copy to clipboard in both text/html and text/plain forms
     navigator.clipboard
       .write([
