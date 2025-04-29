@@ -17,15 +17,30 @@ export class LanguageService {
   /** Signal for the selected language */
   private _selectedLanguage: WritableSignal<LanguageDefinition> = signal(this.loadInitialLanguage());
 
-  /** Gets the currently selected language */
+  /** Gets the currently selected language value */
+  public get selectedLanguageValue(): string {
+    return this._selectedLanguage().value;
+  }
+
+  /** Sets and persists the selected language by value */
+  public set selectedLanguageValue(languageValue: string) {
+    this.storageService.setItem(LANGUAGE_STORAGE_KEY, languageValue);
+
+    // Find the language definition that matches this value
+    const languageDefinition = this.getLanguageByValue(languageValue);
+    if (languageDefinition) {
+      this._selectedLanguage.set(languageDefinition);
+    }
+  }
+
+  /** Gets the full language definition object */
   public get selectedLanguage(): LanguageDefinition {
     return this._selectedLanguage();
   }
 
-  /** Sets and persists the selected language */
-  public set selectedLanguage(language: LanguageDefinition) {
-    this.storageService.setItem(LANGUAGE_STORAGE_KEY, language.value);
-    this._selectedLanguage.set(language);
+  /** Gets a language definition object by its value */
+  public getLanguageByValue(value: string): LanguageDefinition | undefined {
+    return ALL_LANGUAGES_MAP[value];
   }
 
   /** Retrieves only common languages */
@@ -45,6 +60,6 @@ export class LanguageService {
   /** Loads the initial language from storage or defaults to the first available language */
   private loadInitialLanguage(): LanguageDefinition {
     const storedLanguageValue = this.storageService.getItem<string>(LANGUAGE_STORAGE_KEY) || "";
-    return ALL_LANGUAGES_MAP[storedLanguageValue] ?? this.getCommonLanguages()[0];
+    return this.getLanguageByValue(storedLanguageValue) ?? this.getCommonLanguages()[0];
   }
 }

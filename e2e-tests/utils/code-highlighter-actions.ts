@@ -22,10 +22,12 @@ export function createActions(page: Page): CodeHighlighterActions {
     },
     async enterCode(code: string) {
       await page.locator("#source-code").fill(code);
+      await page.waitForTimeout(50);
     },
     async enterCodeFromFile(filePath: string) {
       const code = fs.readFileSync(filePath, "utf-8");
       await this.enterCode(code);
+      await page.waitForTimeout(50);
     },
     async clickCopyButton() {
       await page.locator("#copy-clipboard-button").click();

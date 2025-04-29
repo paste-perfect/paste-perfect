@@ -10,7 +10,8 @@
       [options]="groupedAvailableLanguages"
       [group]="true"
       optionLabel="title"
-      [(ngModel)]="languageService.selectedLanguage"
+      optionValue="value"
+      [(ngModel)]="languageService.selectedLanguageValue"
     >
       <!-- Style the group heading -->
       <ng-template let-group #group>
@@ -95,6 +96,21 @@
       [(ngModel)]="selectedIndentationMode"
     ></p-select>
   </div>
+
+  <!-- Add this to settings.component.html -->
+  <div class="settings-item full-width">
+    <label for="enable-formatting" class="label-with-popover">
+      <span>Enable Formatting</span>
+      <i
+        class="pi pi-question-circle popover-trigger-icon"
+        (click)="formattingPopover.toggle($event); $event.preventDefault()"
+        (keyup.enter)="formattingPopover.toggle($event); $event.preventDefault()"
+        (keyup.space)="formattingPopover.toggle($event); $event.preventDefault()"
+        tabindex="0"
+      ></i>
+    </label>
+    <p-toggleswitch inputId="enable-formatting" [(ngModel)]="formattingEnabled" />
+  </div>
 </div>
 
 <!-- Popover for Indentation Size -->
@@ -119,5 +135,15 @@
         <li><strong>PowerPoint:</strong> Use <em>nonbreaking spaces (NBSP)</em>.</li>
       </ul>
     </div>
+  </div>
+</p-popover>
+
+<p-popover #formattingPopover>
+  <div class="popover-content">
+    <span class="popover-title">Code Formatting</span>
+    <p class="popover-text">
+      When enabled, the code will be automatically formatted according to best practices for the selected language. Disable this option if
+      you want to preserve the exact formatting of your code.
+    </p>
   </div>
 </p-popover>
