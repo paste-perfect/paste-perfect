@@ -1,0 +1,38 @@
+<!-- Dialog for showing the app settings on mobile devices -->
+<p-dialog header="Highlighting Settings" id="highlighting-settings-dialog" [modal]="true" [(visible)]="settingsDialogVisible">
+  <app-settings></app-settings>
+</p-dialog>
+
+<!-- Title -->
+<header class="header">
+  <h1>
+    Syntax Highlighting with
+    <span class="project-name">PastePerfect <i class="pi pi-code"></i></span>
+  </h1>
+  <div class="button-menu">
+    <span> v1.2.7 </span>
+    <!-- Settings Cog Link (on small devices) -->
+    <p-button
+      aria-label="Open Settings"
+      (click)="showDialog()"
+      class="show-sm"
+      severity="secondary"
+      pTooltip="Settings"
+      [tooltipOptions]="tooltipOptions"
+    >
+      <i class="pi pi-cog"></i>
+    </p-button>
+
+    <!-- GitHub Link -->
+    <a
+      href="https://github.com/NikAcc/paste-perfect"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="p-button p-button-secondary"
+      pTooltip="Go to the GitHub page"
+      [tooltipOptions]="tooltipOptions"
+    >
+      <i class="pi pi-github"></i>
+    </a>
+  </div>
+</header>

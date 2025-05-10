@@ -1,17 +1,11 @@
 import { Component } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
-import { DropdownModule } from "primeng/dropdown";
 import { Card } from "primeng/card";
 import { Toast } from "primeng/toast";
 import { SettingsComponent } from "@components/settings/settings.component";
 import { CodeInputComponent } from "@components/code-input/code-input.component";
 import { CodeOutputComponent } from "@components/code-output/code-output.component";
-import { Tooltip } from "primeng/tooltip";
-import { TooltipOptions } from "primeng/api";
-import { DEFAULT_TOOLTIP_OPTIONS } from "./constants";
-import { Dialog } from "primeng/dialog";
-import { Button } from "primeng/button";
+import { HeaderComponent } from "@components/header/header.component";
 
 /**
  * Standalone Angular component for demonstrating code syntax highlighting
@@ -20,15 +14,8 @@ import { Button } from "primeng/button";
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [FormsModule, DropdownModule, SettingsComponent, CodeInputComponent, CodeOutputComponent, Card, Toast, Tooltip, Dialog, Button],
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
+  imports: [Toast, HeaderComponent, Card, CodeInputComponent, SettingsComponent, CodeOutputComponent],
 })
-export class AppComponent {
-  protected tooltipOptions: TooltipOptions = DEFAULT_TOOLTIP_OPTIONS;
-  protected settingsDialogVisible = false;
-
-  protected showDialog(): void {
-    this.settingsDialogVisible = true;
-  }
-}
+export class AppComponent {}
