@@ -64,6 +64,10 @@ I had the experience that most online syntax highlighters lose their formatting 
 
 See our [Contributing Guidelines](CONTRIBUTING.md). We appreciate your help in making Paste Perfect better!
 
+## Development Environment
+
+The `dev` branch gets automatically pushed and deployed to GitHub Pages in a separate Repo: https://github.com/paste-perfect/paste-perfect-test
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE). Feel free to use, modify, and distribute this software as your needs require.
