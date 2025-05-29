@@ -3,10 +3,8 @@ name: Deploy App
 on:
   release:
     types:
-      - published
       - prereleased
       - released
-      - created
 
 permissions:
   contents: write
