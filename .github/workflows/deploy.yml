@@ -15,7 +15,6 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
-    environment: gh-pages-review
 
     steps:
       - name: Checkout repository
@@ -42,6 +41,7 @@ jobs:
           folder: dist/paste-perfect/browser
           clean: true
           ssh-key: ${{ secrets.DEPLOY_KEY }}
+          env: gh-pages-preview
 
       - name: Build Angular app
         if: '!github.event.prerelease'
