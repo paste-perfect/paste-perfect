@@ -2,7 +2,7 @@ name: Deploy App
 
 on:
   release:
-    types: [published]
+    types: [published,prereleased]
 
 permissions:
   contents: write
