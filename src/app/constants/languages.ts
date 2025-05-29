@@ -1,6 +1,7 @@
 import prismComponents from "prismjs/components.js";
 import { getEntries } from "@utils/utils";
 import { LanguageDefinition } from "@types";
+import { PRETTIER_LANGUAGE_MAP } from "./prettier-language-map";
 
 /**
  * Derive all supported languages from the Prism.js components language definition.
@@ -23,6 +24,8 @@ export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = {
         dependencies: [...normalizeToArray(value.require), ...normalizeToArray(value.modify), ...normalizeToArray(value.optional)],
         // Extract alias titles
         filterAlias: Object.values(value.aliasTitles || {}),
+        // Add Prettier configuration if available
+        prettier: PRETTIER_LANGUAGE_MAP[key],
       };
       return acc;
     }, {}),
@@ -32,6 +35,7 @@ export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = {
     dependencies: ["typescript", "scss", "json", "markup"],
     filterAlias: ["Angular", "Typescript"],
     customImportPath: "custom-languages/angular-grammar.js",
+    prettier: { parser: "typescript", plugins: ["typescript", "estree"] },
   },
   vue: {
     title: "Vue",
@@ -39,6 +43,7 @@ export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = {
     dependencies: ["typescript", "scss", "json", "markup"],
     filterAlias: ["Vue", "Typescript"],
     customImportPath: "custom-languages/vue-grammar.js",
+    prettier: { parser: "html", plugins: ["html"] },
   },
 };
 

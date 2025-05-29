@@ -28,4 +28,6 @@ export interface HighlightingSettings {
   indentationSize: number;
   /** The selected indentation mode (spaces, tabs, or NBSP). */
   indentationMode: IndentationModeValue;
+  /** Whether or not formatting should be enabled */
+  enableFormatting: boolean;
 }

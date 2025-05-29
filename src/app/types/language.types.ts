@@ -12,4 +12,10 @@ export interface LanguageDefinition {
   filterAlias: string[];
   /** Define a custom import path (for custom languages */
   customImportPath?: string;
+  /** Prettify parser (if supported) */
+  prettier?: {
+    parser: string;
+    plugins: string[];
+    external?: boolean;
+  };
 }

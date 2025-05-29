@@ -20,7 +20,7 @@ interface TestCase {
 
 const testCases: TestCase[] = [
   {
-    language: "JavaScript",
+    language: "JavaScript*",
     rawFilename: "javascript.js",
     fixture: "javascript.html",
   },
@@ -30,7 +30,7 @@ const testCases: TestCase[] = [
     fixture: "python.html",
   },
   {
-    language: "Markup",
+    language: "Markup*",
     rawFilename: "markup.html",
     fixture: "markup.html",
   },

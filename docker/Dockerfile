@@ -1,4 +1,4 @@
-FROM docker.io/node:lts@sha256:c7fd844945a76eeaa83cb372e4d289b4a30b478a1c80e16c685b62c54156285b AS builder
+FROM docker.io/node:lts@sha256:120a74c2ae5bf7f51ab253caef82e7ec3491ac85ef5b1c25751e6c3b55f49cf8 AS builder
 
 RUN mkdir /app
 WORKDIR /app
@@ -9,6 +9,6 @@ RUN npm ci
 COPY ./ /app
 RUN npm run build-docker
 
-FROM docker.io/nginxinc/nginx-unprivileged:alpine-slim@sha256:154d7db418e13bcb29375cfa1f05d77496e986c717b9ba8a831e11077c880358 AS runtime
+FROM docker.io/nginxinc/nginx-unprivileged:alpine-slim@sha256:858590381e9f6d96eeb196c1116146afa8d0b7b4eadd1333a97537d6ddd2aba2 AS runtime
 EXPOSE 8080
 COPY --from=builder /app/dist/paste-perfect/browser /usr/share/nginx/html

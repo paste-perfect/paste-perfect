@@ -1,6 +1,21 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:best-practices", ":semanticCommitTypeAll(refactor)", ":automergeMinor", ":automergeLinters", ":preserveSemverRanges"],
+  "extends": [
+    "config:best-practices",
+    ":semanticCommitTypeAll(refactor)",
+    ":automergeRequireAllStatusChecks",
+    ":automergeDigest",
+    ":automergeMinor",
+    ":automergeLinters",
+    ":preserveSemverRanges",
+    "workarounds:all",
+    ":configMigration",
+    "security:openssf-scorecard",
+    "replacements:all",
+    "npm:unpublishSafe",
+    ":enablePreCommit",
+    ":enableVulnerabilityAlerts"
+  ],
   "baseBranches": ["dev"],
   "customManagers": [
     {

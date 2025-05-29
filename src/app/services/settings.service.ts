@@ -45,6 +45,7 @@ export class SettingsService {
     return {
       indentationSize: 2,
       indentationMode: INDENTATION_MODE_MAP.Spaces,
+      enableFormatting: true,
       // Overwrite defaults with stored values if they exist
       ...(this.storageService.getItem<HighlightingSettings>(SETTINGS_STORAGE_KEY) || {}),
     };
