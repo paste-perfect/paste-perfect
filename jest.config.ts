@@ -36,11 +36,11 @@ const config: Config = {
 
   // Transform TypeScript using ts-jest
   transform: {
-    "^.+\\.ts$": ["ts-jest", { tsconfig: "tsconfig.spec.json" }],
+    "^.+\\.ts$": ["jest-preset-angular", { tsconfig: "tsconfig.spec.json" }],
   },
 
   // Extensions Jest should care about
-  moduleFileExtensions: ["ts", "js"],
+  moduleFileExtensions: ["ts", "html", "js", "json", "mjs"],
 
   // Map TS path aliases to Jest module paths
   moduleNameMapper: {
