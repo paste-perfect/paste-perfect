@@ -5,6 +5,8 @@ on:
     types:
       - prereleased
       - released
+      - published
+      - created
 
 permissions:
   contents: write
