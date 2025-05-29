@@ -41,7 +41,6 @@ jobs:
           folder: dist/paste-perfect/browser
           clean: true
           ssh-key: ${{ secrets.DEPLOY_KEY }}
-          env: gh-pages-preview
 
       - name: Build Angular app
         if: 'github.event.prerelease'
@@ -54,4 +53,3 @@ jobs:
           branch: gh-pages  # Deploy to `gh-pages` branch
           folder: dist/paste-perfect/browser
           clean: true
-          env: github-pages
