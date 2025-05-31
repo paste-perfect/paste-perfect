@@ -44,11 +44,7 @@
           }
         ],
         "parserOpts": {
-          "noteKeywords": [
-            "BREAKING CHANGE",
-            "BREAKING CHANGES",
-            "BREAKING"
-          ]
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
         }
       }
     ],
@@ -144,17 +140,10 @@
           }
         ],
         "parserOpts": {
-          "noteKeywords": [
-            "BREAKING CHANGE",
-            "BREAKING CHANGES",
-            "BREAKING"
-          ]
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
         },
         "writerOpts": {
-          "commitsSort": [
-            "subject",
-            "scope"
-          ]
+          "commitsSort": ["subject", "scope"]
         }
       }
     ],
@@ -169,6 +158,12 @@
       "@semantic-release/github",
       {
         "assets": "dist/*.tgz"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
       }
     ]
   ]
