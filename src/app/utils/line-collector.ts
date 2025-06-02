@@ -1,6 +1,6 @@
 import { NodeUtils } from "@utils/node-utils";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
-import { INDENTATION_MODE_MAP } from "../constants";
+import { INDENTATION_MODE_MAP } from "@constants";
 import { IndentationModeValue } from "@types";
 import { IndentationFormatter } from "@utils/indentation-formatter";
 import { RegexPatterns } from "../regex/regex-patterns";

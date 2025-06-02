@@ -1,15 +1,15 @@
 import { Component } from "@angular/core";
-import { DEFAULT_TOOLTIP_OPTIONS } from "../../constants";
 import { TooltipOptions } from "primeng/api";
-import { Button } from "primeng/button";
+import { Button, ButtonIcon } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { SettingsComponent } from "@components/settings/settings.component";
 import { Dialog } from "primeng/dialog";
-import packageJson from "../../../../package.json";
+import packageJson from "@package.json";
+import { DEFAULT_TOOLTIP_OPTIONS } from "@constants";
 
 @Component({
   selector: "app-header",
-  imports: [Button, Tooltip, SettingsComponent, Dialog],
+  imports: [Button, Tooltip, SettingsComponent, Dialog, ButtonIcon],
   templateUrl: "./header.component.html",
   styleUrl: "./header.component.scss",
 })

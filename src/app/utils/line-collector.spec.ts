@@ -1,4 +1,4 @@
-import { INDENTATION_MODE_MAP } from "../constants";
+import { INDENTATION_MODE_MAP } from "@constants";
 import { LinesCollector } from "@utils/line-collector";
 
 const createTextNode = (text: string): Text => document.createTextNode(text);

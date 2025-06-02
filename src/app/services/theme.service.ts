@@ -1,6 +1,6 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
-import { DARK_THEME_MAP, LIGHT_THEME_MAP, THEME_STORAGE_KEY } from "../constants";
+import { DARK_THEME_MAP, LIGHT_THEME_MAP, THEME_STORAGE_KEY } from "@constants";
 import { AvailableTheme, DarkThemes, LightThemes, ThemeKey, ThemeValue } from "@types";
 import { getEntries } from "@utils/utils";
 import { MessageService } from "primeng/api";

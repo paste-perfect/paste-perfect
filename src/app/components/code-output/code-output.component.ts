@@ -2,7 +2,7 @@ import { Component, inject } from "@angular/core";
 import { Button } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { TooltipOptions } from "primeng/api";
-import { DEFAULT_TOOLTIP_OPTIONS } from "../../constants";
+import { DEFAULT_TOOLTIP_OPTIONS } from "@constants";
 import { SyntaxHighlightService } from "@services/syntax.highlight.service";
 import { CodeService } from "@services/code.service";
 import { LanguageService } from "@services/language.service";

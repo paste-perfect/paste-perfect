@@ -1,4 +1,4 @@
-import { SpecialCharacters } from "../constants";
+import { SpecialCharacters } from "@constants";
 
 export class NodeUtils {
   private static readonly CM_IN_PTS: number = 28.3465;

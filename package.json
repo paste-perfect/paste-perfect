@@ -5,7 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "serve": "npm run start",
-    "build": "ng build",
+    "build-prod": "ng build --base-href /paste-perfect/″",
     "build-preview": "ng build --base-href /paste-perfect-test/",
     "build-docker": "ng build --base-href /",
     "test": "npm run test:unit && npm run test:e2e",

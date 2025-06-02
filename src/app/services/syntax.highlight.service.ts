@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, Signal } from "@angular/core";
 import * as Prism from "prismjs";
 
-import { HTML_CODE_PRE_SELECTOR } from "../constants";
+import { HTML_CODE_PRE_SELECTOR } from "@constants";
 import { SettingsService } from "./settings.service";
 import { MessageService } from "primeng/api";
 import { IndentationModeValue, LanguageDefinition } from "@types";

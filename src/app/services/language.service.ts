@@ -1,7 +1,7 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
 import { LanguageDefinition } from "@types";
-import { ALL_LANGUAGES_MAP, LANGUAGE_STORAGE_KEY, POPULAR_LANGUAGES } from "../constants";
+import { ALL_LANGUAGES_MAP, LANGUAGE_STORAGE_KEY, POPULAR_LANGUAGES } from "@constants";
 
 /**
  * Service to manage application languages, including retrieving available languages,
