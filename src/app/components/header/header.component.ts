@@ -1,6 +1,6 @@
 import { Component } from "@angular/core";
 import { TooltipOptions } from "primeng/api";
-import { Button, ButtonIcon } from "primeng/button";
+import { Button } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { SettingsComponent } from "@components/settings/settings.component";
 import { Dialog } from "primeng/dialog";
@@ -9,7 +9,7 @@ import { DEFAULT_TOOLTIP_OPTIONS } from "@constants";
 
 @Component({
   selector: "app-header",
-  imports: [Button, Tooltip, SettingsComponent, Dialog, ButtonIcon],
+  imports: [Button, Tooltip, SettingsComponent, Dialog],
   templateUrl: "./header.component.html",
   styleUrl: "./header.component.scss",
 })
