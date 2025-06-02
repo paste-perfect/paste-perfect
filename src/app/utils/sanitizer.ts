@@ -1,5 +1,5 @@
 import { getEntries } from "@utils/utils";
-import { INPUT_SANITIZE_MAP, OUTPUT_SANITIZE_MAP, SpecialCharacters } from "../constants";
+import { INPUT_SANITIZE_MAP, OUTPUT_SANITIZE_MAP, SpecialCharacters } from "@constants";
 import { RegexFlags } from "../regex/regex-flags";
 import { RegexPatterns } from "../regex/regex-patterns";
 

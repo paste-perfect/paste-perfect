@@ -45,7 +45,8 @@ const config: Config = {
   // Map TS path aliases to Jest module paths
   moduleNameMapper: {
     "^@components/(.*)$": "<rootDir>/src/app/components/$1",
-    "^@const$": "<rootDir>/src/app/const/index",
+    "^@constants$": "<rootDir>/src/app/constants/index",
+    "^@package.json$": "<rootDir>/package.json",
     "^@services/(.*)$": "<rootDir>/src/app/services/$1",
     "^@types$": "<rootDir>/src/app/types/index",
     "^@utils/(.*)$": "<rootDir>/src/app/utils/$1",

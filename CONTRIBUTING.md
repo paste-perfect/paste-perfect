@@ -45,7 +45,7 @@ To set up Paste Perfect locally:
 Here are the relevant `npm` scripts available for development and contribution:
 
 - `npm run start` – Runs the app locally with `ng serve`.
-- `npm run build` – Builds the Angular project.
+- `npm run build-prod` – Builds the Angular project.
 - `npm run build-docker` – Builds the app with a base href for Docker deployment.
 - `npm run test` – Runs both unit and end-to-end tests.
 - `npm run test:unit` – Runs unit tests.

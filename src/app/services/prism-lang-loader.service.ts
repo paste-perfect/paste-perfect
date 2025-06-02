@@ -1,5 +1,5 @@
 import { LanguageDefinition } from "@types";
-import { ALL_LANGUAGES_MAP } from "../constants";
+import { ALL_LANGUAGES_MAP } from "@constants";
 import { MessageService } from "primeng/api";
 import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";

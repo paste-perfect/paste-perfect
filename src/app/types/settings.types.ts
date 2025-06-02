@@ -1,4 +1,4 @@
-import { INDENTATION_MODE_MAP } from "../constants";
+import { INDENTATION_MODE_MAP } from "@constants";
 
 /**
  * Represents a selectable indentation mode.
