@@ -1,44 +1,9 @@
 <!-- Toast for displaying messages -->
 <p-toast preventOpenDuplicates />
 
-<!-- Dialog for showing the app settings on mobile devices -->
-<p-dialog header="Highlighting Settings" id="highlighting-settings-dialog" [modal]="true" [(visible)]="settingsDialogVisible">
-  <app-settings></app-settings>
-</p-dialog>
-
 <div class="syntax-highlighter-container">
-  <!-- Title -->
-  <header class="title">
-    <h1>
-      Syntax Highlighting with
-      <span class="project-name">PastePerfect <i class="pi pi-code"></i></span>
-    </h1>
-    <div class="button-menu">
-      <!-- Settings Cog Link (on small devices) -->
-      <p-button
-        aria-label="Open Settings"
-        (click)="showDialog()"
-        class="show-sm"
-        severity="secondary"
-        pTooltip="Settings"
-        [tooltipOptions]="tooltipOptions"
-      >
-        <i class="pi pi-cog"></i>
-      </p-button>
-
-      <!-- GitHub Link -->
-      <a
-        href="https://github.com/NikAcc/paste-perfect"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="p-button p-button-secondary"
-        pTooltip="Go to the GitHub page"
-        [tooltipOptions]="tooltipOptions"
-      >
-        <i class="pi pi-github"></i>
-      </a>
-    </div>
-  </header>
+  <!-- Header -->
+  <app-header></app-header>
 
   <!-- Welcome Message -->
   <div class="intro-message">
