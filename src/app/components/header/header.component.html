@@ -10,7 +10,6 @@
     <span class="project-name">PastePerfect <i class="pi pi-code"></i></span>
   </h1>
   <div class="button-menu">
-    <span>{{ version }}</span>
     <!-- Settings Cog Link (on small devices) -->
     <p-button
       aria-label="Open Settings"
@@ -23,16 +22,16 @@
       <i class="pi pi-cog"></i>
     </p-button>
 
-    <!-- GitHub Link -->
+    <!-- GitHub Repo Link -->
     <a
       href="https://github.com/paste-perfect/paste-perfect/releases/tag/v{{ version }}"
       target="_blank"
       rel="noopener noreferrer"
-      class="p-button p-button-secondary"
-      pTooltip="Go to the GitHub page"
+      class="p-button p-button-secondary github-link"
+      pTooltip="Go to the GitHub release page"
       [tooltipOptions]="tooltipOptions"
     >
-      <i class="pi pi-github"></i>
+      <i class="pi pi-github"></i><span>{{ version }}</span>
     </a>
   </div>
 </header>

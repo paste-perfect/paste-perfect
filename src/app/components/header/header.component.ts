@@ -1,11 +1,11 @@
 import { Component } from "@angular/core";
-import { DEFAULT_TOOLTIP_OPTIONS } from "../../constants";
+import { DEFAULT_TOOLTIP_OPTIONS } from "@constants";
 import { TooltipOptions } from "primeng/api";
 import { Button } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { SettingsComponent } from "@components/settings/settings.component";
 import { Dialog } from "primeng/dialog";
-import packageJson from "../../../../package.json";
+import packageJson from "@package.json";
 
 @Component({
   selector: "app-header",

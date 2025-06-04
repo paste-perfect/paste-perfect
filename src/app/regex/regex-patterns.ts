@@ -1,4 +1,4 @@
-import { SpecialCharacters } from "../constants";
+import { SpecialCharacters } from "@constants";
 import { RegexFlags } from "./regex-flags";
 
 export class RegexPatterns {

@@ -1,5 +1,5 @@
 import { IndentationFormatter } from "@utils/indentation-formatter";
-import { SpecialCharacters } from "../constants";
+import { SpecialCharacters } from "@constants";
 
 describe("IndentationFormatter", () => {
   const tabSize = 2;

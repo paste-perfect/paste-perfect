@@ -1,5 +1,5 @@
 import { NodeUtils } from "@utils/node-utils";
-import { SpecialCharacters } from "../constants";
+import { SpecialCharacters } from "@constants";
 import { MsOfficeUtils } from "@utils/ms-office-utils";
 
 // Create mock elements for testing

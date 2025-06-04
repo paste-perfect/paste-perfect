@@ -1,4 +1,4 @@
-import { SpecialCharacters } from "../constants";
+import { SpecialCharacters } from "@constants";
 import { NodeUtils } from "@utils/node-utils";
 
 describe("NodeUtils", () => {
