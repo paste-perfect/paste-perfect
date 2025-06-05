@@ -29,12 +29,12 @@ jobs:
         run: npm ci  # Ensure dependencies are installed
 
       - name: Build Angular app (Review Env)
-        if: '!github.event.prerelease'
+        if: '!github.event.release.prerelease'
         run: npm run build-preview
 
       - name: Deploy to GitHub Pages (Review Env)
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
-        if: '!github.event.prerelease'
+        if: '!github.event.release.prerelease'
         with:
           repository-name: paste-perfect/paste-perfect-test
           branch: gh-pages
@@ -43,12 +43,12 @@ jobs:
           ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Build Angular app
-        if: 'github.event.prerelease'
+        if: 'github.event.release.prerelease'
         run: npm run build-prod
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4
-        if: 'github.event.prerelease'
+        if: 'github.event.release.prerelease'
         with:
           branch: gh-pages  # Deploy to `gh-pages` branch
           folder: dist/paste-perfect/browser
