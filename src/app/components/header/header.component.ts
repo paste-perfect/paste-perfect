@@ -5,7 +5,7 @@ import { Button } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { SettingsComponent } from "@components/settings/settings.component";
 import { Dialog } from "primeng/dialog";
-import packageJson from "@package.json";
+import { environment } from "@environments/environment";
 
 @Component({
   selector: "app-header",
@@ -16,7 +16,7 @@ import packageJson from "@package.json";
 export class HeaderComponent {
   protected tooltipOptions: TooltipOptions = DEFAULT_TOOLTIP_OPTIONS;
   protected settingsDialogVisible = false;
-  protected version: string = packageJson.version;
+  protected version: string = environment.version;
 
   protected showDialog(): void {
     this.settingsDialogVisible = true;

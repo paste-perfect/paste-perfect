@@ -1,4 +1,3 @@
-// tests/fixtures.ts
 import { test as baseTest, expect, Page as BasePage, PageAssertionsToHaveScreenshotOptions } from '@playwright/test';
 import { BASE_URL } from '../../playwright.config';
 

@@ -9,8 +9,6 @@ test.describe("Mobile Settings Dialog", () => {
     // Simulate a small screen (e.g., width < breakpoint-md)
     await page.setViewportSize({ width: 600, height: 800 });
 
-    await page.waitForTimeout(9999);
-
     // Verify we see the mobile version of settings
     await page.assertions.expectHasMobileSettings();
 

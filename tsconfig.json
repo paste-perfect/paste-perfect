@@ -19,6 +19,7 @@
       "@components/*": ["./src/app/components/*"],
       "@constants": ["./src/app/constants/index"],
       "@package.json": ["./package.json"],
+      "@environments/*": ["./src/environments/*"],
       "@services/*": ["./src/app/services/*"],
       "@types": ["./src/app/types/index"],
       "@utils/*": ["./src/app/utils/*"]
