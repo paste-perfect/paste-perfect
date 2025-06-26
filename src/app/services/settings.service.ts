@@ -1,6 +1,6 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
-import { AvailableIndentationMode, HighlightingSettings, IndentationModeKey, IndentationModeValue } from "@types";
+import { SelectableIndentationMode, HighlightingSettings, IndentationModeKey, IndentationModeValue } from "@types";
 import { INDENTATION_MODE_MAP, SETTINGS_STORAGE_KEY } from "@constants";
 
 /**
@@ -15,7 +15,7 @@ export class SettingsService {
   private storageService: StorageService = inject(StorageService);
 
   /** List of available languages */
-  private readonly indentationModes: AvailableIndentationMode[] = Object.entries(INDENTATION_MODE_MAP).map(([label, value]) => ({
+  private readonly indentationModes: SelectableIndentationMode[] = Object.entries(INDENTATION_MODE_MAP).map(([label, value]) => ({
     label: label as IndentationModeKey,
     value: value as IndentationModeValue,
   }));
@@ -36,7 +36,7 @@ export class SettingsService {
   }
 
   /** Retrieves the list of available languages */
-  public getAvailableIndentationModes(): AvailableIndentationMode[] {
+  public getAvailableIndentationModes(): SelectableIndentationMode[] {
     return [...this.indentationModes]; // Return a copy to maintain immutability
   }
 

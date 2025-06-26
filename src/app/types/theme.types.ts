@@ -3,11 +3,11 @@ import { DARK_THEME_MAP, LIGHT_THEME_MAP } from "@constants";
 /**
  * Represents a selectable syntax theme.
  */
-export interface AvailableTheme {
+export interface SelectableTheme {
   /** The key representing the theme label. */
-  label: ThemeKey;
+  readonly label: ThemeKey;
   /** The corresponding theme value. */
-  value: ThemeValue;
+  readonly value: ThemeValue;
 }
 
 /**

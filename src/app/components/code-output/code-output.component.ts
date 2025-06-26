@@ -3,9 +3,9 @@ import { Button } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { TooltipOptions } from "primeng/api";
 import { DEFAULT_TOOLTIP_OPTIONS } from "@constants";
-import { SyntaxHighlightService } from "@services/syntax.highlight.service";
 import { CodeService } from "@services/code.service";
 import { LanguageService } from "@services/language.service";
+import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 
 /**
  * Component responsible for displaying and managing highlighted code output.
@@ -26,7 +26,7 @@ export class CodeOutputComponent {
   /**
    * Service for handling syntax highlighting and clipboard copy functionality.
    */
-  private readonly syntaxHighlightService: SyntaxHighlightService = inject(SyntaxHighlightService);
+  private readonly syntaxHighlightService: PrismHighlightService = inject(PrismHighlightService);
 
   /**
    * Service for managing code content and highlighted output.

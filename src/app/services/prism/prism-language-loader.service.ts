@@ -8,7 +8,7 @@ import { LocationStrategy } from "@angular/common";
 @Injectable({
   providedIn: "root",
 })
-export class PrismLangLoaderService {
+export class PrismLanguageLoaderService {
   /**
    * PrimeNGs messages service for displaying toasts to the user
    */
@@ -18,6 +18,7 @@ export class PrismLangLoaderService {
    * Inject location strategy to get the base href configured in angular.json
    */
   private locationStrategy: LocationStrategy = inject(LocationStrategy);
+
   /**
    * Dynamically loads the Prism.js language component for the given language.
    *
@@ -49,9 +50,9 @@ export class PrismLangLoaderService {
    * @param lang - The language definition.
    */
   private async loadDependencies(lang: LanguageDefinition): Promise<void> {
-    if (!lang?.dependencies?.length) return;
+    if (!lang?.prismConfiguration.dependencies?.length) return;
 
-    for (const dep of lang.dependencies) {
+    for (const dep of lang.prismConfiguration.dependencies) {
       const dependency = ALL_LANGUAGES_MAP[dep];
 
       if (!dependency) {
@@ -83,10 +84,10 @@ export class PrismLangLoaderService {
    */
   private async importLanguage(lang: LanguageDefinition): Promise<void> {
     try {
-      if (lang.customImportPath) {
-        await import(/* @vite-ignore */ `${this.locationStrategy.getBaseHref()}${lang.customImportPath}`);
+      if (lang.prismConfiguration.customImportPath) {
+        await import(/* @vite-ignore */ `${this.locationStrategy.getBaseHref()}${lang.prismConfiguration.customImportPath}`);
       } else {
-        await import(/* @vite-ignore */ `../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
+        await import(/* @vite-ignore */ `../../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
       }
       // Note: The following import method does not work for some reason
       // await import( /* @vite-ignore */  prismjs/components/prism-${lang}.min.js);

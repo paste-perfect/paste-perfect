@@ -1,4 +1,4 @@
-import { inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
 import { LanguageDefinition } from "@types";
 import { ALL_LANGUAGES_MAP, LANGUAGE_STORAGE_KEY, POPULAR_LANGUAGES } from "@constants";
@@ -32,6 +32,11 @@ export class LanguageService {
       this._selectedLanguage.set(languageDefinition);
     }
   }
+
+  /**
+   * Whether the currently selected language supports formatting / prettier
+   */
+  public readonly isPrettierSupportedByLanguage = computed(() => !!this.selectedLanguage.prettierConfiguration);
 
   /** Gets the full language definition object */
   public get selectedLanguage(): LanguageDefinition {

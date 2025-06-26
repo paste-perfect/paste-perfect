@@ -28,6 +28,15 @@
     flex-direction: row;
     gap: var(--spacing-sm);
     align-items: center;
+    width: fit-content;
+  }
+
+  .enable-formatting-toggle {
+    width: fit-content;
+
+    &:has(input:disabled) {
+      cursor: not-allowed;
+    }
   }
 }
 

@@ -3,11 +3,11 @@ import { INDENTATION_MODE_MAP } from "@constants";
 /**
  * Represents a selectable indentation mode.
  */
-export interface AvailableIndentationMode {
+export interface SelectableIndentationMode {
   /** The key representing the indentation mode label. */
-  label: IndentationModeKey;
+  readonly label: IndentationModeKey;
   /** The corresponding indentation mode value. */
-  value: IndentationModeValue;
+  readonly value: IndentationModeValue;
 }
 
 /**
@@ -24,10 +24,10 @@ export type IndentationModeValue = (typeof INDENTATION_MODE_MAP)[IndentationMode
  * Represents the settings for syntax highlighting.
  */
 export interface HighlightingSettings {
-  /** The size of indentation (number of spaces or tab width). */
-  indentationSize: number;
-  /** The selected indentation mode (spaces, tabs, or NBSP). */
-  indentationMode: IndentationModeValue;
-  /** Whether or not formatting should be enabled */
-  enableFormatting: boolean;
+  /** Number of spaces or tab width for indentation */
+  readonly indentationSize: number;
+  /** Selected indentation mode (spaces, tabs, or NBSP) */
+  readonly indentationMode: IndentationModeValue;
+  /** Whether code formatting is enabled */
+  readonly enableFormatting: boolean;
 }

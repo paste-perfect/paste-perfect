@@ -2,13 +2,13 @@ import { computed, inject, Injectable, Signal } from "@angular/core";
 import * as Prism from "prismjs";
 
 import { HTML_CODE_PRE_SELECTOR } from "@constants";
-import { SettingsService } from "./settings.service";
 import { MessageService } from "primeng/api";
 import { IndentationModeValue, LanguageDefinition } from "@types";
-import { PrismLangLoaderService } from "@services/prism-lang-loader.service";
-import { SanitizerWrapper } from "@utils/sanitizer";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
 import { LinesCollector } from "@utils/line-collector";
+import { SettingsService } from "@services/settings.service";
+import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
+import { SanitizerWrapper } from "@utils/sanitizer";
 
 /**
  * A service responsible for syntax highlighting and clipboard copying of code snippets.
@@ -17,7 +17,7 @@ import { LinesCollector } from "@utils/line-collector";
 @Injectable({
   providedIn: "root",
 })
-export class SyntaxHighlightService {
+export class PrismHighlightService {
   /**
    * Service for managing the highlighting settings.
    */
@@ -26,7 +26,7 @@ export class SyntaxHighlightService {
   /**
    * Service for loading the required prism languages dynamically.
    */
-  private prismLanguageLoaderService: PrismLangLoaderService = inject(PrismLangLoaderService);
+  private prismLanguageLoaderService: PrismLanguageLoaderService = inject(PrismLanguageLoaderService);
 
   /**
    * PrimeNGs messages service for displaying toasts to the user

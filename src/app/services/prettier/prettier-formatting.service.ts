@@ -1,8 +1,8 @@
 import { inject, Injectable } from "@angular/core";
-import { SettingsService } from "./settings.service";
-import { PrettierPluginLoaderService } from "@services/prettier-plugin-loader.service";
 import { LanguageDefinition } from "@types";
 import * as prettier from "prettier/standalone";
+import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
+import { SettingsService } from "@services/settings.service";
 
 /**
  * Service responsible for code formatting using Prettier
@@ -10,7 +10,7 @@ import * as prettier from "prettier/standalone";
 @Injectable({
   providedIn: "root",
 })
-export class PrettierService {
+export class PrettierFormattingService {
   /** Service for loading Prettier plugins */
   private readonly pluginLoader = inject(PrettierPluginLoaderService);
 
@@ -24,12 +24,18 @@ export class PrettierService {
    * @param language - The programming language of the code
    * @returns A promise resolving to the formatted code, or the original code if formatting fails
    */
-  public async formatCode(code: string, language: LanguageDefinition): Promise<string> {
+  public async formatCode(
+    code: string,
+    language: LanguageDefinition
+  ): Promise<{
+    code: string;
+    formattingSuccessful: boolean;
+  }> {
     const settings = this.settingsService.editorSettings;
 
     // Return original code if formatting is disabled or code is empty
     if (!settings.enableFormatting || !code?.trim()) {
-      return code;
+      return { code, formattingSuccessful: true };
     }
 
     try {
@@ -38,31 +44,33 @@ export class PrettierService {
 
       // Output the original code if no prettier was found
       if (!result) {
-        return code;
+        return { code, formattingSuccessful: true };
       }
 
       const { parser, plugins } = result;
 
       // Format the code with the appropriate parser and plugins
-      return await prettier.format(code, {
-        parser,
-        plugins,
-        // plugins: [tmpPlugin],
-        printWidth: 140,
-        tabWidth: settings.indentationSize,
-        useTabs: settings.indentationMode === "tabs",
-        semi: true,
-        singleQuote: false,
-        trailingComma: "es5",
-        bracketSpacing: true,
-        arrowParens: "always",
-        endOfLine: "lf",
-      });
-    } catch {
-      // console.warn("Code formatting failed:", error);
+      return {
+        code: await prettier.format(code, {
+          parser,
+          plugins,
+          printWidth: 140,
+          tabWidth: settings.indentationSize,
+          useTabs: settings.indentationMode === "tabs",
+          semi: true,
+          singleQuote: false,
+          trailingComma: "es5",
+          bracketSpacing: true,
+          arrowParens: "always",
+          endOfLine: "lf",
+        }),
+        formattingSuccessful: true,
+      };
+    } catch (error) {
+      console.log(error);
       console.warn("Code has issues, formatting failed.");
       // Return the original code if formatting fails
-      return code;
+      return { code, formattingSuccessful: false };
     }
   }
 }
