@@ -1,6 +1,6 @@
 {
   "name": "paste-perfect",
-  "version": "1.12.0-rc.65",
+  "version": "1.12.0-rc.67",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -63,7 +63,7 @@
     "@semantic-release/release-notes-generator": "^14.0.3",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.11",
-    "angular-eslint": "^19.2.1",
+    "angular-eslint": "^20.0.0",
     "conventional-changelog-conventionalcommits": "^9.0.0",
     "eslint": "^9.22.0",
     "husky": "^9.1.7",
