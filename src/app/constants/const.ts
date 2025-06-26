@@ -27,10 +27,15 @@ export const THEME_STORAGE_KEY = "selected_theme";
  */
 export const HTML_CODE_PRE_SELECTOR = "pre#highlighted-code-wrapper";
 
+export enum IndentationMode {
+  Spaces = "SPACE_INDENTATION",
+  Tabs = "TAB_INDENTATION",
+}
+
 /**
  * Mapping of available indentation modes.
  */
-export const INDENTATION_MODE_MAP = {
-  Spaces: "spaces",
-  Tabs: "tabs",
+export const INDENTATION_MODE_MAP: Record<IndentationMode, string> = {
+  [IndentationMode.Spaces]: "Spaces",
+  [IndentationMode.Tabs]: "Tabs",
 } as const;

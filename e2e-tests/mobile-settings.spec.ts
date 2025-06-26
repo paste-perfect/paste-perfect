@@ -1,12 +1,15 @@
 import { test } from "./pages/code-highlighter.page";
-import { ThemeKey } from "@types";
+import { Theme } from "@types";
+import { DarkTheme } from "@constants";
 
 test.describe("Mobile Settings Dialog", () => {
   test("should open and close settings dialog on small screen", async ({ page }) => {
-    const theme: ThemeKey = "a11y Dark";
+    const theme: Theme = DarkTheme.A11yDark;
 
     // Simulate a small screen (e.g., width < breakpoint-md)
     await page.setViewportSize({ width: 600, height: 800 });
+
+    await page.waitForTimeout(9999);
 
     // Verify we see the mobile version of settings
     await page.assertions.expectHasMobileSettings();

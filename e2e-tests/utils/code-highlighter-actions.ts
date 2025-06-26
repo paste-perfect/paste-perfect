@@ -1,7 +1,9 @@
-import { IndentationModeKey, ThemeKey } from "@types";
 import fs from "fs";
 import { Page } from "../fixtures";
 import { CodeHighlighterActions } from "../types/types";
+import { IndentationMode } from "@constants";
+import { Theme } from "@types";
+import { getIndentationValueFromMode, getThemeValueFromTheme } from "./enum-mappers";
 
 export function createActions(page: Page): CodeHighlighterActions {
   return {
@@ -9,13 +11,14 @@ export function createActions(page: Page): CodeHighlighterActions {
       await page.locator("#language-selector:visible").click();
       await page.locator(`li:visible span:visible:text-is("${language}")`).click();
     },
-    async setTheme(theme: ThemeKey) {
+    async setTheme(theme: Theme) {
       await page.locator("#theme-selector:visible").click();
-      await page.locator(`li:visible span:visible:text-is("${theme}")`).click();
+      await page.locator(`li:visible span:visible:text-is("${getThemeValueFromTheme(theme)}")`).click();
     },
-    async setIndentMode(indentMode: IndentationModeKey) {
+    async setIndentMode(indentMode: IndentationMode) {
       await page.locator("#indent-mode:visible").click();
-      await page.locator(`li:visible span:visible:text-is("${indentMode}")`).click();
+
+      await page.locator(`li:visible span:visible:text-is("${getIndentationValueFromMode(indentMode)}")`).click();
     },
     async setIndentationSize(size: number) {
       await page.locator("#indentation-size:visible").fill(size.toString());

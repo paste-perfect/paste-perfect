@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "./pages/code-highlighter.page";
+import { IndentationMode, LightTheme } from "@constants";
 
 const invalidCode = `function (a: test) {`; // invalid JS syntax
 
@@ -8,9 +9,10 @@ test.describe("Code Highlighter Error Handling", () => {
     await page.assertions.expectHasDesktopSettings();
     await page.utils.configureEditor({
       language: "JavaScript*" /* Pick a wrong language on purpose! */,
-      theme: "a11y Light",
-      indentMode: "Spaces",
+      theme: LightTheme.A11yLight,
+      indentationMode: IndentationMode.Spaces,
       indentationSize: 4,
+      enableFormatting: true,
       code: invalidCode,
     });
 

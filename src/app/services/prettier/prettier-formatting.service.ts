@@ -3,6 +3,7 @@ import { LanguageDefinition } from "@types";
 import * as prettier from "prettier/standalone";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
 import { SettingsService } from "@services/settings.service";
+import { IndentationMode } from "@constants";
 
 /**
  * Service responsible for code formatting using Prettier
@@ -56,7 +57,7 @@ export class PrettierFormattingService {
           plugins,
           printWidth: 140,
           tabWidth: settings.indentationSize,
-          useTabs: settings.indentationMode === "tabs",
+          useTabs: settings.indentationMode === IndentationMode.Tabs,
           semi: true,
           singleQuote: false,
           trailingComma: "es5",

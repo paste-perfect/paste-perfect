@@ -1,7 +1,7 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
 import { DARK_THEME_MAP, LIGHT_THEME_MAP, THEME_STORAGE_KEY } from "@constants";
-import { SelectableTheme, DarkThemes, LightThemes, ThemeKey, ThemeValue } from "@types";
+import { DarkThemes, LightThemes, SelectableTheme, Theme, ThemeLabel } from "@types";
 import { getEntries } from "@utils/utils";
 import { MessageService } from "primeng/api";
 
@@ -98,9 +98,9 @@ export class ThemeService {
   private getThemes(themeMap: LightThemes | DarkThemes): SelectableTheme[] {
     return getEntries(themeMap)
       .map(
-        ([key, value]: [ThemeKey, ThemeValue]): SelectableTheme => ({
-          label: key,
-          value: value,
+        ([value, label]: [Theme, ThemeLabel]): SelectableTheme => ({
+          value,
+          label,
         })
       )
       .sort((a: SelectableTheme, b: SelectableTheme): number => a.label.localeCompare(b.label));

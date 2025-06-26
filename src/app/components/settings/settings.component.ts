@@ -7,11 +7,11 @@ import { Popover } from "primeng/popover";
 import { ThemeService } from "@services/theme.service";
 import { LanguageService } from "@services/language.service";
 import { SettingsService } from "@services/settings.service";
-import { SelectableIndentationMode, IndentationModeValue, LanguageDefinition } from "@types";
+import { SelectableIndentationMode, LanguageDefinition } from "@types";
 import { SelectItemGroup, TooltipOptions } from "primeng/api";
 import { ToggleSwitch } from "primeng/toggleswitch";
 import { Tooltip } from "primeng/tooltip";
-import { DEFAULT_TOOLTIP_OPTIONS } from "@constants";
+import { DEFAULT_TOOLTIP_OPTIONS, IndentationMode } from "@constants";
 
 @Component({
   selector: "app-settings",
@@ -107,15 +107,15 @@ export class SettingsComponent {
   /**
    * Gets the currently selected indentation mode (e.g., spaces or tabs).
    */
-  get selectedIndentationMode(): IndentationModeValue {
+  get selectedIndentationMode(): IndentationMode {
     return this.settingsService.editorSettings.indentationMode;
   }
 
   /**
    * Updates the selected indentation mode setting in the editor settings.
-   * @param mode - The new indentation mode value.
+   * @param mode - The new indentation mode.
    */
-  set selectedIndentationMode(mode: IndentationModeValue) {
+  set selectedIndentationMode(mode: IndentationMode) {
     this.settingsService.updateSettings({ indentationMode: mode });
   }
 

@@ -1,9 +1,9 @@
 import { computed, inject, Injectable, Signal } from "@angular/core";
 import * as Prism from "prismjs";
 
-import { HTML_CODE_PRE_SELECTOR } from "@constants";
+import { HTML_CODE_PRE_SELECTOR, IndentationMode } from "@constants";
 import { MessageService } from "primeng/api";
-import { IndentationModeValue, LanguageDefinition } from "@types";
+import { LanguageDefinition } from "@types";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
 import { LinesCollector } from "@utils/line-collector";
 import { SettingsService } from "@services/settings.service";
@@ -36,7 +36,7 @@ export class PrismHighlightService {
   /**
    * Signal representing the current indentation mode (e.g., tabs or spaces).
    */
-  private mode: Signal<IndentationModeValue> = computed(() => this.settingsService.editorSettings.indentationMode);
+  private mode: Signal<IndentationMode> = computed(() => this.settingsService.editorSettings.indentationMode);
 
   /**
    * Signal representing the current tab size setting.

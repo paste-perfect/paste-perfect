@@ -1,7 +1,6 @@
 import { NodeUtils } from "@utils/node-utils";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
-import { INDENTATION_MODE_MAP } from "@constants";
-import { IndentationModeValue } from "@types";
+import { IndentationMode } from "@constants";
 import { IndentationFormatter } from "@utils/indentation-formatter";
 import { RegexPatterns } from "../regex/regex-patterns";
 import { MsOfficeUtils } from "@utils/ms-office-utils";
@@ -18,7 +17,7 @@ import { MsOfficeUtils } from "@utils/ms-office-utils";
 export class LinesCollector {
   private readonly lines: Node[][]; // Stores arrays of Node objects, each representing a single line
   private readonly tabSize: number; // Number of spaces to use in place of a single tab
-  private readonly indentationMode: IndentationModeValue; // Whether we want to use spaces or tabs for indentation
+  private readonly indentationMode: IndentationMode; // Whether we want to use spaces or tabs for indentation
   private isStartOfLine: boolean; // Tracks if we are at the start of a line
   private maxIndentationMarkers = 0; // Tracks the maximum number of consecutive markers in any line
 
@@ -26,7 +25,7 @@ export class LinesCollector {
    * @param indentationMode Desired indentation mode (Tabs vs Spaces).
    * @param tabSize Number of spaces used when replacing tab characters or converting marker runs.
    */
-  constructor(indentationMode: IndentationModeValue, tabSize: number) {
+  constructor(indentationMode: IndentationMode, tabSize: number) {
     this.lines = [[]];
     this.isStartOfLine = true;
     this.tabSize = tabSize;
@@ -86,7 +85,7 @@ export class LinesCollector {
       lineNodes.forEach((node) => p.appendChild(node));
 
       // When using tabs, set up tab stops according to the maximum marker count
-      if (this.indentationMode === INDENTATION_MODE_MAP.Tabs) {
+      if (this.indentationMode === IndentationMode.Tabs) {
         const requiredStops = Math.ceil(this.maxIndentationMarkers / this.tabSize);
         const newStyle = NodeUtils.getTabStops(requiredStops);
         NodeUtils.appendInlineStyle(p, newStyle);
@@ -217,7 +216,7 @@ export class LinesCollector {
     // Update the max marker count for final tab stops
     this.maxIndentationMarkers = Math.max(this.maxIndentationMarkers, markerCount);
 
-    if (this.indentationMode === INDENTATION_MODE_MAP.Tabs) {
+    if (this.indentationMode === IndentationMode.Tabs) {
       // Replace the markers with tabs (not needed for Office-Applications, but might be for others)
       markerSpan.textContent = IndentationFormatter.unmaskIndentationWithTabs(markerText, this.tabSize);
       const tabCount = Math.floor(markerCount / this.tabSize);
