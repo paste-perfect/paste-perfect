@@ -17,8 +17,21 @@ export function createActions(page: Page): CodeHighlighterActions {
     },
     async setIndentMode(indentMode: IndentationMode) {
       await page.locator("#indent-mode:visible").click();
-
       await page.locator(`li:visible span:visible:text-is("${getIndentationValueFromMode(indentMode)}")`).click();
+    },
+    async setEnableFormatting(enableFormatting: boolean) {
+      const formatCheckbox = page.locator("#enable-formatting");
+      const isDisabled = await formatCheckbox.isDisabled();
+      if (isDisabled) {
+        return;
+      }
+
+      const isChecked = (await formatCheckbox.getAttribute("aria-checked")) === "true";
+
+      if (isChecked !== enableFormatting) {
+        // Click on the parent element (doesn't work directly on the checkbox)
+        await formatCheckbox.click();
+      }
     },
     async setIndentationSize(size: number) {
       await page.locator("#indentation-size:visible").fill(size.toString());

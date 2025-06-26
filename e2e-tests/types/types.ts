@@ -18,6 +18,7 @@ export interface CodeHighlighterActions {
   setLanguage(language: string): Promise<void>;
   setTheme(theme: Theme): Promise<void>;
   setIndentMode(indentMode: IndentationMode): Promise<void>;
+  setEnableFormatting(enableFormatting: boolean): Promise<void>;
   setIndentationSize(size: number): Promise<void>;
   enterCode(code: string): Promise<void>;
   enterCodeFromFile(filePath: string): Promise<void>;
@@ -34,6 +35,7 @@ export interface CodeHighlighterAssertions {
   expectLanguage(language: string): Promise<void>;
   expectTheme(theme: Theme): Promise<void>;
   expectIndentMode(indentMode: IndentationMode): Promise<void>;
+  expectEnableFormatting(enableFormatting: boolean): Promise<void>;
   expectIndentationSize(indentationSize: number): Promise<void>;
   expectHasDesktopSettings(): Promise<void>;
   expectHasMobileSettings(): Promise<void>;
