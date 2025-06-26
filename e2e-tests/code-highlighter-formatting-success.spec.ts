@@ -9,6 +9,8 @@ const expectedOutput = `function testFunction() {
 
 test.describe("Code Highlighter Formatting Success", () => {
   test("should properly format code when formatting is enabled", async ({ page }) => {
+    page.on("console", (msg) => console.log(msg.text()));
+
     await page.assertions.expectHasDesktopSettings();
     await page.utils.configureEditor({
       language: "JavaScript*",
