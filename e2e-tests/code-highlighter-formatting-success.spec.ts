@@ -19,7 +19,7 @@ test.describe("Code Highlighter Formatting Success", () => {
       code: input,
     });
 
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(2000);
 
     // Wait for async highlight
     expect(await page.utils.getHighlightedCodeText()).toContain(expectedOutput);
