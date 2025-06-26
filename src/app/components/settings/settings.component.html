@@ -14,7 +14,7 @@
       [(ngModel)]="languageService.selectedLanguageValue"
     >
       <!-- Style the group heading -->
-      <ng-template let-group #group1>
+      <ng-template let-group #languageGroup>
         <div class="group-heading">
           <!-- Display an icon conditionally -->
           @if (group.value === "common") {
@@ -61,7 +61,7 @@
       [(ngModel)]="themeService.selectedTheme"
     >
       <!-- Style the group heading -->
-      <ng-template let-group #group2>
+      <ng-template let-group #themeGroup>
         <div class="group-heading">
           <!-- Display an icon conditionally -->
           @if (group.value === "dark") {
