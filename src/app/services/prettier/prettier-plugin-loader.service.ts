@@ -23,20 +23,7 @@ export class PrettierPluginLoaderService {
   /**
    * Mapping of plugin names to their import paths
    */
-  private readonly pluginRegistry: Record<PrettierPluginType, () => Promise<PrettierPlugin>> = {
-    graphql: () => import("prettier/plugins/graphql.js"),
-    estree: () => import("prettier/plugins/estree.js") as Promise<PrettierPlugin>,
-    yaml: () => import("prettier/plugins/yaml.js"),
-    html: () => import("prettier/plugins/html.js"),
-    acorn: () => import("prettier/plugins/acorn.js"),
-    typescript: () => import("prettier/plugins/typescript.js"),
-    babel: () => import("prettier/parser-babel"),
-    glimmer: () => import("prettier/plugins/glimmer.js"),
-    postcss: () => import("prettier/plugins/postcss.js"),
-    flow: () => import("prettier/plugins/flow.js"),
-    markdown: () => import("prettier/plugins/markdown.js"),
-    meriyah: () => import("prettier/plugins/meriyah.js"),
-    angular: () => import("prettier/plugins/angular.js"),
+  private readonly pluginRegistry: Partial<Record<PrettierPluginType, () => Promise<PrettierPlugin>>> = {
     "prettier-plugin-php": () => import("@prettier/plugin-php").then((m) => m.default),
     "prettier-plugin-java": () => import("prettier-plugin-java").then((m) => m.default),
     "prettier-plugin-gherkin": () => import("prettier-plugin-gherkin").then((m) => m.default),
@@ -96,7 +83,14 @@ export class PrettierPluginLoaderService {
     }
 
     try {
-      const plugin = await this.pluginRegistry[pluginName]();
+      const isPluginInRegistry = pluginName in this.pluginRegistry;
+
+      let plugin;
+      if (isPluginInRegistry && this.pluginRegistry[pluginName]) {
+        plugin = await this.pluginRegistry[pluginName]();
+      } else {
+        plugin = await import(/* @vite-ignore */ `../../../../node_modules/prettier/plugins/${pluginName}.mjs`);
+      }
 
       // Store in cache
       this.pluginCache.set(pluginName, plugin);
