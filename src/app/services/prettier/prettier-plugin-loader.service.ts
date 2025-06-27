@@ -1,9 +1,9 @@
 import { inject, Injectable } from "@angular/core";
 import { MessageService } from "primeng/api";
-import { LanguageDefinition, PrettierParserType, PrettierPluginType } from "@types";
+import { LanguageDefinition, PrettierParserNames, PrettierPluginType } from "@types";
 import { Plugin as PrettierPlugin } from "prettier";
 
-/**̨̊̊̊
+/**
  * Service for dynamically loading Prettier plugins based on language requirements
  */
 @Injectable({
@@ -30,7 +30,7 @@ export class PrettierPluginLoaderService {
     html: () => import("prettier/plugins/html.js"),
     acorn: () => import("prettier/plugins/acorn.js"),
     typescript: () => import("prettier/plugins/typescript.js"),
-    babel: () => import("prettier/plugins/babel.js"),
+    babel: () => import("prettier/parser-babel"),
     glimmer: () => import("prettier/plugins/glimmer.js"),
     postcss: () => import("prettier/plugins/postcss.js"),
     flow: () => import("prettier/plugins/flow.js"),
@@ -52,7 +52,7 @@ export class PrettierPluginLoaderService {
    * @returns A Promise resolving to an object containing the parser name and required plugins
    */
   public async getParserAndPlugins(language: LanguageDefinition): Promise<{
-    parser: PrettierParserType;
+    parser: PrettierParserNames;
     plugins: PrettierPlugin[];
   } | null> {
     // Get Prettier config from language definition or use default
@@ -60,6 +60,7 @@ export class PrettierPluginLoaderService {
     if (!config) {
       return null;
     }
+    console.log(config.plugins);
 
     const requiredPlugins: PrettierPlugin[] = [];
 
@@ -71,6 +72,8 @@ export class PrettierPluginLoaderService {
         console.warn(`Failed to load plugin ${plugin}, continuing with available plugins`, error);
       }
     }
+
+    console.log("Loaded plugins: ", requiredPlugins);
 
     return {
       parser: config.parser,

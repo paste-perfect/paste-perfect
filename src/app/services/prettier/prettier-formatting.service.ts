@@ -54,6 +54,13 @@ export class PrettierFormattingService {
 
       const { parser, plugins } = result;
 
+      await prettier.format(code, {
+        parser,
+        plugins,
+      });
+
+      console.log(await prettier.getSupportInfo());
+
       // Format the code with the appropriate parser and plugins
       return {
         code: await prettier.format(code, {

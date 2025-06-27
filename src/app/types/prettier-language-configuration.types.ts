@@ -1,4 +1,4 @@
-import { PrettierParserType } from "./prettier-parsers.types";
+import { PrettierParserNames } from "./prettier-parsers.types";
 import { PrettierPluginType } from "./prettier-plugin.type";
 
 /**
@@ -6,7 +6,7 @@ import { PrettierPluginType } from "./prettier-plugin.type";
  */
 export interface PrettierLanguageConfiguration {
   /** The parser to use for formatting this language */
-  readonly parser: PrettierParserType;
+  readonly parser: PrettierParserNames;
   /** List of Prettier plugins required for this language */
   readonly plugins: readonly PrettierPluginType[];
 }

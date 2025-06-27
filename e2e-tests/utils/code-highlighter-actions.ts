@@ -26,7 +26,7 @@ export function createActions(page: Page): CodeHighlighterActions {
         return;
       }
 
-      const isChecked = (await formatCheckbox.getAttribute("aria-checked")) === "true";
+      const isChecked = await formatCheckbox.isChecked();
 
       if (isChecked !== enableFormatting) {
         // Click on the parent element (doesn't work directly on the checkbox)
