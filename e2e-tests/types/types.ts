@@ -1,5 +1,6 @@
-import { IndentationModeKey, ThemeKey } from "@types";
+import { HighlightingSettings, Theme } from "@types";
 import { Page } from "../fixtures";
+import { IndentationMode } from "@constants";
 
 /**
  * For clipboard mocking.
@@ -15,8 +16,9 @@ declare global {
  */
 export interface CodeHighlighterActions {
   setLanguage(language: string): Promise<void>;
-  setTheme(theme: ThemeKey): Promise<void>;
-  setIndentMode(indentMode: IndentationModeKey): Promise<void>;
+  setTheme(theme: Theme): Promise<void>;
+  setIndentMode(indentMode: IndentationMode): Promise<void>;
+  setEnableFormatting(enableFormatting: boolean): Promise<void>;
   setIndentationSize(size: number): Promise<void>;
   enterCode(code: string): Promise<void>;
   enterCodeFromFile(filePath: string): Promise<void>;
@@ -31,8 +33,9 @@ export interface CodeHighlighterActions {
  */
 export interface CodeHighlighterAssertions {
   expectLanguage(language: string): Promise<void>;
-  expectTheme(theme: string): Promise<void>;
-  expectIndentMode(indentMode: IndentationModeKey): Promise<void>;
+  expectTheme(theme: Theme): Promise<void>;
+  expectIndentMode(indentMode: IndentationMode): Promise<void>;
+  expectEnableFormatting(enableFormatting: boolean): Promise<void>;
   expectIndentationSize(indentationSize: number): Promise<void>;
   expectHasDesktopSettings(): Promise<void>;
   expectHasMobileSettings(): Promise<void>;
@@ -47,20 +50,22 @@ export interface CodeHighlighterAssertions {
 export interface CodeHighlighterUtils {
   getHighlightedCodeText(): Promise<string>;
   getClipboardContent(): Promise<{ plainText: string; htmlText: string } | null>;
-  configureEditor(config: {
-    language: string;
-    theme: ThemeKey;
-    indentMode: IndentationModeKey;
-    indentationSize: number;
-    code: string;
-  }): Promise<void>;
-  configureEditorFromFile(config: {
-    language: string;
-    theme: ThemeKey;
-    indentMode: IndentationModeKey;
-    indentationSize: number;
-    filePath: string;
-  }): Promise<void>;
+
+  configureEditor(
+    config: HighlightingSettings & {
+      language: string;
+      theme: Theme;
+      code: string;
+    }
+  ): Promise<void>;
+
+  configureEditorFromFile(
+    config: HighlightingSettings & {
+      language: string;
+      theme: Theme;
+      filePath: string;
+    }
+  ): Promise<void>;
 }
 
 /**

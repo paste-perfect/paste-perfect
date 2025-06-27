@@ -20,49 +20,55 @@ export const ALL_LANGUAGES_MAP: Record<string, LanguageDefinition> = {
         title: value.title || key,
         // Language identifier
         value: key,
-        // Collect dependencies, ensuring they are arrays
-        dependencies: [...normalizeToArray(value.require), ...normalizeToArray(value.modify), ...normalizeToArray(value.optional)],
         // Extract alias titles
         filterAlias: Object.values(value.aliasTitles || {}),
+        prismConfiguration: {
+          // Collect dependencies, ensuring they are arrays
+          dependencies: [...normalizeToArray(value.require), ...normalizeToArray(value.modify), ...normalizeToArray(value.optional)],
+        },
         // Add Prettier configuration if available
-        prettier: PRETTIER_LANGUAGE_MAP[key],
+        prettierConfiguration: PRETTIER_LANGUAGE_MAP[key],
       };
       return acc;
     }, {}),
   angular: {
     title: "Angular",
     value: "angular",
-    dependencies: ["typescript", "scss", "json", "markup"],
     filterAlias: ["Angular", "Typescript"],
-    customImportPath: "custom-languages/angular-grammar.js",
-    prettier: { parser: "typescript", plugins: ["typescript", "estree"] },
+    prismConfiguration: {
+      dependencies: ["typescript", "scss", "json", "markup"],
+      customImportPath: "custom-languages/angular-grammar.js",
+    },
+    prettierConfiguration: { parser: "typescript", plugins: ["typescript", "estree"] },
   },
   vue: {
     title: "Vue",
     value: "vue",
-    dependencies: ["typescript", "scss", "json", "markup"],
     filterAlias: ["Vue", "Typescript"],
-    customImportPath: "custom-languages/vue-grammar.js",
-    prettier: { parser: "html", plugins: ["html"] },
+    prismConfiguration: {
+      dependencies: ["typescript", "scss", "json", "markup"],
+      customImportPath: "custom-languages/vue-grammar.js",
+    },
+    prettierConfiguration: { parser: "html", plugins: ["html"] },
   },
-};
+} as const;
 
 /**
  * Set of commonly used programming languages.
  * These languages are considered "popular" and can be adjusted as needed.
  */
 export const POPULAR_LANGUAGES = new Set([
+  "csharp",
+  "css",
   "java",
   "javascript",
-  "typescript",
+  "json",
   "markup",
-  "css",
-  "python",
-  "csharp",
   "php",
+  "python",
   "rust",
   "sql",
-  "json",
+  "typescript",
   "yaml",
 ]);
 

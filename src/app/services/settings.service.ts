@@ -1,7 +1,8 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
-import { AvailableIndentationMode, HighlightingSettings, IndentationModeKey, IndentationModeValue } from "@types";
-import { INDENTATION_MODE_MAP, SETTINGS_STORAGE_KEY } from "@constants";
+import { HighlightingSettings, SelectableIndentationMode } from "@types";
+import { INDENTATION_MODE_MAP, IndentationMode, SETTINGS_STORAGE_KEY } from "@constants";
+import { getEntries } from "@utils/utils";
 
 /**
  * Service to manage editor settings, including indentation size and mode,
@@ -15,9 +16,9 @@ export class SettingsService {
   private storageService: StorageService = inject(StorageService);
 
   /** List of available languages */
-  private readonly indentationModes: AvailableIndentationMode[] = Object.entries(INDENTATION_MODE_MAP).map(([label, value]) => ({
-    label: label as IndentationModeKey,
-    value: value as IndentationModeValue,
+  private readonly indentationModes: SelectableIndentationMode[] = getEntries(INDENTATION_MODE_MAP).map(([value, label]) => ({
+    value: value,
+    label: label,
   }));
 
   /** Signal for the editor settings */
@@ -36,7 +37,7 @@ export class SettingsService {
   }
 
   /** Retrieves the list of available languages */
-  public getAvailableIndentationModes(): AvailableIndentationMode[] {
+  public getAvailableIndentationModes(): SelectableIndentationMode[] {
     return [...this.indentationModes]; // Return a copy to maintain immutability
   }
 
@@ -44,7 +45,7 @@ export class SettingsService {
   private loadInitialSettings(): HighlightingSettings {
     return {
       indentationSize: 2,
-      indentationMode: INDENTATION_MODE_MAP.Spaces,
+      indentationMode: IndentationMode.Spaces,
       enableFormatting: true,
       // Overwrite defaults with stored values if they exist
       ...(this.storageService.getItem<HighlightingSettings>(SETTINGS_STORAGE_KEY) || {}),

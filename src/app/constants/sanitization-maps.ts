@@ -26,3 +26,17 @@ export const OUTPUT_SANITIZE_MAP: Partial<Record<SpecialCharacters, SpecialChara
   // [SpecialCharacters.NEWLINE]: SpecialCharacters.LINE_BREAK, // Newline -> <br>
   // Add more output replacements as needed
 };
+
+/**
+ * A map for replacing German umlauts and the eszett character with their ASCII representations.
+ */
+export const UMLAUT_REPLACEMENT_MAP: Record<string, string> = {
+  Ä: "AE",
+  ä: "ae",
+  Ö: "OE",
+  ö: "oe",
+  Ü: "UE",
+  ü: "ue",
+  ẞ: "SS",
+  ß: "ss",
+};

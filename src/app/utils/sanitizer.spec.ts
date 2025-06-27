@@ -93,4 +93,65 @@ describe("SanitizerWrapper", () => {
       expect(result).toBe("<br>&emsp;<br>");
     });
   });
+
+  describe("escapeUmlauts", () => {
+    beforeEach(() => {
+      (getEntries as jest.Mock).mockReturnValue([
+        ["ä", "ae"],
+        ["ö", "oe"],
+        ["ü", "ue"],
+        ["Ä", "AE"],
+        ["Ö", "OE"],
+        ["Ü", "UE"],
+        ["ẞ", "SS"],
+        ["ß", "ss"],
+      ]);
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("replaces German umlauts correctly", () => {
+      const input = "Müller wohnt in Köln";
+      const result = SanitizerWrapper.escapeUmlauts(input);
+      expect(result).toBe("Mueller wohnt in Koeln");
+    });
+
+    it("replaces uppercase umlauts correctly", () => {
+      const input = "MÜNCHEN und DÜSSELDORF";
+      const result = SanitizerWrapper.escapeUmlauts(input);
+      expect(result).toBe("MUENCHEN und DUESSELDORF");
+    });
+
+    it("replaces eszett correctly", () => {
+      const input = "Straße und Weiß";
+      const result = SanitizerWrapper.escapeUmlauts(input);
+      expect(result).toBe("Strasse und Weiss");
+    });
+
+    it("handles mixed case umlauts", () => {
+      const input = "Größe und schön";
+      const result = SanitizerWrapper.escapeUmlauts(input);
+      expect(result).toBe("Groesse und schoen");
+    });
+
+    it("returns original string if no umlauts present", () => {
+      const input = "Hello World";
+      const result = SanitizerWrapper.escapeUmlauts(input);
+      expect(result).toBe("Hello World");
+    });
+
+    it("handles empty string gracefully", () => {
+      const input = "";
+      const result = SanitizerWrapper.escapeUmlauts(input);
+      expect(result).toBe("");
+    });
+
+    it("preserves other non-ASCII characters", () => {
+      const input = "Café with ümlauts and émojis 🎉";
+      const result = SanitizerWrapper.escapeUmlauts(input);
+      expect(result).toBe("Café with uemlauts and émojis 🎉");
+    });
+  });
 });

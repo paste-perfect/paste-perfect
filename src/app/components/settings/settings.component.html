@@ -14,7 +14,7 @@
       [(ngModel)]="languageService.selectedLanguageValue"
     >
       <!-- Style the group heading -->
-      <ng-template let-group #group>
+      <ng-template let-group #languageGroup>
         <div class="group-heading">
           <!-- Display an icon conditionally -->
           @if (group.value === "common") {
@@ -61,7 +61,7 @@
       [(ngModel)]="themeService.selectedTheme"
     >
       <!-- Style the group heading -->
-      <ng-template let-group #group>
+      <ng-template let-group #themeGroup>
         <div class="group-heading">
           <!-- Display an icon conditionally -->
           @if (group.value === "dark") {
@@ -97,7 +97,6 @@
     ></p-select>
   </div>
 
-  <!-- Add this to settings.component.html -->
   <div class="settings-item full-width">
     <label for="enable-formatting" class="label-with-popover">
       <span>Enable Formatting</span>
@@ -109,7 +108,14 @@
         tabindex="0"
       ></i>
     </label>
-    <p-toggleswitch inputId="enable-formatting" [(ngModel)]="formattingEnabled" />
+    <p-toggleswitch
+      inputId="enable-formatting"
+      [(ngModel)]="formattingEnabled"
+      class="enable-formatting-toggle"
+      [disabled]="!languageService.isPrettierSupportedByLanguage()"
+      [tooltipOptions]="tooltipOptions"
+      [pTooltip]="languageService.isPrettierSupportedByLanguage() ? undefined : 'Formatting is not supported for current language'"
+    />
   </div>
 </div>
 
@@ -138,12 +144,16 @@
   </div>
 </p-popover>
 
+<!-- Popover for Formatting -->
 <p-popover #formattingPopover>
   <div class="popover-content">
     <span class="popover-title">Code Formatting</span>
-    <p class="popover-text">
-      When enabled, the code will be automatically formatted according to best practices for the selected language. Disable this option if
-      you want to preserve the exact formatting of your code.
-    </p>
+    <div class="popover-text">
+      <p>
+        When enabled, the code will be automatically formatted according to best practices for the selected language. Disable this option if
+        you want to preserve the exact formatting of your code.
+      </p>
+      <p>Please note that formatting is only supported for languages marked with an asterisks (*).</p>
+    </div>
   </div>
 </p-popover>

@@ -27,15 +27,15 @@ export const THEME_STORAGE_KEY = "selected_theme";
  */
 export const HTML_CODE_PRE_SELECTOR = "pre#highlighted-code-wrapper";
 
-/**
- * CSS selector for the `<code>` element containing the highlighted code.
- */
-export const HTML_CODE_SELECTOR = "code.highlighted-code";
+export enum IndentationMode {
+  Spaces = "SPACE_INDENTATION",
+  Tabs = "TAB_INDENTATION",
+}
 
 /**
  * Mapping of available indentation modes.
  */
-export const INDENTATION_MODE_MAP = {
-  Spaces: "spaces",
-  Tabs: "tabs",
+export const INDENTATION_MODE_MAP: Record<IndentationMode, string> = {
+  [IndentationMode.Spaces]: "Spaces",
+  [IndentationMode.Tabs]: "Tabs",
 } as const;

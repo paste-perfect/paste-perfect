@@ -3,4 +3,30 @@
   min-height: 5rem;
   height: 100%;
   width: 100%;
+
+  &.formatting-invalid {
+    border-color: var(--p-textarea-invalid-border-color);
+  }
+
+  &.formatting-valid {
+    border-color: var(--p-button-success-border-color);
+  }
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+
+  .formatting-error-message {
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    &:hover {
+      opacity: 0.5;
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { INDENTATION_MODE_MAP } from "@constants";
+import { IndentationMode } from "@constants";
 import { LinesCollector } from "@utils/line-collector";
 
 const createTextNode = (text: string): Text => document.createTextNode(text);
@@ -20,7 +20,7 @@ describe("LinesCollector", () => {
   });
 
   it("splits lines and handles indentation in spaces mode", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Spaces, 2);
+    const collector = new LinesCollector(IndentationMode.Spaces, 2);
 
     const span = createStyledSpan("  indented line\nsecond line");
     original.appendChild(span);
@@ -39,7 +39,7 @@ describe("LinesCollector", () => {
   });
 
   it("handles tab mode and sets styles accordingly", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Tabs, 2);
+    const collector = new LinesCollector(IndentationMode.Tabs, 2);
 
     const span = createStyledSpan("    Tabbed text\nNext");
     original.appendChild(span);
@@ -59,7 +59,7 @@ describe("LinesCollector", () => {
   });
 
   it("creates paragraphs for empty line", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Spaces, 2);
+    const collector = new LinesCollector(IndentationMode.Spaces, 2);
 
     const span = createStyledSpan("\n");
     original.appendChild(span);
@@ -76,7 +76,7 @@ describe("LinesCollector", () => {
   });
 
   it("ignores unsupported nodes like comments", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Spaces, 2);
+    const collector = new LinesCollector(IndentationMode.Spaces, 2);
 
     const comment = document.createComment("some comment");
     original.appendChild(comment);
@@ -90,7 +90,7 @@ describe("LinesCollector", () => {
   });
 
   it("applies parent span styles when parent is span", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Spaces, 4);
+    const collector = new LinesCollector(IndentationMode.Spaces, 4);
 
     const parent = document.createElement("span");
     parent.style.color = "red";
@@ -102,7 +102,7 @@ describe("LinesCollector", () => {
   });
 
   it("does not apply styles if parent is not a span", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Spaces, 4);
+    const collector = new LinesCollector(IndentationMode.Spaces, 4);
 
     const parent = document.createElement("div");
     parent.style.fontWeight = "bold";
@@ -114,7 +114,7 @@ describe("LinesCollector", () => {
   });
 
   it("handles mixed content with spans and text", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Spaces, 2);
+    const collector = new LinesCollector(IndentationMode.Spaces, 2);
 
     const outerSpan = document.createElement("span");
     const innerSpan = document.createElement("span");
@@ -138,7 +138,7 @@ describe("LinesCollector", () => {
   });
 
   it("preserves multiple indentation markers as spaces (spaces mode)", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Spaces, 2);
+    const collector = new LinesCollector(IndentationMode.Spaces, 2);
 
     const span = createStyledSpan("    Indented");
     original.appendChild(span);
@@ -153,7 +153,7 @@ describe("LinesCollector", () => {
   });
 
   it("applies tab spacing styles for tab mode", () => {
-    const collector = new LinesCollector(INDENTATION_MODE_MAP.Tabs, 4);
+    const collector = new LinesCollector(IndentationMode.Tabs, 4);
 
     const span = createStyledSpan("\t\tTabbed");
     original.appendChild(span);

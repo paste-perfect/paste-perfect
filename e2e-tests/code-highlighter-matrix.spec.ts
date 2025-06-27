@@ -2,13 +2,12 @@ import { expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { test } from "./pages/code-highlighter.page";
-import { IndentationModeKey, ThemeKey } from "@types";
+import { HighlightingSettings, Theme } from "@types";
+import { DarkTheme, IndentationMode, LightTheme } from "@constants";
 
-interface Mode {
+interface Mode extends HighlightingSettings {
   name: string;
-  theme: ThemeKey;
-  indentMode: IndentationModeKey;
-  indentationSize: number;
+  theme: Theme;
   fixtureDir: string;
 }
 
@@ -39,17 +38,19 @@ const testCases: TestCase[] = [
 const modes: Mode[] = [
   {
     name: "Dark Mode with Tabs",
-    theme: "Prism Coldark Dark",
-    indentMode: "Tabs",
+    theme: DarkTheme.PrismColdarkDark,
+    indentationMode: IndentationMode.Tabs,
     indentationSize: 2,
     fixtureDir: "dark-tabs",
+    enableFormatting: false,
   },
   {
     name: "Light Mode with Spaces",
-    theme: "a11y Light",
-    indentMode: "Spaces",
+    theme: LightTheme.A11yLight,
+    indentationMode: IndentationMode.Spaces,
     indentationSize: 4,
     fixtureDir: "light-spaces",
+    enableFormatting: false,
   },
 ];
 
@@ -68,8 +69,9 @@ for (const mode of modes) {
         await page.utils.configureEditorFromFile({
           language,
           theme: mode.theme,
-          indentMode: mode.indentMode,
+          indentationMode: mode.indentationMode,
           indentationSize: mode.indentationSize,
+          enableFormatting: mode.enableFormatting,
           filePath: rawCodePath,
         });
 
@@ -85,8 +87,9 @@ for (const mode of modes) {
         await page.utils.configureEditorFromFile({
           language,
           theme: mode.theme,
-          indentMode: mode.indentMode,
+          indentationMode: mode.indentationMode,
           indentationSize: mode.indentationSize,
+          enableFormatting: mode.enableFormatting,
           filePath: rawCodePath,
         });
 

@@ -19,28 +19,32 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
         };
       });
     },
-    async configureEditor({ language, theme, indentMode, indentationSize, code }) {
+    async configureEditor({ language, theme, indentationMode, enableFormatting, indentationSize, code }) {
       await page.actions.setLanguage(language);
       await page.actions.setTheme(theme);
-      await page.actions.setIndentMode(indentMode);
+      await page.actions.setIndentMode(indentationMode);
+      await page.actions.setEnableFormatting(enableFormatting);
       await page.actions.setIndentationSize(indentationSize);
 
       await page.assertions.expectLanguage(language);
       await page.assertions.expectTheme(theme);
-      await page.assertions.expectIndentMode(indentMode);
+      await page.assertions.expectIndentMode(indentationMode);
+      await page.assertions.expectEnableFormatting(enableFormatting);
       await page.assertions.expectIndentationSize(indentationSize);
 
       await page.actions.enterCode(code);
     },
-    async configureEditorFromFile({ language, theme, indentMode, indentationSize, filePath }) {
+    async configureEditorFromFile({ language, theme, indentationMode, enableFormatting, indentationSize, filePath }) {
       await page.actions.setLanguage(language);
       await page.actions.setTheme(theme);
-      await page.actions.setIndentMode(indentMode);
+      await page.actions.setIndentMode(indentationMode);
+      await page.actions.setEnableFormatting(enableFormatting);
       await page.actions.setIndentationSize(indentationSize);
 
       await page.assertions.expectLanguage(language);
       await page.assertions.expectTheme(theme);
-      await page.assertions.expectIndentMode(indentMode);
+      await page.assertions.expectIndentMode(indentationMode);
+      await page.assertions.expectEnableFormatting(enableFormatting);
       await page.assertions.expectIndentationSize(indentationSize);
 
       await page.actions.enterCodeFromFile(filePath);

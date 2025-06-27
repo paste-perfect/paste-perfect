@@ -1,5 +1,5 @@
 import { getEntries } from "@utils/utils";
-import { INPUT_SANITIZE_MAP, OUTPUT_SANITIZE_MAP, SpecialCharacters } from "@constants";
+import { INPUT_SANITIZE_MAP, OUTPUT_SANITIZE_MAP, SpecialCharacters, UMLAUT_REPLACEMENT_MAP } from "@constants";
 import { RegexFlags } from "../regex/regex-flags";
 import { RegexPatterns } from "../regex/regex-patterns";
 
@@ -19,13 +19,15 @@ export class SanitizerWrapper {
    * @returns {string} - The sanitized string with replacements applied and unwanted characters removed.
    */
   public static sanitizeInput(input: string): string {
+    let sanitizedInput = input;
+
     // Replace mapped characters first
-    getEntries(INPUT_SANITIZE_MAP).forEach(([key, value]) => {
-      input = input.replace(new RegExp(key, RegexFlags.GLOBAL), value as SpecialCharacters);
+    getEntries(INPUT_SANITIZE_MAP).forEach(([character, replacement]) => {
+      sanitizedInput = sanitizedInput.replace(new RegExp(character, RegexFlags.GLOBAL), replacement as SpecialCharacters);
     });
 
     return (
-      input
+      sanitizedInput
         // Remove all non-ASCII characters except mapped ones
         .replace(RegexPatterns.NON_ASCII_CHARACTERS_REGEX, "")
         // Remove leading and trailing blank lines
@@ -44,5 +46,21 @@ export class SanitizerWrapper {
       output = output.replace(new RegExp(key, RegexFlags.GLOBAL), value as SpecialCharacters);
     });
     return output;
+  }
+
+  /**
+   * Escapes German umlauts and eszett by replacing them with their ASCII equivalents.
+   *
+   * @param {string} input - The input string containing umlauts to escape.
+   * @returns {string} - The string with umlauts replaced by their ASCII equivalents.
+   */
+  public static escapeUmlauts(input: string): string {
+    let escapedInput = input;
+
+    getEntries(UMLAUT_REPLACEMENT_MAP).forEach(([character, replacement]) => {
+      escapedInput = escapedInput.replace(new RegExp(character, RegexFlags.GLOBAL), replacement as SpecialCharacters);
+    });
+
+    return escapedInput;
   }
 }

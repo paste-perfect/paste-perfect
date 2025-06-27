@@ -52,7 +52,7 @@ export default defineConfig({
     actionTimeout: 5 * 1000, // 5 seconds for actions (i.e., click, goto)
   },
   webServer: {
-    command: "npm run serve",
+    command: "npm run serve:test",
     reuseExistingServer: !process.env.CI,
     url: BASE_URL,
   },

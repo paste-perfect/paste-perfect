@@ -7,17 +7,21 @@ import { Popover } from "primeng/popover";
 import { ThemeService } from "@services/theme.service";
 import { LanguageService } from "@services/language.service";
 import { SettingsService } from "@services/settings.service";
-import { AvailableIndentationMode, IndentationModeValue, LanguageDefinition } from "@types";
-import { SelectItemGroup } from "primeng/api";
+import { SelectableIndentationMode, LanguageDefinition } from "@types";
+import { SelectItemGroup, TooltipOptions } from "primeng/api";
 import { ToggleSwitch } from "primeng/toggleswitch";
+import { Tooltip } from "primeng/tooltip";
+import { DEFAULT_TOOLTIP_OPTIONS, IndentationMode } from "@constants";
 
 @Component({
   selector: "app-settings",
-  imports: [DropdownModule, FormsModule, InputNumber, Select, Popover, ToggleSwitch],
+  imports: [DropdownModule, FormsModule, InputNumber, Select, Popover, ToggleSwitch, Tooltip],
   templateUrl: "./settings.component.html",
   styleUrl: "./settings.component.scss",
 })
 export class SettingsComponent {
+  protected tooltipOptions: TooltipOptions = { ...DEFAULT_TOOLTIP_OPTIONS, tooltipPosition: "top" };
+
   /** Minimum indentation size input number */
   protected readonly MIN_INDENTATION: number = 1;
 
@@ -59,7 +63,7 @@ export class SettingsComponent {
   private mapWithPrettier(languages: LanguageDefinition[]): LanguageDefinition[] {
     return languages.map((language) => ({
       ...language,
-      title: language.title + (language.prettier ? "*" : ""),
+      title: language.title + (language.prettierConfiguration ? "*" : ""),
     }));
   }
 
@@ -83,7 +87,7 @@ export class SettingsComponent {
   /**
    * List of available indentation modes (e.g., spaces or tabs) for the editor.
    */
-  protected availableIndentationModes: AvailableIndentationMode[] = this.settingsService.getAvailableIndentationModes();
+  protected availableIndentationModes: SelectableIndentationMode[] = this.settingsService.getAvailableIndentationModes();
 
   /**
    * Gets the current indentation size setting from the editor settings.
@@ -103,15 +107,15 @@ export class SettingsComponent {
   /**
    * Gets the currently selected indentation mode (e.g., spaces or tabs).
    */
-  get selectedIndentationMode(): IndentationModeValue {
+  get selectedIndentationMode(): IndentationMode {
     return this.settingsService.editorSettings.indentationMode;
   }
 
   /**
    * Updates the selected indentation mode setting in the editor settings.
-   * @param mode - The new indentation mode value.
+   * @param mode - The new indentation mode.
    */
-  set selectedIndentationMode(mode: IndentationModeValue) {
+  set selectedIndentationMode(mode: IndentationMode) {
     this.settingsService.updateSettings({ indentationMode: mode });
   }
 

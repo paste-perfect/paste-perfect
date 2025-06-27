@@ -1,7 +1,8 @@
 import { effect, inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { SyntaxHighlightService } from "./syntax.highlight.service";
-import { LanguageService } from "./language.service";
-import { PrettierService } from "@services/prettier.service";
+import { PrismHighlightService } from "@services/prism/prism-highlight.service";
+import { LanguageService } from "@services/language.service";
+import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
+import { SanitizerWrapper } from "@utils/sanitizer";
 
 /**
  * CodeService is responsible for managing and processing source code,
@@ -12,13 +13,13 @@ import { PrettierService } from "@services/prettier.service";
 })
 export class CodeService {
   /** Injected service for syntax highlighting */
-  private readonly syntaxHighlightService: SyntaxHighlightService = inject(SyntaxHighlightService);
+  private readonly syntaxHighlightService: PrismHighlightService = inject(PrismHighlightService);
 
   /** Injected service for managing the selected programming language */
   private readonly languageService: LanguageService = inject(LanguageService);
 
   /** Injected service for code formatting */
-  private readonly prettierService: PrettierService = inject(PrettierService);
+  private readonly prettierService: PrettierFormattingService = inject(PrettierFormattingService);
 
   /** Default message when no code is provided */
   private readonly noCode: string = "<span>The highlighted code will appear here after pasting some code!</span>";
@@ -28,6 +29,9 @@ export class CodeService {
 
   /** Writable signal to store highlighted code */
   private _highlightedCode: WritableSignal<string> = signal(this.noCode);
+
+  /** Writable signal to store highlighted code */
+  private _formattingSuccessful: WritableSignal<boolean> = signal(true);
 
   /**
    * Setter for raw code.
@@ -62,6 +66,22 @@ export class CodeService {
   }
 
   /**
+   * Setter for raw code.
+   * @param successful - The new raw code to be stored.
+   */
+  public set formattingSuccessful(successful: boolean) {
+    this._formattingSuccessful.set(successful);
+  }
+
+  /**
+   * Getter for raw code.
+   * @returns The current raw source code.
+   */
+  public get formattingSuccessful(): boolean {
+    return this._formattingSuccessful();
+  }
+
+  /**
    * Determines whether meaningful highlighted code is present.
    * @returns True if highlighted code exists and is not the default placeholder.
    */
@@ -77,13 +97,19 @@ export class CodeService {
     effect(async () => {
       const selectedLanguage = this.languageService.selectedLanguage;
 
+      // Sanitize input
+      const escapedInput = SanitizerWrapper.escapeUmlauts(this.rawCode);
+
       // Format the code using the PrettierService
-      const formattedCode = await this.prettierService.formatCode(this.rawCode, selectedLanguage);
+      const { code: formattedCode, formattingSuccessful } = await this.prettierService.formatCode(escapedInput, selectedLanguage);
+      this.formattingSuccessful = formattingSuccessful;
 
       // Update the highlighted code
-      const result = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
+      const highlightedCode = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
 
-      this.highlightedCode = this.hasCode() ? result : this.noCode;
+      const sanitizedOuput = SanitizerWrapper.sanitizeOutput(highlightedCode);
+
+      this.highlightedCode = this.hasCode() ? sanitizedOuput : this.noCode;
     });
   }
 }
