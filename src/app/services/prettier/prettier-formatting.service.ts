@@ -33,9 +33,6 @@ export class PrettierFormattingService {
     formattingSuccessful: boolean;
   }> {
     const settings = this.settingsService.editorSettings;
-    console.log("TEST1234");
-    console.log("!settings.enableFormatting", !settings.enableFormatting);
-    console.log("!code?.trim()", !code?.trim());
 
     // Return original code if formatting is disabled or code is empty
     if (!settings.enableFormatting || !code?.trim()) {
@@ -45,7 +42,6 @@ export class PrettierFormattingService {
     try {
       // Get the appropriate parser and plugins for the language
       const result = await this.pluginLoader.getParserAndPlugins(language);
-      console.log(result);
 
       // Output the original code if no prettier was found
       if (!result) {
@@ -58,8 +54,6 @@ export class PrettierFormattingService {
         parser,
         plugins,
       });
-
-      console.log(await prettier.getSupportInfo());
 
       // Format the code with the appropriate parser and plugins
       return {

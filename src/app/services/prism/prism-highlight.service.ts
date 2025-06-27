@@ -89,7 +89,6 @@ export class PrismHighlightService {
     const htmlSnippet: string = SanitizerWrapper.sanitizeOutput(processedClone.outerHTML);
     // Use the original element for the text-only snippet (non-formatted)
     const textSnippet: string = preElement.outerText;
-    console.log(htmlSnippet);
 
     // 3) Copy to clipboard in both text/html and text/plain forms
     navigator.clipboard

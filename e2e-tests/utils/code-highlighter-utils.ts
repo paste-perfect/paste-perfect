@@ -20,15 +20,10 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
       });
     },
     async configureEditor({ language, theme, indentationMode, enableFormatting, indentationSize, code }) {
-      console.log("await page.actions.setLanguage(language);");
       await page.actions.setLanguage(language);
-      console.log("await page.actions.setTheme(theme);");
       await page.actions.setTheme(theme);
-      console.log("await page.actions.setIndentMode(indentationMode);");
       await page.actions.setIndentMode(indentationMode);
-      console.log("await page.actions.setEnableFormatting(enableFormatting);");
       await page.actions.setEnableFormatting(enableFormatting);
-      console.log("await page.actions.setIndentationSize(indentationSize);");
       await page.actions.setIndentationSize(indentationSize);
 
       await page.assertions.expectLanguage(language);
@@ -37,7 +32,6 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
       await page.assertions.expectEnableFormatting(enableFormatting);
       await page.assertions.expectIndentationSize(indentationSize);
 
-      console.log("await page.actions.enterCode(code);");
       await page.actions.enterCode(code);
     },
     async configureEditorFromFile({ language, theme, indentationMode, enableFormatting, indentationSize, filePath }) {

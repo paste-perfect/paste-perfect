@@ -47,7 +47,6 @@ export class PrettierPluginLoaderService {
     if (!config) {
       return null;
     }
-    console.log(config.plugins);
 
     const requiredPlugins: PrettierPlugin[] = [];
 
@@ -59,8 +58,6 @@ export class PrettierPluginLoaderService {
         console.warn(`Failed to load plugin ${plugin}, continuing with available plugins`, error);
       }
     }
-
-    console.log("Loaded plugins: ", requiredPlugins);
 
     return {
       parser: config.parser,
