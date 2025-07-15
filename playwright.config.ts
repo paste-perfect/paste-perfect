@@ -9,7 +9,6 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        channel: "chromium",
         baseURL: BASE_URL,
         headless: process.env.CI ? true : HEADLESS, // always headless in CI
         launchOptions: {
