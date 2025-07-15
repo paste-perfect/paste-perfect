@@ -26,6 +26,8 @@ async function ensureFontsLoaded(page: BasePage): Promise<void> {
 
   // Verify font is loaded
   const fontLoaded = await page.evaluate(() => {
+    console.log("Fonts: ", document.fonts);
+    console.log("Stylesheets: ", document.styleSheets)
     return document.fonts.check("16px Roboto");
   });
 
