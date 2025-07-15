@@ -1,8 +1,15 @@
+@font-face {
+  font-family: "Roboto";
+  src: url("./fonts/Roboto-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
 html,
-body,
-* {
-  /* Force a consistent, widely available font stack */
-  font-family: "Arial", "Helvetica", sans-serif !important;
+body {
+  /* Force the local font */
+  font-family: "Roboto", monospace !important;
   /* Disable font smoothing variations */
   -webkit-font-smoothing: antialiased !important;
   -moz-osx-font-smoothing: grayscale !important;
@@ -11,4 +18,6 @@ body,
   /* Disable font feature settings that might vary */
   font-feature-settings: normal !important;
   font-variant-ligatures: none !important;
+  /* Force consistent font loading */
+  font-display: block !important;
 }

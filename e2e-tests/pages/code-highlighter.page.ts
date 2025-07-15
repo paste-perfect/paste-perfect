@@ -18,6 +18,10 @@ export const test = base.extend<{ page: CodeHighlighterPage }>({
     // Go to the app's root path
     await page.goToPath("/");
 
+    // Wait for fonts to load
+    await page.waitForFunction(() => document.fonts.ready);
+    await page.waitForLoadState("networkidle");
+
     // Expose the final typed Page to the tests
     await use(page as CodeHighlighterPage);
   },

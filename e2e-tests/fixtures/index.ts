@@ -6,23 +6,42 @@ export type Page = BasePage & {
   goToPath: (path: string) => Promise<void>;
 };
 
+const STYLESHEET_PATH = './e2e-tests/styles/styles.css'
+
+async function loadTestStyles(page: BasePage): Promise<void> {
+  // Add styles for testing to have a comparable font
+  await page.addStyleTag({
+    path: STYLESHEET_PATH
+  });
+
+  // Wait for fonts to load
+  await page.evaluate(() => {
+    return document.fonts.ready;
+  });
+
+  // Verify font is loaded
+  const fontLoaded = await page.evaluate(() => {
+    return document.fonts.check('16px Roboto');
+  });
+
+  if (!fontLoaded) {
+    console.warn('Roboto font failed to load, falling back to system fonts');
+  }
+}
+
 export const test = baseTest.extend<{
   page: Page;
 }>({
   page: async ({ page }, use) => {
-    // Add styles for testing to have a comparable font
-    await page.addStyleTag({
-      path: './e2e-tests/styles/fonts.css'
-    });
+    await loadTestStyles(page);
 
     page.expectScreenshot = async (name: string, options) => {
       options = {
         ...options,
-        stylePath: './e2e-tests/styles/fonts.css',
+        stylePath: STYLESHEET_PATH,
         fullPage: true,
         maxDiffPixelRatio: 0.01,
       }
-      await page.waitForFunction(() => document.fonts.ready)
 
       await expect(page).toHaveScreenshot(name, options);
     };
