@@ -56,7 +56,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run end-to-end tests
-        run: npm run test:e2e
+        run: npm run test:snapshots
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4  # upload test results
         if: always()        # run this step even if previous step failed
@@ -77,10 +77,10 @@ jobs:
         name: JEST Tests
         path: 'jest/report.xml'
         reporter: jest-junit
-    - name: Generate E2E test report
+    - name: Generate Snapshot test report
       uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
       with:
         artifact: test-reports
-        name: E2E Tests
+        name: Snapshot Tests
         path: 'playwright/report.xml'
         reporter: jest-junit

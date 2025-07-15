@@ -3,7 +3,7 @@ import { test } from "./pages/code-highlighter.page";
 
 const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`;
 
-test.describe("Code Highlighter E2E Smoke", () => {
+test.describe("Code Highlighter Snapshot Smoke", () => {
   test("should update highlighted output when code is entered", async ({ page }) => {
     await page.assertions.expectHasDesktopSettings();
     await page.actions.enterCode(sampleCode, false);

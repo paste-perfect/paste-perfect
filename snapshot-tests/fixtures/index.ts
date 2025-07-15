@@ -7,7 +7,7 @@ export type Page = BasePage & {
   goToPath: (path: string) => Promise<void>;
 };
 
-export const STYLESHEET_PATH = path.resolve(process.cwd(), './e2e-tests/styles/styles.css');
+export const STYLESHEET_PATH = path.resolve(process.cwd(), './snapshot-tests/styles/styles.css');
 
 export const test = baseTest.extend<{
   page: Page;

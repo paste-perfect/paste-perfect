@@ -56,7 +56,7 @@ export default defineConfig({
     ["html", { outputFolder: "reports/playwright/html-report" }],
   ],
   retries: 0,
-  testDir: "e2e-tests",
+  testDir: "snapshot-tests",
   snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",
   use: {
     trace: "on-first-retry",
