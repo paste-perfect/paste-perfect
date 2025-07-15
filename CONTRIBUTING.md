@@ -47,10 +47,10 @@ Here are the relevant `npm` scripts available for development and contribution:
 - `npm run start` – Runs the app locally with `ng serve`.
 - `npm run build-prod` – Builds the Angular project.
 - `npm run build-docker` – Builds the app with a base href for Docker deployment.
-- `npm run test` – Runs both unit and end-to-end tests.
+- `npm run test` – Runs both unit and snapshot tests.
 - `npm run test:unit` – Runs unit tests.
-- `npm run test:e2e` – Runs Playwright end-to-end tests.
-- `npm run test:e2e:update-snapshots` – Updates Playwright snapshots.
+- `npm run test:snapshots` – Runs Playwright snapshot tests.
+- `npm run test:snapshots:update-snapshots` – Updates Playwright snapshots.
 - `npm run lint:check` – Checks for linting issues.
 - `npm run lint:fix` – Automatically fixes linting issues.
 - `npm run format:check` – Checks code formatting with Prettier.
@@ -91,15 +91,12 @@ This project is built in **Angular**, enhanced by **Prism.js** for syntax highli
 
 - **`syntax-highlight.service.ts`**
   The **heart of the application**, responsible for turning raw code into a highlighted snippet and allowing for a properly formatted clipboard copy. It offers two primary methods:
-
   1. **`highlightCode(code: string, language: LanguageDefinition): Promise<string>`**
-
      - Sanitizes input (e.g., replaces unsupported characters).
      - Dynamically loads Prism.js language definitions if needed.
      - Returns HTML with syntax-highlighted code using Prism.
 
   2. **`copyToClipboard()`**
-
      - Locates the highlighted `<pre><code>` block in the DOM.
      - Clones and processes the node structure to preserve:
        - Inline formatting (e.g., font styles, colors).
@@ -209,21 +206,17 @@ This project is built with **Angular**, enhanced by **Prism.js** for syntax high
 ### Utilities
 
 - **`indentation-formatter.ts`**
-
   - Manages indentation formatting.
   - Converts leading spaces/tabs into placeholder markers.
 
 - **`inline-style-applier.ts`**
-
   - Ensures proper inline styling when copying to the clipboard.
 
 - **`node-utils.ts`**
-
   - Processes DOM nodes.
   - Wraps standalone text nodes inside `<span>` elements.
 
 - **`sanitizer.ts`**
-
   - Sanitizes input and output for proper formatting and security.
 
 - **`utils.ts`**
@@ -234,20 +227,16 @@ This project is built with **Angular**, enhanced by **Prism.js** for syntax high
 Copying highlighted code requires multiple steps for accuracy:
 
 1. **Highlighting Code (`syntax-highlight.service.ts`)**
-
    - Loads Prism.js syntax definitions.
    - Applies syntax highlighting and generates HTML output.
 
 2. **Formatting Indentation (`indentation-formatter.ts`)**
-
    - Replaces indentation characters (tabs, spaces) with placeholder markers for consistency.
 
 3. **Applying Inline Styles (`inline-style-applier.ts`)**
-
    - Converts necessary styles into inline properties to retain formatting upon pasting.
 
 4. **Processing Nodes (`node-utils.ts`)**
-
    - Ensures text nodes are wrapped inside `<span>` elements for structured styling.
 
 5. **Clipboard Copy Execution**
