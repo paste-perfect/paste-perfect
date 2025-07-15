@@ -15,8 +15,8 @@ async function loadTestStyles(page: BasePage): Promise<void> {
   await page.waitForFunction(() => document.fonts.ready);
   await page.waitForLoadState("networkidle");
 
-  console.log("Fonts: ", document.fonts);
-  console.log("Stylesheets: ", document.styleSheets);
+  await page.evaluate(() => console.log("Fonts: ", document.fonts));
+  await page.evaluate(() => console.log("Stylesheets: ", document.styleSheets));
 
   // Verify font is loaded
   const fontLoaded = await page.evaluate(() => {
