@@ -1,4 +1,14 @@
-html {
-  /* Use local Roboto font for comparable screenshot testing */
-  font-family: "Arial", serif !important;
+html,
+body,
+* {
+  /* Force a consistent, widely available font stack */
+  font-family: "Arial", "Helvetica", sans-serif !important;
+  /* Disable font smoothing variations */
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  /* Ensure consistent text rendering */
+  text-rendering: optimizeLegibility !important;
+  /* Disable font feature settings that might vary */
+  font-feature-settings: normal !important;
+  font-variant-ligatures: none !important;
 }

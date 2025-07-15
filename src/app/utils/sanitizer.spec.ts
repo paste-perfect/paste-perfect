@@ -1,6 +1,6 @@
 import { getEntries } from "@utils/utils";
 import { SanitizerWrapper } from "@utils/sanitizer";
-import { INPUT_SANITIZE_MAP, SpecialCharacters } from "@constants";
+import { INPUT_SANITIZE_MAP, SpecialCharacters, UMLAUT_REPLACEMENT_MAP } from "@constants";
 
 jest.mock("@utils/utils", () => ({
   // We need to return an empty array by default in order for languages.ts to properly work
@@ -141,16 +141,7 @@ describe("SanitizerWrapper", () => {
 
   describe("escapeUmlauts", () => {
     beforeEach(() => {
-      (getEntries as jest.Mock).mockReturnValue([
-        ["ä", "ae"],
-        ["ö", "oe"],
-        ["ü", "ue"],
-        ["Ä", "AE"],
-        ["Ö", "OE"],
-        ["Ü", "UE"],
-        ["ẞ", "SS"],
-        ["ß", "ss"],
-      ]);
+      (getEntries as jest.Mock).mockReturnValue(Object.entries(UMLAUT_REPLACEMENT_MAP));
     });
 
     afterEach(() => {
