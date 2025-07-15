@@ -47,9 +47,9 @@ Here are the relevant `npm` scripts available for development and contribution:
 - `npm run start` – Runs the app locally with `ng serve`.
 - `npm run build-prod` – Builds the Angular project.
 - `npm run build-docker` – Builds the app with a base href for Docker deployment.
-- `npm run test` – Runs both unit and end-to-end tests.
+- `npm run test` – Runs both unit and snapshot tests.
 - `npm run test:unit` – Runs unit tests.
-- `npm run test:snapshots` – Runs Playwright end-to-end tests.
+- `npm run test:snapshots` – Runs Playwright snapshot tests.
 - `npm run test:snapshots:update-snapshots` – Updates Playwright snapshots.
 - `npm run lint:check` – Checks for linting issues.
 - `npm run lint:fix` – Automatically fixes linting issues.
