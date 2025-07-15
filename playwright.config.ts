@@ -14,7 +14,6 @@ export default defineConfig({
         headless: process.env.CI ? true : HEADLESS, // always headless in CI
         launchOptions: {
           args: [
-            "--disable-remote-fonts",
             "--disable-lcd-text",
             "--font-rendering-hinting=none",
             "--disable-gpu", // Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.

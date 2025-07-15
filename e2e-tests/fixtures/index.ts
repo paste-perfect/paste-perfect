@@ -26,10 +26,14 @@ async function ensureFontsLoaded(page: BasePage): Promise<void> {
 
   // Verify font is loaded
   const fontLoaded = await page.evaluate(() => {
-    console.log("Fonts: ", document.fonts);
-    console.log("Stylesheets: ", document.styleSheets)
     return document.fonts.check("16px Roboto");
   });
+
+  const props = page.evaluate(() => ({
+    fonts: document.fonts,
+    stylesheets: document.styleSheets,
+  }));
+  console.log('Props: ', props);
 
   if (!fontLoaded) {
     console.warn("Roboto font failed to load, falling back to system fonts");
@@ -50,6 +54,7 @@ export const test = baseTest.extend<{
         maxDiffPixelRatio: 0.01,
       }
 
+      await page.waitForTimeout(99999);
       await expect(page).toHaveScreenshot(name, options);
     };
 
