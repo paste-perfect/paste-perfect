@@ -1,4 +1,4 @@
-import { test } from "./pages/code-highlighter.page";
+import { test } from "../pages/code-highlighter.page";
 import { Theme } from "@types";
 import { DarkTheme } from "@constants";
 

@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { test } from "./pages/code-highlighter.page";
+import { test } from "../pages/code-highlighter.page";
 import { IndentationMode, LightTheme } from "@constants";
 
 const invalidCode = `function (a: test) {`; // invalid JS syntax

@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { test } from "./pages/code-highlighter.page";
+import { test } from "../pages/code-highlighter.page";
 
 const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`;
 

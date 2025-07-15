@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import { test } from "./pages/code-highlighter.page";
+import { test } from "../pages/code-highlighter.page";
 import { HighlightingSettings, Theme } from "@types";
 import { DarkTheme, IndentationMode, LightTheme } from "@constants";
 
@@ -54,7 +54,7 @@ const modes: Mode[] = [
   },
 ];
 
-const FIXTURES_DIR = "fixtures";
+const FIXTURES_DIR = "../fixtures";
 
 for (const mode of modes) {
   for (const { language, rawFilename, fixture } of testCases) {
