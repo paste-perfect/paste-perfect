@@ -4,11 +4,20 @@ import { createAssertions } from "../utils/code-highlighter-assertions";
 import { createUtils } from "../utils/code-highlighter-utils";
 import { CodeHighlighterPage } from "../types/types";
 import { Page as BasePage } from "playwright-core";
+import path from "path";
+import fs from "fs";
 
 async function loadTestStyles(page: BasePage): Promise<void> {
+  console.log("Current working directory:", process.cwd());
+  console.log("Stylesheet path:", STYLESHEET_PATH);
+
+  const absoluteStylesheetPath = path.resolve(process.cwd(), STYLESHEET_PATH);
+  console.log("Absolute stylesheet path:", absoluteStylesheetPath);
+  console.log("File exists:", fs.existsSync(absoluteStylesheetPath));
+
   // Add styles for testing to have a comparable font
   await page.addStyleTag({
-    path: STYLESHEET_PATH,
+    path: absoluteStylesheetPath,
   });
 
   // Wait for fonts to load
