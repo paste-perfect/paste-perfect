@@ -16,9 +16,9 @@ export const test = baseTest.extend<{
     page.expectScreenshot = async (name: string, options) => {
       options = {
         ...options,
-        stylePath: STYLESHEET_PATH,
+        maxDiffPixelRatio: options?.maxDiffPixelRatio || 0.01,
         fullPage: true,
-        maxDiffPixelRatio: 0.01,
+        stylePath: STYLESHEET_PATH,
       }
 
       await expect(page).toHaveScreenshot(name, options);

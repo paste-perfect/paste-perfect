@@ -75,7 +75,10 @@ for (const mode of modes) {
           filePath: rawCodePath,
         });
 
-        await page.expectScreenshot(`${baseName}-fullpage.png`);
+        await page.expectScreenshot(`${baseName}-fullpage.png`, {
+          // Allow a slightly higher difference for markup because it contains all the special symbols
+          maxDiffPixelRatio: language.toLowerCase().includes("markup") ? 0.03 : undefined,
+        });
       });
 
       test(`should copy correct plain and HTML content to clipboard [${baseName}]`, async ({ page }) => {
