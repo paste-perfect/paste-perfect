@@ -16,6 +16,8 @@ test.describe("Code Highlighter Error Handling", () => {
       code: invalidCode,
     });
 
+    await page.waitForTimeout(500); // Otherwise this test sometimes ran into timeout issues
+
     // Wait for async highlight
     expect(await page.utils.getHighlightedCodeText()).toContain(invalidCode);
 
