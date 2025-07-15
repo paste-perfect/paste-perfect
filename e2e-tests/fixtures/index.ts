@@ -18,6 +18,7 @@ export const test = baseTest.extend<{
     page.expectScreenshot = async (name: string, options) => {
       options = {
         ...options,
+        stylePath: './e2e-tests/styles/fonts.css',
         fullPage: true,
         maxDiffPixelRatio: 0.01,
       }

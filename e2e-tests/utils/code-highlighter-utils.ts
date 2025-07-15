@@ -32,7 +32,7 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
       await page.assertions.expectEnableFormatting(enableFormatting);
       await page.assertions.expectIndentationSize(indentationSize);
 
-      await page.actions.enterCode(code);
+      await page.actions.enterCode(code, enableFormatting);
     },
     async configureEditorFromFile({ language, theme, indentationMode, enableFormatting, indentationSize, filePath }) {
       await page.actions.setLanguage(language);
@@ -47,7 +47,7 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
       await page.assertions.expectEnableFormatting(enableFormatting);
       await page.assertions.expectIndentationSize(indentationSize);
 
-      await page.actions.enterCodeFromFile(filePath);
+      await page.actions.enterCodeFromFile(filePath, enableFormatting);
     },
   };
 }

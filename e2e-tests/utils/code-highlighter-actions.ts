@@ -36,14 +36,16 @@ export function createActions(page: Page): CodeHighlighterActions {
     async setIndentationSize(size: number) {
       await page.locator("#indentation-size:visible").fill(size.toString());
     },
-    async enterCode(code: string) {
+    async enterCode(code: string, isFormatting: boolean) {
       await page.locator("#source-code").fill(code);
-      await page.waitForTimeout(200);
+      // Increase timeout when formatting is enabled (as this can take some time)
+      await page.waitForTimeout(isFormatting ? 500 : 100);
     },
-    async enterCodeFromFile(filePath: string) {
+    async enterCodeFromFile(filePath: string, isFormatting: boolean) {
       const code = fs.readFileSync(filePath, "utf-8");
-      await this.enterCode(code);
-      await page.waitForTimeout(200);
+      await this.enterCode(code, isFormatting);
+      // Increase timeout when formatting is enabled (as this can take some time)
+      await page.waitForTimeout(isFormatting ? 500 : 100);
     },
     async clickCopyButton() {
       await page.locator("#copy-clipboard-button").click();

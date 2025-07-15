@@ -20,8 +20,8 @@ export interface CodeHighlighterActions {
   setIndentMode(indentMode: IndentationMode): Promise<void>;
   setEnableFormatting(enableFormatting: boolean): Promise<void>;
   setIndentationSize(size: number): Promise<void>;
-  enterCode(code: string): Promise<void>;
-  enterCodeFromFile(filePath: string): Promise<void>;
+  enterCode(code: string, isFormatting: boolean): Promise<void>;
+  enterCodeFromFile(filePath: string, isFormatting: boolean): Promise<void>;
   clickCopyButton(): Promise<void>;
   openMobileSettings(): Promise<void>;
   closeSettingsDialog(): Promise<void>;
