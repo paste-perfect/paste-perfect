@@ -9,6 +9,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        channel: "chromium",
         baseURL: BASE_URL,
         headless: process.env.CI ? true : HEADLESS, // always headless in CI
         launchOptions: {
@@ -23,6 +24,17 @@ export default defineConfig({
             "--ppapi-subpixel-rendering-setting=0", // The enum value of FontRenderParams::subpixel_rendering to be passed to Ppapi processes.
             "--force-device-scale-factor=1", // Overrides the device scale factor for the browser UI and the contents.
             "--force-color-profile=srgb", // Force all monitors to be treated as though they have the specified color profile.
+            "--disable-system-font-check", // Disable system font check to prevent fallback fonts
+            "--disable-font-subpixel-positioning", // Ensure consistent font positioning
+            "--disable-features=VizDisplayCompositor", // Disable compositor features that might affect rendering
+            "--use-gl=swiftshader", // Use software rendering for consistent results
+            "--disable-background-timer-throttling", // Prevent timing differences
+            "--disable-renderer-backgrounding", // Keep renderer active
+            "--disable-backgrounding-occluded-windows", // Prevent background optimizations
+            "--disable-ipc-flooding-protection", // Disable IPC protection that might affect timing
+            "--font-render-hinting=none", // Disable font hinting
+            "--enable-font-antialiasing", // Ensure antialiasing is consistent
+            "--force-prefers-reduced-motion", // Disable animations that might affect screenshots
           ],
         },
         viewport: {
@@ -30,6 +42,8 @@ export default defineConfig({
           height: 720,
         },
         deviceScaleFactor: 1, // no retina / high-DPI differences
+        locale: "en-US", // Force consistent locale
+        timezoneId: "UTC", // Force consistent timezone
       },
     },
   ],
@@ -42,7 +56,7 @@ export default defineConfig({
     ["html", { outputFolder: "reports/playwright/html-report" }],
   ],
   retries: 0,
-  testDir: "e2e-tests",
+  testDir: "snapshot-tests",
   snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",
   use: {
     trace: "on-first-retry",

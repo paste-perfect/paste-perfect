@@ -1,5 +1,6 @@
 import { getEntries } from "@utils/utils";
 import { SanitizerWrapper } from "@utils/sanitizer";
+import { INPUT_SANITIZE_MAP, SpecialCharacters, UMLAUT_REPLACEMENT_MAP } from "@constants";
 
 jest.mock("@utils/utils", () => ({
   // We need to return an empty array by default in order for languages.ts to properly work
@@ -10,26 +11,17 @@ jest.mock("@utils/utils", () => ({
 describe("SanitizerWrapper", () => {
   describe("sanitizeInput", () => {
     beforeEach(() => {
-      (getEntries as jest.Mock).mockReturnValue([
-        ["&", "and"],
-        ["\\$", "USD"],
-      ]);
+      (getEntries as jest.Mock).mockReturnValue(Object.entries(INPUT_SANITIZE_MAP));
     });
 
     afterEach(() => {
       jest.clearAllMocks();
     });
 
-    it("replaces mapped characters correctly", () => {
-      const input = "Tom & Jerry cost $5";
-      const result = SanitizerWrapper.sanitizeInput(input);
-      expect(result).toBe("Tom and Jerry cost USD5");
-    });
-
     it("removes non-ASCII characters", () => {
       const input = "This is normal — but this dash is non-ASCII.";
       const result = SanitizerWrapper.sanitizeInput(input);
-      expect(result).toBe("This is normal  but this dash is non-ASCII.");
+      expect(result).toBe("This is normal - but this dash is non-ASCII.");
     });
 
     it("removes leading and trailing blank lines", () => {
@@ -41,7 +33,7 @@ describe("SanitizerWrapper", () => {
     it("removes both non-ASCII and blank lines", () => {
       const input = "\n\n—Hello world—\n\n";
       const result = SanitizerWrapper.sanitizeInput(input);
-      expect(result).toBe("Hello world");
+      expect(result).toBe("-Hello world-");
     });
 
     it("handles empty input gracefully", () => {
@@ -55,11 +47,64 @@ describe("SanitizerWrapper", () => {
       const result = SanitizerWrapper.sanitizeInput(input);
       expect(result).toBe("Clean String");
     });
+
+    it("sanitizes all single quotation mark variants to apostrophe", () => {
+      // Array of all single quotation mark variants that should become apostrophe
+      const singleQuotationMarks = [
+        SpecialCharacters.LEFT_SINGLE_QUOTE, // '
+        SpecialCharacters.RIGHT_SINGLE_QUOTE, // '
+        SpecialCharacters.SINGLE_LOW_9_QUOTE, // ‚
+        SpecialCharacters.SINGLE_HIGH_REVERSED_9_QUOTE, // ‛
+        SpecialCharacters.SINGLE_LEFT_ANGLE_QUOTE, // ‹
+        SpecialCharacters.SINGLE_RIGHT_ANGLE_QUOTE, // ›
+        SpecialCharacters.PRIME, // ′
+        SpecialCharacters.REVERSED_PRIME, // ‵
+      ];
+
+      // Test each single quotation mark variant
+      singleQuotationMarks.forEach((char) => {
+        const input = `Hello ${char}world${char} test`;
+        const result = SanitizerWrapper.sanitizeInput(input);
+        expect(result).toBe("Hello 'world' test");
+
+        // Also test the character in isolation
+        const isolatedResult = SanitizerWrapper.sanitizeInput(char);
+        expect(isolatedResult).toBe("'");
+      });
+    });
+
+    it("sanitizes all double quotation mark variants to quotation mark", () => {
+      // Array of all double quotation mark variants that should become quotation mark
+      const doubleQuotationMarks = [
+        SpecialCharacters.LEFT_DOUBLE_QUOTE, // "
+        SpecialCharacters.RIGHT_DOUBLE_QUOTE, // "
+        SpecialCharacters.DOUBLE_LOW_9_QUOTE, // „
+        SpecialCharacters.DOUBLE_HIGH_REVERSED_9_QUOTE, // ‟
+        SpecialCharacters.LEFT_ANGLE_QUOTE, // «
+        SpecialCharacters.RIGHT_ANGLE_QUOTE, // »
+        SpecialCharacters.DOUBLE_PRIME, // ″
+        SpecialCharacters.TRIPLE_PRIME, // ‴
+        SpecialCharacters.REVERSED_DOUBLE_PRIME, // ‶
+        SpecialCharacters.REVERSED_TRIPLE_PRIME, // ‷
+      ];
+
+      // Test each double quotation mark variant
+      doubleQuotationMarks.forEach((char) => {
+        const input = `Hello ${char}world${char} test`;
+        const result = SanitizerWrapper.sanitizeInput(input);
+        expect(result).toBe('Hello "world" test');
+
+        // Also test the character in isolation
+        const isolatedResult = SanitizerWrapper.sanitizeInput(char);
+        expect(isolatedResult).toBe('"');
+      });
+    });
   });
 
   describe("sanitizeOutput", () => {
     beforeEach(() => {
       (getEntries as jest.Mock).mockReturnValue([
+        // Mock the output sanitize map as this is currently empty
         ["\n", "<br>"],
         ["\t", "&emsp;"],
       ]);
@@ -96,16 +141,7 @@ describe("SanitizerWrapper", () => {
 
   describe("escapeUmlauts", () => {
     beforeEach(() => {
-      (getEntries as jest.Mock).mockReturnValue([
-        ["ä", "ae"],
-        ["ö", "oe"],
-        ["ü", "ue"],
-        ["Ä", "AE"],
-        ["Ö", "OE"],
-        ["Ü", "UE"],
-        ["ẞ", "SS"],
-        ["ß", "ss"],
-      ]);
+      (getEntries as jest.Mock).mockReturnValue(Object.entries(UMLAUT_REPLACEMENT_MAP));
     });
 
     afterEach(() => {
