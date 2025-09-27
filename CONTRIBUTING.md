@@ -44,8 +44,6 @@ To set up Paste Perfect locally:
 
 Here are the relevant `npm` scripts available for development and contribution:
 
-Here's the updated documentation that matches your actual scripts:
-
 - `npm run start` – Runs the app locally with `ng serve`.
 - `npm run serve` – Alias for `npm run start`.
 - `npm run serve:test` – Runs the app locally with test configuration and no HMR.
