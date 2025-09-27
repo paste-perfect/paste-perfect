@@ -32,7 +32,6 @@
     "@angular/platform-browser": "^20.3.2",
     "@angular/platform-browser-dynamic": "^20.3.2",
     "@angular/router": "^20.3.2",
-    "@prettier/plugin-php": "^0.24.0",
     "@primeng/themes": "^20.0.0",
     "@types/prismjs": "^1.26.5",
     "angular-prism": "^0.1.20",
