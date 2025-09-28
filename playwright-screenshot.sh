@@ -40,9 +40,6 @@ if [[ "$*" == *"--ui"* ]]; then
     wait_and_print_url &
 fi
 
-# Create directories for reports if they don't exist
-mkdir -p reports/playwright
-
 # Run the Playwright tests in a Docker container
 # The main script will block here, showing container logs.
 # The background function will print the URL when ready.
