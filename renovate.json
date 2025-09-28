@@ -16,7 +16,7 @@
     ":enablePreCommit",
     ":enableVulnerabilityAlerts"
   ],
-  "baseBranches": ["dev"],
+  "baseBranchPatterns": ["dev"],
   "customManagers": [
     {
       "customType": "regex",
