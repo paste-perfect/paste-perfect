@@ -24,7 +24,6 @@ export class PrettierPluginLoaderService {
    * Mapping of plugin names to their import paths
    */
   private readonly pluginRegistry: Partial<Record<PrettierPluginType, () => Promise<PrettierPlugin>>> = {
-    "prettier-plugin-php": () => import("@prettier/plugin-php").then((m) => m.default),
     "prettier-plugin-java": () => import("prettier-plugin-java").then((m) => m.default),
     "prettier-plugin-gherkin": () => import("prettier-plugin-gherkin").then((m) => m.default),
     "prettier-plugin-nginx": () => import("prettier-plugin-nginx"),

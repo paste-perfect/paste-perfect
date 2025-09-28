@@ -45,11 +45,19 @@ To set up Paste Perfect locally:
 Here are the relevant `npm` scripts available for development and contribution:
 
 - `npm run start` – Runs the app locally with `ng serve`.
-- `npm run build-prod` – Builds the Angular project.
-- `npm run build-docker` – Builds the app with a base href for Docker deployment.
+- `npm run serve` – Alias for `npm run start`.
+- `npm run serve:test` – Runs the app locally with test configuration and no HMR.
+- `npm run serve:prod` – Runs the app locally with production configuration and no HMR.
+- `npm run build-prod` – Builds the Angular project for production with `/paste-perfect/` base href.
+- `npm run build-preview` – Builds the Angular project for preview with `/paste-perfect-test/` base href.
+- `npm run build-docker` – Builds the app with root base href for Docker deployment.
 - `npm run test` – Runs both unit and snapshot tests.
-- `npm run test:unit` – Runs unit tests.
+- `npm run test:unit:ci` – Runs unit tests in CI mode.
+- `npm run test:unit` – Runs unit tests with verbose output.
+- `npm run test:unit:watch` – Runs unit tests in watch mode with verbose output.
+- `npm run test:coverage` – Runs unit tests with coverage reporting.
 - `npm run test:snapshots` – Runs Playwright snapshot tests.
+- `npm run test:snapshots:watch` – Runs Playwright snapshot tests with UI mode.
 - `npm run test:snapshots:update-snapshots` – Updates Playwright snapshots.
 - `npm run lint:check` – Checks for linting issues.
 - `npm run lint:fix` – Automatically fixes linting issues.

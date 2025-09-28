@@ -17,10 +17,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 'lts/*'  # Use latest LTS version
           cache: 'npm'
@@ -34,6 +34,9 @@ jobs:
       - name: Check code formatting
         run: npm run format:check
 
+      - name: Create reports directory
+        run: mkdir -p reports/jest
+
       - name: Run unit tests
         run: npm run test:unit:ci
 
@@ -45,7 +48,7 @@ jobs:
         run: echo "version=$(npm list @playwright/test --depth=0 --json | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4 # v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -59,7 +62,7 @@ jobs:
         run: npm run test:snapshots
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4  # upload test results
-        if: always()        # run this step even if previous step failed
+        if: ${{ !cancelled() }} # run this step even if previous step failed
         with:
           name: test-reports
           path: reports/
@@ -70,17 +73,17 @@ jobs:
     needs: test-and-build
 
     steps:
-    - name: Generate JEST tet
-      uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
-      with:
-        artifact: test-reports
-        name: JEST Tests
-        path: 'jest/report.xml'
-        reporter: jest-junit
-    - name: Generate Snapshot test report
-      uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
-      with:
-        artifact: test-reports
-        name: Snapshot Tests
-        path: 'playwright/report.xml'
-        reporter: jest-junit
+      - name: Generate JEST test report
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
+        with:
+          artifact: test-reports
+          name: JEST Tests
+          path: 'jest/report.xml'
+          reporter: jest-junit
+      - name: Generate Snapshot test report
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
+        with:
+          artifact: test-reports
+          name: Snapshot Tests
+          path: 'playwright/report.xml'
+          reporter: jest-junit
