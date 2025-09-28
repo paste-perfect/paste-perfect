@@ -61,18 +61,8 @@ jobs:
       - name: Run snapshot tests
         run: npm run test:snapshots
 
-      - name: List all files after test
-        run: |
-          echo "=== Root directory ==="
-          ls -la
-          echo "=== Reports directory ==="
-          find . -name "*.xml" -type f 2>/dev/null || echo "No XML files found anywhere"
-          echo "=== Check if reports dir exists ==="
-          ls -la reports/ 2>/dev/null || echo "Reports directory doesn't exist"
-        if: always()
-
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4  # upload test results
-        if: always()        # run this step even if previous step failed
+        if: ${{ !cancelled() }} # run this step even if previous step failed
         with:
           name: test-reports
           path: reports/
@@ -83,9 +73,6 @@ jobs:
     needs: test-and-build
 
     steps:
-      - name: List test reports
-        run: find reports/ -type f -name "*.xml" || echo "No XML files found"
-        if: always()
       - name: Generate JEST test report
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
         with:
