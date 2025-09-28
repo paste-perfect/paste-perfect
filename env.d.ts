@@ -19,7 +19,6 @@ declare namespace NodeJS {
      * Used to adjust behavior such as skipping server reuse or enabling headless mode.
      */
     CI?: boolean;
-
     // Add more custom environment variables below as needed.
   }
 }
