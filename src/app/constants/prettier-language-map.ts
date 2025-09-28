@@ -44,9 +44,6 @@ export const PRETTIER_LANGUAGE_MAP: Record<string, PrettierLanguageConfiguration
   // nginx
   nginx: { parser: "nginx", plugins: ["prettier-plugin-nginx"] },
 
-  // php
-  php: { parser: "php", plugins: ["prettier-plugin-php"] },
-
   // sql
   sql: { parser: "sql", plugins: ["prettier-plugin-sql"] },
 
