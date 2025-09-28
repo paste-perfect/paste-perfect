@@ -1,7 +1,30 @@
 import { defineConfig, devices } from "@playwright/test";
+import { PlaywrightTestConfig } from "playwright/types/test";
 
 export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:4200/paste-perfect/";
 const CI = Boolean(process.env.CI);
+
+const reporters: PlaywrightTestConfig["reporter"] = [
+  [CI ? "github" : "list"],
+  [
+    "html",
+    {
+      open: CI ? "never" : "on-failure",
+      host: "0.0.0.0",
+      port: 9323,
+      outputFolder: "reports/playwright/html-report",
+    },
+  ],
+];
+
+if (CI) {
+  reporters.push([
+    "junit",
+    {
+      outputFolder: "reports/playwright/report.xml",
+    },
+  ]);
+}
 
 export default defineConfig({
   projects: [
@@ -28,24 +51,7 @@ export default defineConfig({
   },
   forbidOnly: CI,
   fullyParallel: true,
-  reporter: [
-    [CI ? "github" : "list"],
-    [
-      "junit",
-      {
-        outputFolder: "reports/playwright/report.xml",
-      },
-    ],
-    [
-      "html",
-      {
-        open: CI ? "never" : "on-failure",
-        host: "0.0.0.0",
-        port: 9323,
-        outputFolder: "reports/playwright/html-report",
-      },
-    ],
-  ],
+  reporter: reporters,
   retries: 0,
   testDir: "tests/snapshot-tests",
   snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",

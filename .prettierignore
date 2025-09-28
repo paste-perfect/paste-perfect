@@ -2,4 +2,4 @@ node_modules
 dist
 package-lock.json
 coverage
-snapshot-tests/fixtures
+tests/snapshot-tests/test-data
