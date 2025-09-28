@@ -1,5 +1,4 @@
 import { Component, inject } from "@angular/core";
-import { DropdownModule } from "primeng/dropdown";
 import { FormsModule } from "@angular/forms";
 import { InputNumber } from "primeng/inputnumber";
 import { Select } from "primeng/select";
@@ -7,7 +6,7 @@ import { Popover } from "primeng/popover";
 import { ThemeService } from "@services/theme.service";
 import { LanguageService } from "@services/language.service";
 import { SettingsService } from "@services/settings.service";
-import { SelectableIndentationMode, LanguageDefinition } from "@types";
+import { LanguageDefinition, SelectableIndentationMode } from "@types";
 import { SelectItemGroup, TooltipOptions } from "primeng/api";
 import { ToggleSwitch } from "primeng/toggleswitch";
 import { Tooltip } from "primeng/tooltip";
@@ -15,7 +14,7 @@ import { DEFAULT_TOOLTIP_OPTIONS, IndentationMode } from "@constants";
 
 @Component({
   selector: "app-settings",
-  imports: [DropdownModule, FormsModule, InputNumber, Select, Popover, ToggleSwitch, Tooltip],
+  imports: [FormsModule, InputNumber, Select, Popover, ToggleSwitch, Tooltip],
   templateUrl: "./settings.component.html",
   styleUrl: "./settings.component.scss",
 })
