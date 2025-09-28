@@ -31,12 +31,8 @@
     width: fit-content;
   }
 
-  .enable-formatting-toggle {
-    width: fit-content;
-
-    &:has(input:disabled) {
-      cursor: not-allowed;
-    }
+  .enable-formatting-toggle:has(input:disabled) {
+    cursor: not-allowed;
   }
 }
 
