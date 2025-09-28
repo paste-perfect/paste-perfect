@@ -21,7 +21,7 @@ if (CI) {
   reporters.push([
     "junit",
     {
-      outputFolder: "reports/playwright/report.xml",
+      outputFile: "reports/playwright/report.xml",
     },
   ]);
 }
