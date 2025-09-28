@@ -70,17 +70,20 @@ jobs:
     needs: test-and-build
 
     steps:
-    - name: Generate JEST test report
-      uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
-      with:
-        artifact: test-reports
-        name: JEST Tests
-        path: 'reports/jest/report.xml'
-        reporter: jest-junit
-    - name: Generate Snapshot test report
-      uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
-      with:
-        artifact: test-reports
-        name: Snapshot Tests
-        path: 'reports/playwright/report.xml'
-        reporter: jest-junit
+      - name: List test reports
+        run: find reports/ -type f -name "*.xml" || echo "No XML files found"
+        if: always()
+      - name: Generate JEST test report
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
+        with:
+          artifact: test-reports
+          name: JEST Tests
+          path: 'reports/jest/report.xml'
+          reporter: jest-junit
+      - name: Generate Snapshot test report
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
+        with:
+          artifact: test-reports
+          name: Snapshot Tests
+          path: 'reports/playwright/report.xml'
+          reporter: jest-junit
