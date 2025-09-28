@@ -93,12 +93,12 @@ describe("LinesCollector", () => {
     const collector = new LinesCollector(IndentationMode.Spaces, 4);
 
     const parent = document.createElement("span");
-    parent.style.color = "red";
+    parent.style.color = "rgb(255, 0, 0)";
 
     const childSpan = document.createElement("span");
     collector["applyParentSpanStyles"](parent, childSpan);
 
-    expect(childSpan.style.color).toBe("red");
+    expect(childSpan.style.color).toBe("rgb(255, 0, 0)");
   });
 
   it("does not apply styles if parent is not a span", () => {

@@ -16,7 +16,7 @@ describe("InlineStyleApplier", () => {
   describe("captureRootStyles", () => {
     it("should store only relevant and non-default root styles", () => {
       const root = document.createElement("div");
-      root.style.color = "blue";
+      root.style.color = "rgb(0, 0, 255)";
       root.style.fontStyle = "italic";
       root.style.fontWeight = "400"; // This matches default and should be skipped
       container.appendChild(root);
@@ -25,7 +25,7 @@ describe("InlineStyleApplier", () => {
       InlineStyleApplier.captureRootStyles(root);
 
       expect(InlineStyleApplier["rootStyleProperties"]).toMatchObject({
-        color: "blue",
+        color: "rgb(0, 0, 255)",
         "font-style": "italic",
       });
       expect(InlineStyleApplier["rootStyleProperties"]).not.toHaveProperty("font-weight");
@@ -36,14 +36,14 @@ describe("InlineStyleApplier", () => {
     it("should copy relevant computed styles from original to cloned element", () => {
       const original = document.createElement("span");
       original.style.fontFamily = "Courier New";
-      original.style.color = "green";
+      original.style.color = "rgb(0, 128, 0)";
       container.appendChild(original);
 
       const cloned = document.createElement("span");
       InlineStyleApplier.applyElementStyles(original, cloned);
 
       expect(cloned.style.getPropertyValue("font-family")).toBe("Courier New");
-      expect(cloned.style.getPropertyValue("color")).toBe("green");
+      expect(cloned.style.getPropertyValue("color")).toBe("rgb(0, 128, 0)");
     });
 
     it("should not apply default values again", () => {

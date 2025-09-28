@@ -13,7 +13,8 @@ const config: Config = {
   clearMocks: true,
 
   // Collect code coverage
-  collectCoverage: true,
+  collectCoverage: false,
+
   // The directory where Jest should output its coverage files
   coverageDirectory: "reports/jest/coverage",
   coverageProvider: "v8",
@@ -130,6 +131,7 @@ const config: Config = {
 
   // Use this configuration option to add custom reporters to Jest
   reporters: [
+    "default",
     ["jest-junit", { outputDirectory: "reports/jest", outputName: "report.xml" }],
     ["github-actions", { silent: false }],
     "summary",
