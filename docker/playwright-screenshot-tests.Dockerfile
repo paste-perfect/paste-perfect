@@ -1,5 +1,5 @@
 # Use the official Playwright image
-FROM mcr.microsoft.com/playwright:v1.51.1-jammy
+FROM mcr.microsoft.com/playwright:v1.55.1-jammy@sha256:a012a91c32e36b3300514684c5bdb60c07f01464abd03380320179e5273427ab
 
 # Set the working directory
 WORKDIR /app
