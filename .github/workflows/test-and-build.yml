@@ -92,12 +92,12 @@ jobs:
         with:
           artifact: test-reports
           name: JEST Tests
-          path: 'reports/jest/report.xml'
+          path: 'jest/report.xml'
           reporter: jest-junit
       - name: Generate Snapshot test report
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
         with:
           artifact: test-reports
           name: Snapshot Tests
-          path: 'reports/playwright/report.xml'
+          path: 'playwright/report.xml'
           reporter: jest-junit
