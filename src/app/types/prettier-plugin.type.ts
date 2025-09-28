@@ -13,7 +13,6 @@ export type PrettierPluginType =
   | "prettier-plugin-gherkin"
   | "prettier-plugin-java"
   | "prettier-plugin-nginx"
-  | "prettier-plugin-php"
   | "prettier-plugin-sql"
   | "prettier-plugin-toml"
   | "typescript"
