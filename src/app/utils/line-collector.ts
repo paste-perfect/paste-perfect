@@ -161,7 +161,6 @@ export class LinesCollector {
   private handleTextNode(originalNode: Node, clonedNode: Node): void {
     const textContent = clonedNode.textContent || "";
     const segments = textContent.split(RegexPatterns.NEWLINE_REGEX);
-    console.log("Handle Text Node: ", textContent, segments);
 
     segments.forEach((segment, index) => {
       if (index > 0) {
