@@ -97,7 +97,8 @@
     ></p-select>
   </div>
 
-  <div class="settings-item full-width">
+  <!-- Formatting -->
+  <div class="settings-item">
     <label for="enable-formatting" class="label-with-popover">
       <span>Enable Formatting</span>
       <i
@@ -116,6 +117,21 @@
       [tooltipOptions]="tooltipOptions"
       [pTooltip]="languageService.isPrettierSupportedByLanguage() ? undefined : 'Formatting is not supported for current language'"
     />
+  </div>
+
+  <!-- Show Line Numbers -->
+  <div class="settings-item">
+    <label for="show-line-numbers" class="label-with-popover">
+      <span>Show Line Numbers</span>
+      <i
+        class="pi pi-question-circle popover-trigger-icon"
+        (click)="lineNumbersPopover.toggle($event); $event.preventDefault()"
+        (keyup.enter)="lineNumbersPopover.toggle($event); $event.preventDefault()"
+        (keyup.space)="lineNumbersPopover.toggle($event); $event.preventDefault()"
+        tabindex="0"
+      ></i>
+    </label>
+    <p-toggleswitch inputId="show-line-numbers" [(ngModel)]="showLineNumbers" class="show-line-numbers-toggle" />
   </div>
 </div>
 
@@ -153,7 +169,20 @@
         When enabled, the code will be automatically formatted according to best practices for the selected language. Disable this option if
         you want to preserve the exact formatting of your code.
       </p>
-      <p>Please note that formatting is only supported for languages marked with an asterisks (*).</p>
+      <p>Please note that formatting is <strong>only supported for languages marked with an asterisks (*)</strong>.</p>
+    </div>
+  </div>
+</p-popover>
+
+<!-- Popover for Line Numbers -->
+<p-popover #lineNumbersPopover>
+  <div class="popover-content">
+    <span class="popover-title">Line Numbers</span>
+    <div class="popover-text">
+      <p>
+        When enabled, line numbers will be displayed alongside your code. This can be helpful for referencing specific lines and debugging
+        purposes.
+      </p>
     </div>
   </div>
 </p-popover>

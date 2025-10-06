@@ -132,4 +132,19 @@ export class SettingsComponent {
   set formattingEnabled(enabled: boolean) {
     this.settingsService.updateSettings({ enableFormatting: enabled });
   }
+
+  /**
+   * Gets the current show line numbers setting.
+   */
+  get showLineNumbers(): boolean {
+    return this.settingsService.editorSettings.showLineNumbers;
+  }
+
+  /**
+   * Updates the show line numbers setting.
+   * @param show - Whether line numbers should be displayed.
+   */
+  set showLineNumbers(show: boolean) {
+    this.settingsService.updateSettings({ showLineNumbers: show });
+  }
 }

@@ -13,6 +13,7 @@ test.describe("Code Highlighter Error Handling", () => {
       indentationMode: IndentationMode.Spaces,
       indentationSize: 4,
       enableFormatting: true,
+      showLineNumbers: false, // TODO: Replace me
       code: invalidCode,
     });
 

@@ -43,6 +43,7 @@ const modes: Mode[] = [
     indentationSize: 2,
     fixtureDir: "dark-tabs",
     enableFormatting: false,
+    showLineNumbers: false, // TODO: Replace me
   },
   {
     name: "Light Mode with Spaces",
@@ -51,6 +52,7 @@ const modes: Mode[] = [
     indentationSize: 4,
     fixtureDir: "light-spaces",
     enableFormatting: false,
+    showLineNumbers: false, // TODO: Replace me
   },
 ];
 
@@ -72,6 +74,7 @@ for (const mode of modes) {
           indentationMode: mode.indentationMode,
           indentationSize: mode.indentationSize,
           enableFormatting: mode.enableFormatting,
+          showLineNumbers: false, // TODO: Replace me
           filePath: rawCodePath,
         });
 
@@ -90,6 +93,7 @@ for (const mode of modes) {
           indentationMode: mode.indentationMode,
           indentationSize: mode.indentationSize,
           enableFormatting: mode.enableFormatting,
+          showLineNumbers: false, // TODO: Replace me
           filePath: rawCodePath,
         });
 

@@ -4,6 +4,7 @@ import { IndentationMode } from "@constants";
 import { IndentationFormatter } from "@utils/indentation-formatter";
 import { RegexPatterns } from "../regex/regex-patterns";
 import { MsOfficeUtils } from "@utils/ms-office-utils";
+import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
 
 /**
  * A utility class that:
@@ -18,18 +19,25 @@ export class LinesCollector {
   private readonly lines: Node[][]; // Stores arrays of Node objects, each representing a single line
   private readonly tabSize: number; // Number of spaces to use in place of a single tab
   private readonly indentationMode: IndentationMode; // Whether we want to use spaces or tabs for indentation
-  private isStartOfLine: boolean; // Tracks if we are at the start of a line
+  private readonly hasLineNumbers: boolean;
+  private isLineStart: boolean; // Tracks if we are at the absolute start of a new line.
+  private isContentStart: boolean; // Tracks if we are at the start of the content, after any line number.
   private maxIndentationMarkers = 0; // Tracks the maximum number of consecutive markers in any line
+  private readonly lineNumberWidth: number = 0;
 
   /**
    * @param indentationMode Desired indentation mode (Tabs vs Spaces).
    * @param tabSize Number of spaces used when replacing tab characters or converting marker runs.
+   * @param hasLineNumbers
    */
-  constructor(indentationMode: IndentationMode, tabSize: number) {
+  constructor(indentationMode: IndentationMode, tabSize: number, hasLineNumbers: boolean) {
     this.lines = [[]];
-    this.isStartOfLine = true;
+    this.isLineStart = true;
+    this.isContentStart = true;
+    this.hasLineNumbers = hasLineNumbers;
     this.tabSize = tabSize;
     this.indentationMode = indentationMode;
+    this.lineNumberWidth = MsOfficeUtils.pxToOfficePt(LineNumberingService.getLineNumberWidth());
   }
 
   /**
@@ -81,13 +89,18 @@ export class LinesCollector {
         continue;
       }
 
+      if (this.hasLineNumbers && NodeUtils.isHtmlElement(lineNodes[0])) {
+        // TODO: somehow determine the width of this element and then convert it into "pt" and pass it into the getTabStops
+      }
+
       // Append each collected node
       lineNodes.forEach((node) => p.appendChild(node));
 
       // When using tabs, set up tab stops according to the maximum marker count
       if (this.indentationMode === IndentationMode.Tabs) {
         const requiredStops = Math.ceil(this.maxIndentationMarkers / this.tabSize);
-        const newStyle = NodeUtils.getTabStops(requiredStops);
+        // TODO: Determine an offset based on the line numbers in pt and pass it into the getTabStops to properly accompy for starting line numbers (if any)
+        const newStyle = NodeUtils.getTabStops(requiredStops, this.lineNumberWidth);
         NodeUtils.appendInlineStyle(p, newStyle);
       }
 
@@ -139,31 +152,53 @@ export class LinesCollector {
   }
 
   /**
-   * Splits text content by newline, starting a new line each time a newline is encountered.
-   * Leading indentation markers are handled at the beginning of each line.
+   * Splits text by newlines and processes each segment. It uses a two-stage state (`isLineStart`, `isContentStart`)
+   * to correctly handle optional line numbers first, followed by indentation, even if they occur in separate text nodes.
    *
-   * @param originalNode
+   * @param originalNode The original node, used to access parent styles.
    * @param clonedNode The text node in the cloned DOM.
    */
   private handleTextNode(originalNode: Node, clonedNode: Node): void {
     const textContent = clonedNode.textContent || "";
     const segments = textContent.split(RegexPatterns.NEWLINE_REGEX);
+    console.log("Handle Text Node: ", textContent, segments);
 
     segments.forEach((segment, index) => {
       if (index > 0) {
-        // Encountered a newline => finalize the previous line, start a new line
         this.startNewLine();
       }
 
-      if (segment.length > 0) {
-        let chunk = segment;
-        if (this.isStartOfLine) {
-          // Mask out indentation markers only at the very start of a line
-          chunk = IndentationFormatter.maskIndentation(chunk, this.tabSize);
-        }
+      let textToProcess = segment;
 
+      // Phase 1: Handle line numbers only at the absolute start of the line.
+      if (this.isLineStart && this.hasLineNumbers) {
+        const match = textToProcess.match(RegexPatterns.LEADING_LINE_NUMBER_REGEX);
+        if (match) {
+          const lineNumberText = match[0];
+          const lineNumberSpan = NodeUtils.createSpanWithTextContent(lineNumberText);
+          // Preserve leading spaces in the line number (e.g., "  1. ") as requested.
+          MsOfficeUtils.preserveWhiteSpace(lineNumberSpan);
+          this.getCurrentLine().push(lineNumberSpan);
+
+          // The remainder of the string is what needs indentation processing.
+          textToProcess = textToProcess.slice(lineNumberText.length);
+        }
+      }
+
+      // If we processed any part of the segment, we are no longer at the absolute line start.
+      if (segment.length > 0) {
+        this.isLineStart = false;
+      }
+
+      // Phase 2: Handle indentation at the start of the line's main content.
+      if (this.isContentStart && textToProcess.length > 0) {
+        const chunk = IndentationFormatter.maskIndentation(textToProcess, this.tabSize);
         this.createSpanFromChunk(chunk, originalNode.parentElement);
-        this.isStartOfLine = false;
+        // Once we've processed any content, we're no longer at the content start.
+        this.isContentStart = false;
+      } else if (textToProcess.length > 0) {
+        // Not at the content start, so process as a normal middle-of-the-line chunk.
+        this.createSpanFromChunk(textToProcess, originalNode.parentElement);
       }
     });
   }
@@ -242,12 +277,13 @@ export class LinesCollector {
   }
 
   /**
-   * Signals the start of a new line by pushing a fresh array onto `allLines`.
-   * Also resets `isStartOfLine` to `true`.
+   * Signals the start of a new line by pushing a fresh array onto `allLines`
+   * and resetting the line state flags.
    */
   private startNewLine(): void {
     this.lines.push([]);
-    this.isStartOfLine = true;
+    this.isLineStart = true;
+    this.isContentStart = true;
   }
 
   /**

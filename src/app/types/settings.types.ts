@@ -25,4 +25,6 @@ export interface HighlightingSettings {
   readonly indentationMode: IndentationMode;
   /** Whether code formatting is enabled */
   readonly enableFormatting: boolean;
+  /** Whether line numbers are displayed */
+  readonly showLineNumbers: boolean;
 }

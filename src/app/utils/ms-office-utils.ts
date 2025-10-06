@@ -7,6 +7,27 @@ import { SpecialCharacters } from "@constants";
  * These styles ensure spacing, margins, and tabbing behave as expected in Office environments.
  */
 export class MsOfficeUtils {
+  private static CM_IN_PT = 28.35;
+
+  /**
+   * Converts pixels (px) to points (pt).
+   * Assumes a standard 96 DPI screen, where 1 inch = 96px and 1 inch = 72pt.
+   * @param px The value in pixels.
+   * @returns The equivalent value in points.
+   */
+  public static pxToOfficePt(px: number): number {
+    return px * (96 / 72);
+  }
+
+  /**
+   * Converts centimeters (cm) to points (pt).
+   * @param cm The value in centimeters.
+   * @returns The equivalent value in points.
+   */
+  public static cmToOfficePt(cm: number): number {
+    return cm * MsOfficeUtils.CM_IN_PT;
+  }
+
   /**
    * Creates a `<span>` element containing a non-breaking space, with styles
    * that ensure it is preserved when rendered in Microsoft Office applications.

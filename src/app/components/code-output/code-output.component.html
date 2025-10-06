@@ -11,6 +11,7 @@
     (click)="copyToClipboard()"
   ></p-button>
   <!-- Preformatted text where the highlighted code gets inserted -->
+  <!-- TODO: Use withoutLine Numers -->
   <pre id="highlighted-code-wrapper"><code
     [innerHTML]="codeService.highlightedCode"
     class="highlighted-code language-{{ languageService.selectedLanguage.value }}">
