@@ -89,8 +89,8 @@ for (const mode of modes) {
           filePath: rawCodePath,
         });
 
-        await page.actions.mockClipboardWrite();
-        await page.actions.clickCopyButton();
+        await page.actions.setupClipboardMocking();
+        await page.actions.clickCopyToClipboardButton();
 
         const clipboardContent = await page.utils.getClipboardContent();
         const expectedText = (await page.utils.getHighlightedCodeText()).trim();

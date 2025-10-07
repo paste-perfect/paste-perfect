@@ -18,7 +18,7 @@ test.describe("Mobile Settings Dialog", () => {
     await page.expectScreenshot("mobile-view-base.png");
 
     // Open the mobile settings dialog
-    await page.actions.openMobileSettings();
+    await page.actions.openMobileSettingsPanel();
     await page.assertions.expectSettingsDialogVisible();
     await page.assertions.expectSettingsDialogContains("Highlighting Settings");
     await page.expectScreenshot("mobile-view-dialog.png");
