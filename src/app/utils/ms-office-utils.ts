@@ -7,7 +7,7 @@ import { SpecialCharacters } from "@constants";
  * These styles ensure spacing, margins, and tabbing behave as expected in Office environments.
  */
 export class MsOfficeUtils {
-  private static CM_IN_PT = 28.35;
+  private static CM_IN_PT = 28.3465;
 
   /**
    * Converts pixels (px) to points (pt).
@@ -65,5 +65,25 @@ export class MsOfficeUtils {
    */
   public static applyTabSpacing(element: HTMLElement, tabCount: number): void {
     NodeUtils.appendInlineStyle(element, `mso-tab-count:${tabCount}`);
+  }
+
+  /**
+   * Generates a CSS string with tab stop positions for tab-indented content.
+   *
+   * @param count Number of tab stops to create.
+   * @param offsetInPt Offset in points that gets added to each tab stop position. Defaults to 0.
+   * @returns A CSS string defining left tab stops.
+   */
+  public static getTabStops(count: number, offsetInPt = 0): string {
+    if (count === 0) {
+      return "";
+    }
+
+    const stops = Array.from({ length: count }, (_, i) => {
+      const position = (MsOfficeUtils.cmToOfficePt(i + 1) + offsetInPt).toFixed(4);
+      return `left ${position}pt`;
+    }).join(" ");
+
+    return `tab-stops: ${stops};`;
   }
 }

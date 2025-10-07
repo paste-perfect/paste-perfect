@@ -2,6 +2,7 @@ import { RegexPatterns } from "../../regex/regex-patterns";
 import { SettingsService } from "@services/settings.service";
 import { inject, Injectable } from "@angular/core";
 import { SpecialCharacters } from "@constants";
+import { LINE_NUMBER_CLASSES } from "../../constants/line-numbering";
 
 /**
  * A service responsible for adding line numbers to code blocks.
@@ -10,14 +11,8 @@ import { SpecialCharacters } from "@constants";
   providedIn: "root",
 })
 export class LineNumberingService {
-  private static readonly LINE_NUMBER_CLASSES: string = "token comment line-number";
-
   /** Service for accessing user settings */
   private readonly settingsService: SettingsService = inject(SettingsService);
-
-  public static getLineNumberWidth(): number {
-    return document.getElementsByClassName(LineNumberingService.LINE_NUMBER_CLASSES).item(0)?.getBoundingClientRect().width ?? 0;
-  }
 
   /**
    * Prepends line numbers to each line of the given code string if the
@@ -54,6 +49,6 @@ export class LineNumberingService {
   private formatLineWithNumber(line: string, lineNumber: number, totalLineCount: number): string {
     const paddedLineNumber = String(lineNumber).padStart(totalLineCount, RegexPatterns.LINE_NUMBER_PADDING_CHAR);
     const formattedLineNumber = RegexPatterns.LINE_NUMBER_TEMPLATE.replace(RegexPatterns.LINE_NUMBER_PLACEHOLDER, paddedLineNumber);
-    return `<span class="${LineNumberingService.LINE_NUMBER_CLASSES}">${formattedLineNumber}</span>${line}`;
+    return `<span class="${LINE_NUMBER_CLASSES}">${formattedLineNumber}</span>${line}`;
   }
 }

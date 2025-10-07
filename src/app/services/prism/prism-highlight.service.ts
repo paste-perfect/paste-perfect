@@ -4,7 +4,6 @@ import * as Prism from "prismjs";
 import { HTML_CODE_PRE_SELECTOR } from "@constants";
 import { MessageService } from "primeng/api";
 import { LanguageDefinition } from "@types";
-import { InlineStyleApplier } from "@utils/inline-style-applier";
 import { LinesCollector } from "@utils/line-collector";
 import { SettingsService } from "@services/settings.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
@@ -77,6 +76,7 @@ export class PrismHighlightService {
 
     // 2) Extract final HTML and plain text
     const htmlSnippet: string = SanitizerWrapper.sanitizeOutput(processedClone.outerHTML);
+    console.log("htmlSnippet", htmlSnippet);
     // Use the original element for the text-only snippet (non-formatted)
     const textSnippet: string = preElement.outerText;
 
@@ -133,15 +133,13 @@ export class PrismHighlightService {
     const tabSize = settings.indentationSize;
     const showLineNumbers = settings.showLineNumbers;
 
-    // Clone node
+    // Clone the original element to avoid modifying the source
     const clonedPre: HTMLPreElement = originalPre.cloneNode(true) as HTMLPreElement;
 
-    // We gather "root" computed styles from the original <pre>, to apply to newly created spans/paragraphs
-    InlineStyleApplier.captureRootStyles(originalPre);
+    // Transform the cloned structure for clipboard compatibility
     const linesCollector = new LinesCollector(mode, tabSize, showLineNumbers);
     linesCollector.collectLinesFromNodes(originalPre, clonedPre);
 
-    // Done — the structure is now fully processed
     return clonedPre;
   }
 }

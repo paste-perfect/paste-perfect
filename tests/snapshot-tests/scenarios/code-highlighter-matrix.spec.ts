@@ -43,7 +43,7 @@ const modes: Mode[] = [
     indentationSize: 2,
     fixtureDir: "dark-tabs",
     enableFormatting: false,
-    showLineNumbers: false, // TODO: Replace me
+    showLineNumbers: true,
   },
   {
     name: "Light Mode with Spaces",
@@ -52,7 +52,7 @@ const modes: Mode[] = [
     indentationSize: 4,
     fixtureDir: "light-spaces",
     enableFormatting: false,
-    showLineNumbers: false, // TODO: Replace me
+    showLineNumbers: false,
   },
 ];
 
@@ -69,12 +69,8 @@ for (const mode of modes) {
         const rawCodePath = path.join(__dirname, TEST_DATA_DIR, "raw", rawFilename);
 
         await page.utils.configureEditorFromFile({
+          ...mode,
           language,
-          theme: mode.theme,
-          indentationMode: mode.indentationMode,
-          indentationSize: mode.indentationSize,
-          enableFormatting: mode.enableFormatting,
-          showLineNumbers: false, // TODO: Replace me
           filePath: rawCodePath,
         });
 
@@ -88,12 +84,8 @@ for (const mode of modes) {
         const rawCodePath = path.join(__dirname, TEST_DATA_DIR, "raw", rawFilename);
 
         await page.utils.configureEditorFromFile({
+          ...mode,
           language,
-          theme: mode.theme,
-          indentationMode: mode.indentationMode,
-          indentationSize: mode.indentationSize,
-          enableFormatting: mode.enableFormatting,
-          showLineNumbers: false, // TODO: Replace me
           filePath: rawCodePath,
         });
 

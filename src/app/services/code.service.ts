@@ -111,7 +111,7 @@ export class CodeService {
       // Update the highlighted code
       const highlightedCode = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
 
-      // (Optionally) prepend line numbers
+      // Conditionally prepend line numbers
       const codeWithLineNumbers = this.lineNumberingService.prependLineNumbers(highlightedCode);
 
       // Remove unwanted characters

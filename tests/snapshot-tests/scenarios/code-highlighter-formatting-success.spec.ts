@@ -16,7 +16,7 @@ test.describe("Code Highlighter Formatting Success", () => {
       indentationMode: IndentationMode.Spaces,
       indentationSize: 4,
       enableFormatting: true,
-      showLineNumbers: false, // TODO: Replace me
+      showLineNumbers: true,
       code: input,
     });
 

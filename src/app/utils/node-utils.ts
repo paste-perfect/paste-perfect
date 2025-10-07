@@ -1,22 +1,6 @@
 import { SpecialCharacters } from "@constants";
-import { MsOfficeUtils } from "@utils/ms-office-utils";
 
 export class NodeUtils {
-  /**
-   * Generates a CSS string with tab stop positions for tab-indented content.
-   *
-   * @param count Number of tab stops to create.
-   * @param offsetInPt Offset in Pt that gets added to each tabstop
-   * @returns A CSS string defining left tab stops.
-   */
-  public static getTabStops(count: number, offsetInPt = 0): string {
-    if (count === 0) {
-      return "";
-    }
-    const stops = Array.from({ length: count }, (_, i) => `left ${MsOfficeUtils.cmToOfficePt(i + 1) + offsetInPt}pt`).join(" ");
-    return `tab-stops: ${stops};`;
-  }
-
   /**
    * Appends a new inline style to an existing element's style attribute.
    *
