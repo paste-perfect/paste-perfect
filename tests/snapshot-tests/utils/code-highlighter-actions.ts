@@ -36,6 +36,20 @@ export function createActions(page: Page): CodeHighlighterActions {
     async setIndentationSize(size: number) {
       await page.locator("#indentation-size:visible").fill(size.toString());
     },
+    async setShowLineNumbers(showLineNumbers: boolean) {
+      const formatCheckbox = page.locator("#show-line-numbers");
+      const isDisabled = await formatCheckbox.isDisabled();
+      if (isDisabled) {
+        return;
+      }
+
+      const isChecked = await formatCheckbox.isChecked();
+
+      if (isChecked !== showLineNumbers) {
+        // Click on the parent element (doesn't work directly on the checkbox)
+        await formatCheckbox.click();
+      }
+    },
     async enterCode(code: string, isFormatting: boolean) {
       await page.locator("#source-code").fill(code);
       // Increase timeout when formatting is enabled (as this can take some time)

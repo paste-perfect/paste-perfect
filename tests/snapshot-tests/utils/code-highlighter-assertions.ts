@@ -18,6 +18,16 @@ export function createAssertions(page: Page): CodeHighlighterAssertions {
     async expectIndentationSize(indentationSize: number) {
       await expect(page.locator("input#indentation-size:visible")).toHaveValue(indentationSize.toString());
     },
+    async expectShowLineNumbers(showLineNumbers: boolean) {
+      const formatCheckbox = page.locator("#show-line-numbers");
+      const isDisabled = await formatCheckbox.isDisabled();
+      if (isDisabled) {
+        return;
+      }
+
+      const isChecked = (await formatCheckbox.getAttribute("aria-checked")) === "true";
+      expect(isChecked).toBe(showLineNumbers);
+    },
     async expectEnableFormatting(enableFormatting: boolean) {
       const formatCheckbox = page.locator("#enable-formatting");
       const isDisabled = await formatCheckbox.isDisabled();

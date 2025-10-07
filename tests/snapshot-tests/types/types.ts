@@ -20,6 +20,7 @@ export interface CodeHighlighterActions {
   setIndentMode(indentMode: IndentationMode): Promise<void>;
   setEnableFormatting(enableFormatting: boolean): Promise<void>;
   setIndentationSize(size: number): Promise<void>;
+  setShowLineNumbers(showLineNumbers: boolean): Promise<void>;
   enterCode(code: string, isFormatting: boolean): Promise<void>;
   enterCodeFromFile(filePath: string, isFormatting: boolean): Promise<void>;
   clickCopyButton(): Promise<void>;
@@ -37,6 +38,7 @@ export interface CodeHighlighterAssertions {
   expectIndentMode(indentMode: IndentationMode): Promise<void>;
   expectEnableFormatting(enableFormatting: boolean): Promise<void>;
   expectIndentationSize(indentationSize: number): Promise<void>;
+  expectShowLineNumbers(showLineNumbers: boolean): Promise<void>;
   expectHasDesktopSettings(): Promise<void>;
   expectHasMobileSettings(): Promise<void>;
   expectSettingsDialogVisible(): Promise<void>;

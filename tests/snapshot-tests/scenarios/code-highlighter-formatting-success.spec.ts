@@ -3,9 +3,9 @@ import { test } from "../pages/code-highlighter.page";
 import { IndentationMode, LightTheme } from "@constants";
 
 const input = `function testFunction() { console.log("Test 123"); }`; // valid JS syntax
-const expectedOutput = `function testFunction() {
-    console.log("Test 123");
-}`;
+const expectedOutput = `1. function testFunction() {
+2.     console.log("Test 123");
+3. }`;
 
 test.describe("Code Highlighter Formatting Success", () => {
   test("should properly format code when formatting is enabled", async ({ page }) => {

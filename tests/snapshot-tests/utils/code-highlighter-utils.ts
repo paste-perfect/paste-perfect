@@ -19,33 +19,37 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
         };
       });
     },
-    async configureEditor({ language, theme, indentationMode, enableFormatting, indentationSize, code }) {
+    async configureEditor({ language, theme, indentationMode, enableFormatting, indentationSize, showLineNumbers, code }) {
       await page.actions.setLanguage(language);
       await page.actions.setTheme(theme);
       await page.actions.setIndentMode(indentationMode);
       await page.actions.setEnableFormatting(enableFormatting);
       await page.actions.setIndentationSize(indentationSize);
+      await page.actions.setShowLineNumbers(showLineNumbers);
 
       await page.assertions.expectLanguage(language);
       await page.assertions.expectTheme(theme);
       await page.assertions.expectIndentMode(indentationMode);
       await page.assertions.expectEnableFormatting(enableFormatting);
       await page.assertions.expectIndentationSize(indentationSize);
+      await page.assertions.expectShowLineNumbers(showLineNumbers);
 
       await page.actions.enterCode(code, enableFormatting);
     },
-    async configureEditorFromFile({ language, theme, indentationMode, enableFormatting, indentationSize, filePath }) {
+    async configureEditorFromFile({ language, theme, indentationMode, enableFormatting, indentationSize, showLineNumbers, filePath }) {
       await page.actions.setLanguage(language);
       await page.actions.setTheme(theme);
       await page.actions.setIndentMode(indentationMode);
       await page.actions.setEnableFormatting(enableFormatting);
       await page.actions.setIndentationSize(indentationSize);
+      await page.actions.setShowLineNumbers(showLineNumbers);
 
       await page.assertions.expectLanguage(language);
       await page.assertions.expectTheme(theme);
       await page.assertions.expectIndentMode(indentationMode);
       await page.assertions.expectEnableFormatting(enableFormatting);
       await page.assertions.expectIndentationSize(indentationSize);
+      await page.assertions.expectShowLineNumbers(showLineNumbers);
 
       await page.actions.enterCodeFromFile(filePath, enableFormatting);
     },
