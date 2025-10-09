@@ -12,7 +12,7 @@
     ":configMigration",
     "security:openssf-scorecard",
     "replacements:all",
-    "npm:unpublishSafe",
+    "security:minimumReleaseAgeNpm",
     ":enablePreCommit",
     ":enableVulnerabilityAlerts"
   ],
