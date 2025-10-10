@@ -30,6 +30,7 @@ export class IndentationFormatter {
    * Replaces markers with tabs for display.
    *
    * @param text - Text with masked indentation.
+   * @param {number} tabSize - How many markers constitute one tab.
    * @returns Text with visual indentation restored.
    */
   public static unmaskIndentationWithTabs(text: string, tabSize: number): string {

@@ -61,4 +61,21 @@ describe("OfficeUtils", () => {
       expect(NodeUtils.appendInlineStyle).toHaveBeenCalledWith(mockElement, "mso-tab-count:0");
     });
   });
+  describe("getTabStops", () => {
+    it("returns empty string for count 0", () => {
+      expect(MsOfficeUtils.getTabStops(0)).toBe("");
+    });
+
+    it("returns correct CSS for multiple tab stops", () => {
+      expect(MsOfficeUtils.getTabStops(2)).toBe("tab-stops: left 28.3465pt left 56.6930pt;");
+    });
+
+    it("applies positive offset correctly", () => {
+      expect(MsOfficeUtils.getTabStops(2, 10)).toBe("tab-stops: left 38.3465pt left 66.6930pt;");
+    });
+
+    it("applies negative offset correctly", () => {
+      expect(MsOfficeUtils.getTabStops(2, -5)).toBe("tab-stops: left 23.3465pt left 51.6930pt;");
+    });
+  });
 });

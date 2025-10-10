@@ -11,61 +11,84 @@ declare global {
   }
 }
 
+export interface ConfigureEditorSettings extends HighlightingSettings {
+  language: string;
+  theme: Theme;
+}
+
+export interface ConfigureEditorSettingsFromCode extends ConfigureEditorSettings {
+  code: string;
+}
+
+export interface ConfigureEditorSettingsFromFile extends ConfigureEditorSettings {
+  filePath: string;
+}
+
 /**
  * ACTIONS
  */
 export interface CodeHighlighterActions {
-  setLanguage(language: string): Promise<void>;
-  setTheme(theme: Theme): Promise<void>;
-  setIndentMode(indentMode: IndentationMode): Promise<void>;
-  setEnableFormatting(enableFormatting: boolean): Promise<void>;
-  setIndentationSize(size: number): Promise<void>;
-  enterCode(code: string, isFormatting: boolean): Promise<void>;
-  enterCodeFromFile(filePath: string, isFormatting: boolean): Promise<void>;
-  clickCopyButton(): Promise<void>;
-  openMobileSettings(): Promise<void>;
+  clickCopyToClipboardButton(): Promise<void>;
+
   closeSettingsDialog(): Promise<void>;
-  mockClipboardWrite(): Promise<void>;
+
+  inputSourceCode(code: string, requiresFormatting: boolean): Promise<void>;
+
+  loadSourceCodeFromFile(filePath: string, requiresFormatting: boolean): Promise<void>;
+
+  setupClipboardMocking(): Promise<void>;
+
+  openMobileSettingsPanel(): Promise<void>;
+
+  setEnableFormatting(enableFormatting: boolean): Promise<void>;
+
+  setIndentationSize(size: number): Promise<void>;
+
+  setIndentMode(indentMode: IndentationMode): Promise<void>;
+
+  setLanguage(language: string): Promise<void>;
+
+  setShowLineNumbers(showLineNumbers: boolean): Promise<void>;
+
+  setTheme(theme: Theme): Promise<void>;
 }
 
 /**
  * ASSERTIONS
  */
 export interface CodeHighlighterAssertions {
-  expectLanguage(language: string): Promise<void>;
-  expectTheme(theme: Theme): Promise<void>;
-  expectIndentMode(indentMode: IndentationMode): Promise<void>;
   expectEnableFormatting(enableFormatting: boolean): Promise<void>;
-  expectIndentationSize(indentationSize: number): Promise<void>;
   expectHasDesktopSettings(): Promise<void>;
   expectHasMobileSettings(): Promise<void>;
-  expectSettingsDialogVisible(): Promise<void>;
-  expectSettingsDialogHidden(): Promise<void>;
+
+  expectIndentationSize(indentationSize: number): Promise<void>;
+
+  expectIndentMode(indentMode: IndentationMode): Promise<void>;
+
+  expectLanguage(language: string): Promise<void>;
+
   expectSettingsDialogContains(text: string): Promise<void>;
+
+  expectSettingsDialogHidden(): Promise<void>;
+
+  expectSettingsDialogVisible(): Promise<void>;
+
+  expectShowLineNumbers(showLineNumbers: boolean): Promise<void>;
+
+  expectTheme(theme: Theme): Promise<void>;
 }
 
 /**
  * UTILS
  */
 export interface CodeHighlighterUtils {
-  getHighlightedCodeText(): Promise<string>;
+  configureEditor(config: ConfigureEditorSettingsFromCode): Promise<void>;
+
+  configureEditorFromFile(config: ConfigureEditorSettingsFromFile): Promise<void>;
+
   getClipboardContent(): Promise<{ plainText: string; htmlText: string } | null>;
 
-  configureEditor(
-    config: HighlightingSettings & {
-      language: string;
-      theme: Theme;
-      code: string;
-    }
-  ): Promise<void>;
-
-  configureEditorFromFile(
-    config: HighlightingSettings & {
-      language: string;
-      theme: Theme;
-      filePath: string;
-    }
-  ): Promise<void>;
+  getHighlightedCodeText(): Promise<string>;
 }
 
 /**

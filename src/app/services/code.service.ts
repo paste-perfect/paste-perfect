@@ -3,6 +3,7 @@ import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 import { LanguageService } from "@services/language.service";
 import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
+import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
 
 /**
  * CodeService is responsible for managing and processing source code,
@@ -20,6 +21,9 @@ export class CodeService {
 
   /** Injected service for code formatting */
   private readonly prettierService: PrettierFormattingService = inject(PrettierFormattingService);
+
+  /** Injected service for prepending line numbers */
+  private readonly lineNumberingService: LineNumberingService = inject(LineNumberingService);
 
   /** Default message when no code is provided */
   private readonly noCode: string = "<span>The highlighted code will appear here after pasting some code!</span>";
@@ -107,9 +111,13 @@ export class CodeService {
       // Update the highlighted code
       const highlightedCode = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
 
-      const sanitizedOuput = SanitizerWrapper.sanitizeOutput(highlightedCode);
+      // Conditionally prepend line numbers
+      const codeWithLineNumbers = this.lineNumberingService.prependLineNumbers(highlightedCode);
 
-      this.highlightedCode = this.hasCode() ? sanitizedOuput : this.noCode;
+      // Remove unwanted characters
+      const sanitizedOutput = SanitizerWrapper.sanitizeOutput(codeWithLineNumbers);
+
+      this.highlightedCode = this.hasCode() ? sanitizedOutput : this.noCode;
     });
   }
 }

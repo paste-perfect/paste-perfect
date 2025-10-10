@@ -67,5 +67,9 @@
 
   .popover-text {
     color: var(--p-text-muted-color);
+
+    p {
+      margin: var(--spacing-md) 0 0 0;
+    }
   }
 }
