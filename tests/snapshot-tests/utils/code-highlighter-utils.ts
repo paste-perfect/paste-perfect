@@ -5,10 +5,12 @@ import {
   ConfigureEditorSettingsFromCode,
   ConfigureEditorSettingsFromFile,
 } from "../types/types";
+import { searchLanguageByTitle } from "@constants";
 
 export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighlighterUtils {
   const configureSettings = async (config: ConfigureEditorSettings): Promise<void> => {
     const { enableFormatting, indentationMode, indentationSize, language, showLineNumbers, theme } = config;
+    const isPrettierSupportedByLanguage = searchLanguageByTitle(language)?.prettierConfiguration;
 
     // Language must be set in the beginning
     await page.actions.setLanguage(language);
@@ -22,7 +24,7 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
     await page.actions.setTheme(theme);
 
     // Verify all configuration values
-    await page.assertions.expectEnableFormatting(enableFormatting);
+    await page.assertions.expectEnableFormatting(isPrettierSupportedByLanguage ? enableFormatting : false);
     await page.assertions.expectIndentationSize(indentationSize);
     await page.assertions.expectIndentMode(indentationMode);
     await page.assertions.expectShowLineNumbers(showLineNumbers);

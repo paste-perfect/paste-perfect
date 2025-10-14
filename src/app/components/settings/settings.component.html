@@ -109,14 +109,19 @@
         tabindex="0"
       ></i>
     </label>
-    <p-toggleswitch
-      inputId="enable-formatting"
-      [(ngModel)]="formattingEnabled"
-      class="enable-formatting-toggle"
-      [disabled]="!languageService.isPrettierSupportedByLanguage()"
+    <!-- Wrapper used to show a tooltip when Switch is disabled -->
+    <div
+      [pTooltip]="!languageService.isPrettierSupportedByLanguage() ? 'Formatting is not supported for selected language' : undefined"
       [tooltipOptions]="tooltipOptions"
-      [pTooltip]="languageService.isPrettierSupportedByLanguage() ? undefined : 'Formatting is not supported for current language'"
-    />
+      class="toggle-wrapper"
+    >
+      <p-toggleswitch
+        inputId="enable-formatting"
+        [(ngModel)]="formattingEnabled"
+        class="enable-formatting-toggle"
+        [disabled]="!languageService.isPrettierSupportedByLanguage()"
+      />
+    </div>
   </div>
 
   <!-- Show Line Numbers -->

@@ -1,9 +1,9 @@
 import { LanguageDefinition } from "@types";
-import { ALL_LANGUAGES_MAP } from "@constants";
 import { MessageService } from "primeng/api";
 import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 import { LocationStrategy } from "@angular/common";
+import { searchLanguageByValue } from "@utils/languages-utils";
 
 @Injectable({
   providedIn: "root",
@@ -53,7 +53,7 @@ export class PrismLanguageLoaderService {
     if (!lang?.prismConfiguration.dependencies?.length) return;
 
     for (const dep of lang.prismConfiguration.dependencies) {
-      const dependency = ALL_LANGUAGES_MAP[dep];
+      const dependency = searchLanguageByValue(dep);
 
       if (!dependency) {
         const warningMessage = `Dependency "${dep}" not found in ALL_LANGUAGES_MAP.`;
