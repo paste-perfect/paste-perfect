@@ -9,7 +9,6 @@ import {
 export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighlighterUtils {
   const configureSettings = async (config: ConfigureEditorSettings): Promise<void> => {
     const { enableFormatting, indentationMode, indentationSize, language, showLineNumbers, theme } = config;
-    console.log("Enable Formatting: ", config.enableFormatting);
 
     // Language must be set in the beginning
     await page.actions.setLanguage(language);

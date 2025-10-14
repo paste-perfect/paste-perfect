@@ -76,7 +76,6 @@ export class PrismHighlightService {
 
     // 2) Extract final HTML and plain text
     const htmlSnippet: string = SanitizerWrapper.sanitizeOutput(processedClone.outerHTML);
-    console.log("htmlSnippet", htmlSnippet);
     // Use the original element for the text-only snippet (non-formatted)
     const textSnippet: string = preElement.outerText;
 

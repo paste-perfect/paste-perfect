@@ -15,7 +15,6 @@ export function createActions(page: Page): CodeHighlighterActions {
   const setCheckboxState = async (checkboxSelector: string, shouldBeChecked: boolean): Promise<void> => {
     const checkbox = page.locator(checkboxSelector);
     const isDisabled = await checkbox.isDisabled();
-    console.log("Disabled: ", checkbox, isDisabled);
 
     if (isDisabled) {
       return;

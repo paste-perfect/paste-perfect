@@ -8,12 +8,10 @@ export function createAssertions(page: Page): CodeHighlighterAssertions {
   const expectCheckboxState = async (selector: string, expectedState: boolean): Promise<void> => {
     const checkbox = page.locator(selector);
     const isDisabled = await checkbox.isDisabled();
-    console.log("Checkbox: ", checkbox);
 
     if (isDisabled) return;
 
     const isChecked = (await checkbox.getAttribute("aria-checked")) === "true";
-    console.log("isChecked: ", isChecked);
     expect(isChecked).toBe(expectedState);
   };
 
