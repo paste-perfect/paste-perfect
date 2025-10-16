@@ -41,6 +41,6 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           gh pr create --base dev --head main --title "Auto-Update dev branch after Release" --fill
-          gh pr merge main --auto
+          gh pr merge main --auto --merge
         env:
           GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
