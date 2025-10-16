@@ -4,10 +4,10 @@ RUN mkdir /app
 WORKDIR /app
 COPY ./package-lock.json ./package.json /app/
 
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY ./ /app
-RUN npm run build-docker
+RUN --mount=type=cache,target=/root/.npm npm run build-docker
 
 FROM docker.io/nginxinc/nginx-unprivileged:alpine-slim@sha256:7e5a9a620fbf78f0ad3565a1e5527d5d4509381d16b08501b656cf5251b339ce AS runtime
 EXPOSE 8080
