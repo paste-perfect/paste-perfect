@@ -37,3 +37,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
         run: npx semantic-release
+      - name: Create PR to update dev branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gh pr create --base dev --head main --title "Auto-Update dev branch after Release" --fill
+          gh pr merge main --auto
+        env:
+          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
