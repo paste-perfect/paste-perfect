@@ -1,6 +1,6 @@
 {
   "name": "paste-perfect",
-  "version": "2.2.0",
+  "version": "2.3.0-rc.52",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
