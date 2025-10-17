@@ -40,7 +40,7 @@ jobs:
       - name: Create PR to update dev branch
         if: github.ref == 'refs/heads/main'
         run: |
-          gh pr create --base dev --head main --title "Auto-Update dev branch after Release" --fill
+          gh pr create --base dev --head main --title "Auto-Update dev branch after Release" --fill || echo "PR already exists! Trying merge..."
           sleep 5
           gh pr merge main --merge
         env:
