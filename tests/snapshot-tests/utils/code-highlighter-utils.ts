@@ -1,15 +1,52 @@
-import { CodeHighlighterPage, CodeHighlighterUtils } from "../types/types";
+import {
+  CodeHighlighterPage,
+  CodeHighlighterUtils,
+  ConfigureEditorSettings,
+  ConfigureEditorSettingsFromCode,
+  ConfigureEditorSettingsFromFile,
+} from "../types/types";
+import { searchLanguageByTitle } from "@constants";
 
 export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighlighterUtils {
+  const configureSettings = async (config: ConfigureEditorSettings): Promise<void> => {
+    const { enableFormatting, indentationMode, indentationSize, language, showLineNumbers, theme } = config;
+    const isPrettierSupportedByLanguage = searchLanguageByTitle(language)?.prettierConfiguration;
+
+    // Language must be set in the beginning
+    await page.actions.setLanguage(language);
+    await page.assertions.expectLanguage(language);
+
+    // Set all configuration values
+    await page.actions.setEnableFormatting(enableFormatting);
+    await page.actions.setIndentationSize(indentationSize);
+    await page.actions.setIndentMode(indentationMode);
+    await page.actions.setShowLineNumbers(showLineNumbers);
+    await page.actions.setTheme(theme);
+
+    // Verify all configuration values
+    await page.assertions.expectEnableFormatting(isPrettierSupportedByLanguage ? enableFormatting : false);
+    await page.assertions.expectIndentationSize(indentationSize);
+    await page.assertions.expectIndentMode(indentationMode);
+    await page.assertions.expectShowLineNumbers(showLineNumbers);
+    await page.assertions.expectTheme(theme);
+  };
+
   return {
-    async getHighlightedCodeText() {
-      return page.locator("#highlighted-code-wrapper code").innerText();
+    async configureEditor(config: ConfigureEditorSettingsFromCode) {
+      await configureSettings(config);
+      await page.actions.inputSourceCode(config.code, config.enableFormatting);
     },
+
+    async configureEditorFromFile(config: ConfigureEditorSettingsFromFile) {
+      await configureSettings(config);
+      await page.actions.loadSourceCodeFromFile(config.filePath, config.enableFormatting);
+    },
+
     async getClipboardContent() {
       return page.evaluate(async () => {
         if (!window.__copiedClipboardItem) return null;
-        const item = window.__copiedClipboardItem;
 
+        const item = window.__copiedClipboardItem;
         const plainBlob = await item.getType("text/plain");
         const htmlBlob = await item.getType("text/html");
 
@@ -19,35 +56,9 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
         };
       });
     },
-    async configureEditor({ language, theme, indentationMode, enableFormatting, indentationSize, code }) {
-      await page.actions.setLanguage(language);
-      await page.actions.setTheme(theme);
-      await page.actions.setIndentMode(indentationMode);
-      await page.actions.setEnableFormatting(enableFormatting);
-      await page.actions.setIndentationSize(indentationSize);
 
-      await page.assertions.expectLanguage(language);
-      await page.assertions.expectTheme(theme);
-      await page.assertions.expectIndentMode(indentationMode);
-      await page.assertions.expectEnableFormatting(enableFormatting);
-      await page.assertions.expectIndentationSize(indentationSize);
-
-      await page.actions.enterCode(code, enableFormatting);
-    },
-    async configureEditorFromFile({ language, theme, indentationMode, enableFormatting, indentationSize, filePath }) {
-      await page.actions.setLanguage(language);
-      await page.actions.setTheme(theme);
-      await page.actions.setIndentMode(indentationMode);
-      await page.actions.setEnableFormatting(enableFormatting);
-      await page.actions.setIndentationSize(indentationSize);
-
-      await page.assertions.expectLanguage(language);
-      await page.assertions.expectTheme(theme);
-      await page.assertions.expectIndentMode(indentationMode);
-      await page.assertions.expectEnableFormatting(enableFormatting);
-      await page.assertions.expectIndentationSize(indentationSize);
-
-      await page.actions.enterCodeFromFile(filePath, enableFormatting);
+    async getHighlightedCodeText() {
+      return page.locator("#highlighted-code-wrapper code").innerText();
     },
   };
 }

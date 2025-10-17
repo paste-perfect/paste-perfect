@@ -1,10 +1,9 @@
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 
-import { HTML_CODE_PRE_SELECTOR, IndentationMode } from "@constants";
+import { HTML_CODE_PRE_SELECTOR } from "@constants";
 import { MessageService } from "primeng/api";
 import { LanguageDefinition } from "@types";
-import { InlineStyleApplier } from "@utils/inline-style-applier";
 import { LinesCollector } from "@utils/line-collector";
 import { SettingsService } from "@services/settings.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
@@ -32,16 +31,6 @@ export class PrismHighlightService {
    * PrimeNGs messages service for displaying toasts to the user
    */
   private messageService: MessageService = inject(MessageService);
-
-  /**
-   * Signal representing the current indentation mode (e.g., tabs or spaces).
-   */
-  private mode: Signal<IndentationMode> = computed(() => this.settingsService.editorSettings.indentationMode);
-
-  /**
-   * Signal representing the current tab size setting.
-   */
-  private tabSize: Signal<number> = computed(() => this.settingsService.editorSettings.indentationSize);
 
   /**
    * Highlights a code snippet using Prism.js.
@@ -138,18 +127,18 @@ export class PrismHighlightService {
    * @returns A fully processed and styled clone of the original `<pre>` element.
    */
   private preprocessForClipboard(originalPre: HTMLPreElement): HTMLPreElement {
-    const mode = this.mode();
-    const tabSize = this.tabSize();
+    const settings = this.settingsService.editorSettings;
+    const mode = settings.indentationMode;
+    const tabSize = settings.indentationSize;
+    const showLineNumbers = settings.showLineNumbers;
 
-    // Clone node
+    // Clone the original element to avoid modifying the source
     const clonedPre: HTMLPreElement = originalPre.cloneNode(true) as HTMLPreElement;
 
-    // We gather "root" computed styles from the original <pre>, to apply to newly created spans/paragraphs
-    InlineStyleApplier.captureRootStyles(originalPre);
-    const linesCollector = new LinesCollector(mode, tabSize);
+    // Transform the cloned structure for clipboard compatibility
+    const linesCollector = new LinesCollector(mode, tabSize, showLineNumbers);
     linesCollector.collectLinesFromNodes(originalPre, clonedPre);
 
-    // Done — the structure is now fully processed
     return clonedPre;
   }
 }

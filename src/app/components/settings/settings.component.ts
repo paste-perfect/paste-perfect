@@ -6,11 +6,11 @@ import { Popover } from "primeng/popover";
 import { ThemeService } from "@services/theme.service";
 import { LanguageService } from "@services/language.service";
 import { SettingsService } from "@services/settings.service";
-import { LanguageDefinition, SelectableIndentationMode } from "@types";
+import { SelectableIndentationMode } from "@types";
 import { SelectItemGroup, TooltipOptions } from "primeng/api";
 import { ToggleSwitch } from "primeng/toggleswitch";
 import { Tooltip } from "primeng/tooltip";
-import { DEFAULT_TOOLTIP_OPTIONS, IndentationMode } from "@constants";
+import { DEFAULT_TOOLTIP_OPTIONS, IndentationMode, OTHER_LANGUAGES, POPULAR_LANGUAGES } from "@constants";
 
 @Component({
   selector: "app-settings",
@@ -50,21 +50,14 @@ export class SettingsComponent {
     {
       label: "Popular Languages",
       value: "common",
-      items: this.mapWithPrettier(this.languageService.getCommonLanguages()),
+      items: POPULAR_LANGUAGES,
     },
     {
       label: "Other Languages",
       value: "others",
-      items: this.mapWithPrettier(this.languageService.getOtherLanguages()),
+      items: OTHER_LANGUAGES,
     },
   ];
-
-  private mapWithPrettier(languages: LanguageDefinition[]): LanguageDefinition[] {
-    return languages.map((language) => ({
-      ...language,
-      title: language.title + (language.prettierConfiguration ? "*" : ""),
-    }));
-  }
 
   /**
    * List of available themes that the user can choose from,
@@ -122,7 +115,8 @@ export class SettingsComponent {
    * Gets the current formatting enabled setting.
    */
   get formattingEnabled(): boolean {
-    return this.settingsService.editorSettings.enableFormatting;
+    // When formatting is not supported, it should be false by default
+    return this.languageService.isPrettierSupportedByLanguage() && this.settingsService.editorSettings.enableFormatting;
   }
 
   /**
@@ -131,5 +125,20 @@ export class SettingsComponent {
    */
   set formattingEnabled(enabled: boolean) {
     this.settingsService.updateSettings({ enableFormatting: enabled });
+  }
+
+  /**
+   * Gets the current show line numbers setting.
+   */
+  get showLineNumbers(): boolean {
+    return this.settingsService.editorSettings.showLineNumbers;
+  }
+
+  /**
+   * Updates the show line numbers setting.
+   * @param show - Whether line numbers should be displayed.
+   */
+  set showLineNumbers(show: boolean) {
+    this.settingsService.updateSettings({ showLineNumbers: show });
   }
 }

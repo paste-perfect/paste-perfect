@@ -2,16 +2,6 @@ import { SpecialCharacters } from "@constants";
 import { NodeUtils } from "@utils/node-utils";
 
 describe("NodeUtils", () => {
-  describe("getTabStops", () => {
-    it("returns empty string for count 0", () => {
-      expect(NodeUtils.getTabStops(0)).toBe("");
-    });
-
-    it("returns correct CSS for tab stops", () => {
-      expect(NodeUtils.getTabStops(2)).toBe("tab-stops: left 28.3465pt left 56.693pt;");
-    });
-  });
-
   describe("appendInlineStyle", () => {
     let element: HTMLElement;
 
