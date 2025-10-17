@@ -6,7 +6,7 @@ const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`
 test.describe("Code Highlighter Snapshot Smoke", () => {
   test("should update highlighted output when code is entered", async ({ page }) => {
     await page.assertions.expectHasDesktopSettings();
-    await page.actions.enterCode(sampleCode, false);
+    await page.actions.inputSourceCode(sampleCode, false);
 
     // Wait for async highlight
     expect(await page.utils.getHighlightedCodeText()).toContain(sampleCode);

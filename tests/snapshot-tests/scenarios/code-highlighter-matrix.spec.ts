@@ -43,6 +43,7 @@ const modes: Mode[] = [
     indentationSize: 2,
     fixtureDir: "dark-tabs",
     enableFormatting: false,
+    showLineNumbers: true,
   },
   {
     name: "Light Mode with Spaces",
@@ -51,6 +52,7 @@ const modes: Mode[] = [
     indentationSize: 4,
     fixtureDir: "light-spaces",
     enableFormatting: false,
+    showLineNumbers: false,
   },
 ];
 
@@ -67,11 +69,8 @@ for (const mode of modes) {
         const rawCodePath = path.join(__dirname, TEST_DATA_DIR, "raw", rawFilename);
 
         await page.utils.configureEditorFromFile({
+          ...mode,
           language,
-          theme: mode.theme,
-          indentationMode: mode.indentationMode,
-          indentationSize: mode.indentationSize,
-          enableFormatting: mode.enableFormatting,
           filePath: rawCodePath,
         });
 
@@ -85,16 +84,13 @@ for (const mode of modes) {
         const rawCodePath = path.join(__dirname, TEST_DATA_DIR, "raw", rawFilename);
 
         await page.utils.configureEditorFromFile({
+          ...mode,
           language,
-          theme: mode.theme,
-          indentationMode: mode.indentationMode,
-          indentationSize: mode.indentationSize,
-          enableFormatting: mode.enableFormatting,
           filePath: rawCodePath,
         });
 
-        await page.actions.mockClipboardWrite();
-        await page.actions.clickCopyButton();
+        await page.actions.setupClipboardMocking();
+        await page.actions.clickCopyToClipboardButton();
 
         const clipboardContent = await page.utils.getClipboardContent();
         const expectedText = (await page.utils.getHighlightedCodeText()).trim();

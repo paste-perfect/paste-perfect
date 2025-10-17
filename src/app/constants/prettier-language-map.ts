@@ -1,4 +1,4 @@
-import { PrettierLanguageConfiguration } from "../types/prettier-language-configuration.types";
+import { PrettierLanguageConfiguration } from "@types";
 
 /**
  * Mapping of language aliases to their Prettier configurations
@@ -56,4 +56,4 @@ export const PRETTIER_LANGUAGE_MAP: Record<string, PrettierLanguageConfiguration
   ts: { parser: "typescript", plugins: ["typescript", "estree"] },
   tsx: { parser: "typescript", plugins: ["typescript", "estree"] },
   typescript: { parser: "typescript", plugins: ["typescript", "estree"] },
-};
+} as const;
