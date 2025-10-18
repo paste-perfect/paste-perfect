@@ -20,7 +20,7 @@
   ],
   "baseBranchPatterns": ["dev"],
   "schedule": ["before 6am on monday"],
-  "timezone": "UTC",
+  "timezone": "Europe/Berlin",
   "prConcurrentLimit": 10,
   "prHourlyLimit": 5,
   "packageRules": [
