@@ -10,16 +10,11 @@ on:
       - "v*.*.*"
   push:
     branches:
-      - main
-      - dev
+      - "*"
     tags:
       - "v*.*.*"
   release:
     types: [published]
-  pull_request:
-    branches:
-      - "main"
-      - "dev"
 
 permissions:
   contents: read
