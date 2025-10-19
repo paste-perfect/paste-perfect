@@ -26,9 +26,11 @@
   "packageRules": [
     {
       "description": "Security updates can run immediately",
-      "matchPackagePatterns": ["*"],
-      "vulnerabilityAlerts": true,
-      "schedule": ["at any time"]
+      "vulnerabilityAlerts": {
+        "enabled": true
+      },
+      "schedule": ["at any time"],
+      "matchPackageNames": ["*"]
     }
   ],
   "customManagers": [
