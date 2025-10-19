@@ -45,3 +45,9 @@ jobs:
           gh pr merge main --merge
         env:
           GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
+      - name: Create PR to create upcoming release
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          gh pr create --base main --head dev --title "Upcoming Release" --fill || echo "PR already exists! Skipping..."
+        env:
+          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}

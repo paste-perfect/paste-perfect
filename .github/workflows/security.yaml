@@ -1,4 +1,4 @@
-name: 'Run Security Tests'
+name: "Run Security Tests"
 on:
   push:
     branches:
@@ -6,7 +6,11 @@ on:
       - dev
   pull_request:
   schedule:
-    - cron: '* * * * 0' # run weekly
+    - cron: "* * * * 0" # run weekly
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -24,12 +28,12 @@ jobs:
       - name: Run Trivy vulnerability scanner in repo mode
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
-          scan-type: 'fs'
-          format: 'sarif'
-          output: 'trivy-results-fs.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+          scan-type: "fs"
+          format: "sarif"
+          output: "trivy-results-fs.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@16140ae1a102900babc80a33c44059580f687047 # v4
         with:
-          sarif_file: 'trivy-results-fs.sarif'
+          sarif_file: "trivy-results-fs.sarif"
