@@ -1,9 +1,11 @@
-name: "Test and Build"
+name: 'Test and Build'
 
 on:
   push:
     branches:
-      - "*"
+      - main
+      - dev
+  pull_request:
 
 permissions:
   contents: read
@@ -20,11 +22,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
         with:
-          node-version: "lts/*" # Use latest LTS version
-          cache: "npm"
+          node-version: 'lts/*'  # Use latest LTS version
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci # Uses package-lock.json for reproducible installs
+        run: npm ci  # Uses package-lock.json for reproducible installs
 
       - name: Lint code
         run: npm run lint:check
@@ -76,12 +78,12 @@ jobs:
         with:
           artifact: test-reports
           name: JEST Tests
-          path: "jest/report.xml"
+          path: 'jest/report.xml'
           reporter: jest-junit
       - name: Generate Snapshot test report
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
         with:
           artifact: test-reports
           name: Snapshot Tests
-          path: "playwright/report.xml"
+          path: 'playwright/report.xml'
           reporter: jest-junit
