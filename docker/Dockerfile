@@ -9,6 +9,6 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY ./ /app
 RUN --mount=type=cache,target=/root/.npm npm run build-docker
 
-FROM docker.io/nginxinc/nginx-unprivileged:alpine-slim@sha256:df0b0b0201bcd6e6a2adea928e20fb0f4dc60e2b97e0da3fb41b2262c9c8ca27 AS runtime
+FROM docker.io/nginxinc/nginx-unprivileged:alpine-slim@sha256:13d13f63d80772e27637e4077d95a89d59a92ee461b4d13eefa60423f8855089 AS runtime
 EXPOSE 8080
 COPY --from=builder /app/dist/paste-perfect/browser /usr/share/nginx/html
