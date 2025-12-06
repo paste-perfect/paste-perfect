@@ -54,8 +54,8 @@
     "zone.js": "~0.16.0"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.3",
-    "@angular/cli": "^20.3.3",
+    "@angular/build": "^21.0.0",
+    "@angular/cli": "^21.0.0",
     "@angular/compiler-cli": "^20.3.2",
     "@playwright/test": "^1.51.1",
     "@semantic-release/commit-analyzer": "^13.0.1",
