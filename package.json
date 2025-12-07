@@ -46,7 +46,7 @@
     "prettier-plugin-sql": "^0.19.1",
     "prettier-plugin-toml": "^2.0.5",
     "primeicons": "^7.0.0",
-    "primeng": "^20.0.0",
+    "primeng": "^21.0.0",
     "prismjs": "^1.30.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
