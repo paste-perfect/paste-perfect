@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
         with:
           node-version: "lts/*" # Use latest LTS version
           cache: "npm"
@@ -64,7 +64,7 @@ jobs:
       - name: Run snapshot tests
         run: npm run test:snapshots
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4  # upload test results
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6  # upload test results
         if: ${{ !cancelled() }} # run this step even if previous step failed
         with:
           name: test-reports
@@ -77,14 +77,14 @@ jobs:
 
     steps:
       - name: Generate JEST test report
-        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
+        uses: dorny/test-reporter@fe45e9537387dac839af0d33ba56eed8e24189e8 # v2
         with:
           artifact: test-reports
           name: JEST Tests
           path: "jest/report.xml"
           reporter: jest-junit
       - name: Generate Snapshot test report
-        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2
+        uses: dorny/test-reporter@fe45e9537387dac839af0d33ba56eed8e24189e8 # v2
         with:
           artifact: test-reports
           name: Snapshot Tests
