@@ -26,6 +26,7 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "^21.0.6",
     "@angular/common": "^21.0.6",
     "@angular/compiler": "^21.0.6",
     "@angular/core": "^21.0.6",
@@ -66,6 +67,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
     "angular-eslint": "^21.0.0",
+    "baseline-browser-mapping": "^2.9.11",
     "conventional-changelog-conventionalcommits": "^9.0.0",
     "eslint": "^9.22.0",
     "husky": "^9.1.7",
