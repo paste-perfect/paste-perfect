@@ -17,7 +17,7 @@
     "security:openssf-scorecard",
     "workarounds:all"
   ],
-  "baseBranchPatterns": ["dev", "main"],
+  "baseBranchPatterns": ["dev"],
   "schedule": ["before 6am on monday"],
   "timezone": "Europe/Berlin",
   "prConcurrentLimit": 10,
