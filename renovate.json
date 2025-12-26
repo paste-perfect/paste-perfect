@@ -1,24 +1,23 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",
-    ":automergeDigest",
-    ":automergeLinters",
-    ":automergeMinor",
+    ":automergeAll",
     ":automergeRequireAllStatusChecks",
     ":configMigration",
     ":enablePreCommit",
     ":enableVulnerabilityAlerts",
+    ":preserveSemverRanges",
+    ":semanticCommitTypeAll(refactor)",
+    "config:best-practices",
+    "customManagers:dockerfileVersions",
     "group:allNonMajor",
     "group:monorepos",
-    ":preserveSemverRanges",
     "replacements:all",
     "security:minimumReleaseAgeNpm",
     "security:openssf-scorecard",
-    ":semanticCommitTypeAll(refactor)",
     "workarounds:all"
   ],
-  "baseBranchPatterns": ["dev"],
+  "baseBranchPatterns": ["dev", "main"],
   "schedule": ["before 6am on monday"],
   "timezone": "Europe/Berlin",
   "prConcurrentLimit": 10,
@@ -31,16 +30,6 @@
       },
       "schedule": ["at any time"],
       "matchPackageNames": ["*"]
-    }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^Dockerfile$/"],
-      "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\sARG .*?_VERSION=\"(?<currentValue>.*)\"\\s"
-      ],
-      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
   ],
   "ignorePaths": ["docker-compose.yml"],
