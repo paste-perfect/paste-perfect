@@ -1,4 +1,4 @@
-FROM docker.io/node:lts@sha256:20988bcdc6dc76690023eb2505dd273bdeefddcd0bde4bfd1efe4ebf8707f747 AS builder
+FROM docker.io/node:lts@sha256:33587cf3a89a08b68ba50feabd41b7584d6d09d0bfb209134a6a15532d2dab66 AS builder
 
 RUN mkdir /app
 WORKDIR /app
