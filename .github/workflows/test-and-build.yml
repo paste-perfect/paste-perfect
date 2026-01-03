@@ -77,14 +77,14 @@ jobs:
 
     steps:
       - name: Generate JEST test report
-        uses: dorny/test-reporter@e17be7e0078fc00f61965f3b4032f1e1fdc7fcfb # v2
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2
         with:
           artifact: test-reports
           name: JEST Tests
           path: "jest/report.xml"
           reporter: jest-junit
       - name: Generate Snapshot test report
-        uses: dorny/test-reporter@e17be7e0078fc00f61965f3b4032f1e1fdc7fcfb # v2
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2
         with:
           artifact: test-reports
           name: Snapshot Tests
