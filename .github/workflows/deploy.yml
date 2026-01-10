@@ -33,7 +33,7 @@ jobs:
         run: npm run build-preview
 
       - name: Deploy to GitHub Pages (Review Env)
-        uses: JamesIves/github-pages-deploy-action@9d877eea73427180ae43cf98e8914934fe157a1a # v4
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         if: 'github.event.release.prerelease'
         with:
           repository-name: paste-perfect/paste-perfect-test
@@ -47,7 +47,7 @@ jobs:
         run: npm run build-prod
 
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@9d877eea73427180ae43cf98e8914934fe157a1a # v4
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         if: '!github.event.release.prerelease'
         with:
           branch: gh-pages  # Deploy to `gh-pages` branch
