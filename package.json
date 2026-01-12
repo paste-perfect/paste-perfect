@@ -67,7 +67,7 @@
     "@types/jest": "30.0.0",
     "@types/node": "24.10.4",
     "angular-eslint": "21.1.0",
-    "baseline-browser-mapping": "2.9.13",
+    "baseline-browser-mapping": "2.9.14",
     "conventional-changelog-conventionalcommits": "9.1.0",
     "eslint": "9.39.2",
     "husky": "9.1.7",
