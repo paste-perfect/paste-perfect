@@ -45,7 +45,8 @@ jobs:
         run: |
           gh pr create --base dev --head main --title "Auto-Update dev branch after Release" --fill || echo "PR already exists! Trying merge..."
           sleep 5
-          gh pr merge main --merge
+          # Queue the PR to merge automatically once checks pass
+          gh pr merge main --merge --auto
         env:
           GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
       - name: Create PR to create upcoming release
