@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-          ssh-key: ${{ secrets.SEMANTIC_RELEASE_KEY }}
+          token: ${{ secrets.SEMANTIC_RELEASE }}
           # Persist credentials so that semantic-release will use them
           persist-credentials: true
       - name: Setup Node.js
@@ -50,7 +50,9 @@ jobs:
             || echo "PR creation failed or PR already exists."
 
           # 2. Set Auto-Merge
-          gh pr merge main --auto --merge --delete-branch=false
+          # Get the PR number and merge it explicitly
+          PR_NUMBER=$(gh pr list --base dev --head main --json number --jq '.[0].number')
+          gh pr merge "$PR_NUMBER" --auto --merge --delete-branch=false
         env:
           GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
       - name: Create PR to create upcoming release
