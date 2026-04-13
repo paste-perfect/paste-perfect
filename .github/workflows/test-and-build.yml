@@ -10,6 +10,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -38,7 +39,7 @@ jobs:
         run: npm run format:check
 
       - name: Create reports directory
-        run: mkdir -p reports/jest
+        run: mkdir -p reports/jest reports/playwright
 
       - name: Run unit tests
         run: npm run test:unit:ci
@@ -57,9 +58,12 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps
+
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps
+        run: npx playwright install
 
       - name: Run snapshot tests
         run: npm run test:snapshots
@@ -74,6 +78,11 @@ jobs:
     name: Generate Test Reports
     runs-on: ubuntu-latest
     needs: test-and-build
+    # Required by dorny/test-reporter
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
 
     steps:
       - name: Generate JEST test report
@@ -81,12 +90,13 @@ jobs:
         with:
           artifact: test-reports
           name: JEST Tests
-          path: "jest/report.xml"
+          path: "reports/jest/report.xml"
           reporter: jest-junit
+
       - name: Generate Snapshot test report
         uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2
         with:
           artifact: test-reports
           name: Snapshot Tests
-          path: "playwright/report.xml"
+          path: "reports/playwright/report.xml"
           reporter: jest-junit
