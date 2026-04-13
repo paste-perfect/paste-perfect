@@ -36,7 +36,7 @@ jobs:
         run: |
           # Only check the core CI workflows (Test and Build, docker-build)
           STATUS=$(gh api \
-            repos/${{ github.repository }}/commits/dev/check-runs \
+            "repos/${{ github.repository }}/commits/dev/check-runs?per_page=100" \
             --jq '
               [.check_runs[]
                 | select(.name | test("Test and Build|docker-build"; "i"))
