@@ -1,61 +1,114 @@
 name: Release
+
 on:
   push:
     branches:
       - main
-      - dev
 
 permissions:
-  contents: write # to be able to publish a GitHub release
-  issues: write # to be able to comment on released issues
-  pull-requests: write # to be able to comment on released pull requests
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
     permissions:
-      contents: write # to be able to publish a GitHub release
-      issues: write # to be able to comment on released issues
-      pull-requests: write # to be able to comment on released pull requests
-      id-token: write # to enable use of OIDC for npm provenance
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
       packages: write
+
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
         with:
           fetch-depth: 0
-          ssh-key: ${{ secrets.SEMANTIC_RELEASE_KEY }}
-          # Persist credentials so that semantic-release will use them
+          token: ${{ secrets.SEMANTIC_RELEASE_PAT }}
           persist-credentials: true
+
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v4
         with:
           node-version: "lts/*"
+
       - name: Install dependencies
         run: npm clean-install
-      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
-        run: npm audit signatures
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
-        run: npx semantic-release
-      - name: Create PR to update dev branch
-        if: github.ref == 'refs/heads/main'
-        run: |
-          # 1. Create the Pull Request
-          gh pr create --base dev --head main \
-            --title "chore(sync): update dev with latest release from main" \
-            --body "Syncing changes from main back to dev following a release." \
-            || echo "PR creation failed or PR already exists."
 
-          # 2. Set Auto-Merge
-          gh pr merge main --auto --merge --delete-branch=false
+      - name: Verify dependency provenance
+        run: npm audit signatures
+
+      - name: Run semantic-release
         env:
-          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
-      - name: Create PR to create upcoming release
-        if: github.ref == 'refs/heads/dev'
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+        run: npx semantic-release
+
+      # After a release, back-merge main → dev so dev stays up to date
+      # with the release commit (version bump, changelog, etc.)
+      - name: Back-merge main → dev
+        env:
+          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
         run: |
-          gh pr create --base main --head dev --title "Upcoming Release" --fill || echo "PR already exists! Skipping..."
+          EXISTING=$(gh pr list \
+            --base dev --head main \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -z "$EXISTING" ] || [ "$EXISTING" = "null" ]; then
+            gh pr create \
+              --base dev \
+              --head main \
+              --title "chore(sync): sync dev with latest release from main" \
+              --body "Automated back-merge of the release commit from \`main\` into \`dev\`." \
+              --label "dependencies"
+            PR_NUMBER=$(gh pr list \
+              --base dev --head main \
+              --state open \
+              --json number \
+              --jq '.[0].number')
+          else
+            PR_NUMBER=$EXISTING
+            echo "PR #$PR_NUMBER already exists, enabling auto-merge."
+          fi
+
+          # Safe to merge directly: this is a pure sync commit from main, no feature code
+          gh pr merge "$PR_NUMBER" --merge --delete-branch=false --auto
+          echo "Back-merge PR #$PR_NUMBER merged."
+
+      # Only create a dev → main PR if dev is ahead of main (i.e. there is something to release)
+      - name: Ensure Upcoming Release PR (dev → main) exists if needed
         env:
-          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE }}
+          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+        run: |
+          # Check if dev has any commits not in main
+          git fetch origin dev main
+          AHEAD=$(git rev-list --count origin/main..origin/dev)
+
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "✅ dev and main are in sync. No upcoming release PR needed."
+            exit 0
+          fi
+
+          echo "dev is $AHEAD commit(s) ahead of main. Checking for existing PR..."
+
+          EXISTING=$(gh pr list \
+            --base main \
+            --head dev \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -z "$EXISTING" ] || [ "$EXISTING" = "null" ]; then
+            gh pr create \
+              --base main \
+              --head dev \
+              --title "Upcoming Release" \
+              --body "This PR is managed automatically. It will only be merged by the scheduled lifecycle-check workflow when all commits since the last release are lifecycle/automated and all checks pass." \
+              --label "dependencies"
+            echo "Upcoming Release PR created."
+          else
+            echo "Upcoming Release PR #$EXISTING already exists. Nothing to do."
+          fi

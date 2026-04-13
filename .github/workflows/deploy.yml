@@ -1,55 +1,63 @@
 name: Deploy App
 
 on:
-  release:
-    types:
-      - prereleased
-      - released
-      - published
-      - created
+  workflow_run:
+    workflows: [ "Test and Build" ]
+    branches: [ dev, main ]
+    types: [ completed ]
+
+concurrency:
+  group: deploy-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false # Never cancel an active deployment mid-flight
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
+    # Only deploy when the test pipeline actually succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v4
         with:
-          node-version: 'lts/*'  # Use latest LTS version
+          node-version: "lts/*"
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci  # Ensure dependencies are installed
+        run: npm ci
 
-      - name: Build Angular app (Review Env)
-        if: 'github.event.release.prerelease'
+      # ── dev branch → preview/dev environment ─────────────────────────────────────
+      - name: Build Angular app (Dev / Preview)
+        if: github.event.workflow_run.head_branch == 'dev'
         run: npm run build-preview
 
-      - name: Deploy to GitHub Pages (Review Env)
+      - name: Deploy to GitHub Pages (Dev environment)
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
-        if: 'github.event.release.prerelease'
+        if: github.event.workflow_run.head_branch == 'dev'
         with:
           repository-name: paste-perfect/paste-perfect-test
           branch: gh-pages
           folder: dist/paste-perfect/browser
           clean: true
-          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          ssh-key: ${{ secrets.DEPLOY_KEY_NEU }}
 
-      - name: Build Angular app
-        if: '!github.event.release.prerelease'
+      # ── main branch → production environment ─────────────────────────────────
+      - name: Build Angular app (Production)
+        if: github.event.workflow_run.head_branch == 'main'
         run: npm run build-prod
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (Production)
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
-        if: '!github.event.release.prerelease'
+        if: github.event.workflow_run.head_branch == 'main'
         with:
-          branch: gh-pages  # Deploy to `gh-pages` branch
+          branch: gh-pages
           folder: dist/paste-perfect/browser
           clean: true

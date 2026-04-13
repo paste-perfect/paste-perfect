@@ -5,9 +5,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  create:
-    tags:
-      - "v*.*.*"
   push:
     branches:
       - main
@@ -18,8 +15,8 @@ on:
     types: [published]
   pull_request:
     branches:
-      - "main"
-      - "dev"
+      - main
+      - dev
 
 permissions:
   contents: read
@@ -89,7 +86,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         if: ${{ github.event_name != 'pull_request' }}
         with:
           image-ref: "${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
