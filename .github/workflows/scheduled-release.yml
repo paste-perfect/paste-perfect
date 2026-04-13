@@ -15,17 +15,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
 
       # ── 1. Guard: dev pipeline must be green ──────────────────────────────
       - name: Verify dev pipeline is green
         id: check-pipeline
         env:
-          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           # Only check the core CI workflows (Test and Build, docker-build)
           STATUS=$(gh api \
@@ -42,6 +49,12 @@ jobs:
 
           echo "Dev pipeline status: $STATUS"
 
+          if [ "$STATUS" = "no_checks" ]; then
+            echo "⚠️  No CI check results found on dev. This may indicate checks have not run yet."
+            echo "   Treating as non-green to be safe. Aborting."
+            exit 1
+          fi
+
           if [ "$STATUS" != "green" ]; then
             echo "❌ Dev pipeline is not fully green (status=$STATUS). Aborting."
             exit 1
@@ -53,7 +66,7 @@ jobs:
       - name: Check that dev only contains lifecycle commits since last merge
         id: check-commits
         env:
-          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           MERGE_BASE=$(git merge-base origin/dev origin/main)
           echo "Merge base commit: $MERGE_BASE"
@@ -68,8 +81,11 @@ jobs:
             exit 0
           fi
 
-          # Allowed patterns (Renovate + semantic-release sync/release commits + merge commits)
-          LIFECYCLE_PATTERN="^(chore|fix|refactor)(\(deps(-dev)?\))?!?: |^chore\(sync\)|^chore\(release\)|^(Merge|merge) "
+          # Allowed patterns:
+          #   - Renovate dependency updates: chore/fix/refactor(deps), build(deps)
+          #   - semantic-release sync/release commits: chore(sync), chore(release)
+          #   - Merge commits
+          LIFECYCLE_PATTERN="^(chore|fix|refactor|build)(\(deps(-dev)?\))?!?: |^chore\(sync\)|^chore\(release\)|^(Merge|merge) "
 
           NON_LIFECYCLE=$(echo "$COMMITS" | grep -vE "$LIFECYCLE_PATTERN" || true)
 
@@ -87,7 +103,7 @@ jobs:
         if: steps.check-commits.outputs.should_merge == 'true'
         id: pr
         env:
-          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           EXISTING=$(gh pr list \
             --base main \
@@ -101,28 +117,42 @@ jobs:
             echo "pr_number=$EXISTING" >> "$GITHUB_OUTPUT"
           else
             echo "Creating dev → main PR..."
+
+            # Ensure the 'dependencies' label exists before referencing it
+            gh label create "dependencies" --color "0075ca" --description "Dependency updates" 2>/dev/null \
+              || echo "ℹ️  Label 'dependencies' already exists."
+
             gh pr create \
               --base main \
               --head dev \
               --title "chore(release): scheduled lifecycle merge dev → main" \
               --body "Automated weekly merge. All commits are lifecycle/dependency updates only." \
               --label "dependencies"
+
             PR_NUMBER=$(gh pr list \
               --base main --head dev --state open \
               --json number --jq '.[0].number')
+
+            if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+              echo "❌ PR was created but could not be retrieved. Aborting."
+              exit 1
+            fi
+
             echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Merge dev → main
         if: steps.check-commits.outputs.should_merge == 'true'
         env:
-          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           PR_NUMBER=${{ steps.pr.outputs.pr_number }}
+
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
             echo "No PR to merge (was already up to date). Exiting."
             exit 0
           fi
+
           echo "Merging PR #$PR_NUMBER"
           gh pr merge "$PR_NUMBER" \
             --merge \
