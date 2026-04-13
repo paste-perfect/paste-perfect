@@ -90,7 +90,7 @@ jobs:
         with:
           artifact: test-reports
           name: JEST Tests
-          path: "reports/jest/report.xml"
+          path: "jest/report.xml"
           reporter: jest-junit
 
       - name: Generate Snapshot test report
@@ -98,5 +98,5 @@ jobs:
         with:
           artifact: test-reports
           name: Snapshot Tests
-          path: "reports/playwright/report.xml"
+          path: "playwright/report.xml"
           reporter: jest-junit
