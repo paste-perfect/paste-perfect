@@ -5,18 +5,11 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - main
-      - dev
-    tags:
-      - "v*.*.*"
-  release:
-    types: [published]
-  pull_request:
-    branches:
-      - main
-      - dev
+  workflow_run:
+    workflows:
+      - "Test and Build"
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -27,9 +20,16 @@ jobs:
   docker:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    # Only run if the triggering workflow_run succeeded (releases always proceed)
+    if: >
+      github.event_name == 'release' ||
+      github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # For workflow_run events, check out the exact commit that was tested
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set IMAGE_NAME
         run: echo "IMAGE_NAME=ghcr.io/${REPO,,}" >> $GITHUB_ENV

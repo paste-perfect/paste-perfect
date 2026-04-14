@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 permissions:
   contents: write
@@ -93,6 +94,7 @@ jobs:
           gh pr merge "$PR_NUMBER" --auto --merge --delete-branch=false
 
       - name: Create PR to create upcoming release
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -110,18 +112,3 @@ jobs:
           fi
     outputs:
       released: ${{ steps.release.outputs.released }}
-
-  deploy-production:
-    name: Trigger Production Deployment
-    needs: release
-    # Only deploy when a release was actually created
-    if: needs.release.outputs.released == 'true'
-    permissions:
-      contents: write
-      actions: read
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
-    with:
-      environment: prod
-      ref: main
-

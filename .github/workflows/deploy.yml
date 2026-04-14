@@ -1,35 +1,30 @@
 name: Deploy App
 
 on:
-  workflow_call:
-    inputs:
-      environment:
-        description: "Target environment (dev or prod)"
-        required: true
-        type: string
-      ref:
-        description: "Git ref to checkout (branch or tag)"
-        required: true
-        type: string
+  release:
+    types:
+      - prereleased
+      - released
+      - published
+      - created
 
 permissions:
   contents: write
-  actions: read
 
 concurrency:
-  group: deploy-${{ inputs.environment }}
+  group: deploy-${{ github.ref }}
   cancel-in-progress: false # Never cancel an active deployment mid-flight
 
 jobs:
   deploy:
-    name: Deploy to GitHub Pages (${{ inputs.environment }})
+    name: Deploy to GitHub Pages (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
@@ -42,11 +37,11 @@ jobs:
 
       # ── dev → preview environment ──────────────────────────────────────────
       - name: Build Angular app (Dev / Preview)
-        if: inputs.environment == 'dev'
+        if: github.event.release.prerelease == true
         run: npm run build-preview
 
       - name: Deploy to GitHub Pages (Dev environment)
-        if: inputs.environment == 'dev'
+        if: github.event.release.prerelease == true
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f
         with:
           repository-name: paste-perfect/paste-perfect-test
@@ -57,11 +52,11 @@ jobs:
 
       # ── main → production environment ─────────────────────────────────────
       - name: Build Angular app (Production)
-        if: inputs.environment == 'prod'
+        if: github.event.release.prerelease == false
         run: npm run build-prod
 
       - name: Deploy to GitHub Pages (Production)
-        if: inputs.environment == 'prod'
+        if: github.event.release.prerelease == false
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f
         with:
           branch: gh-pages
