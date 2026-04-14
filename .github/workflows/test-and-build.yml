@@ -84,6 +84,7 @@ jobs:
     # Required by dorny/test-reporter
     permissions:
       contents: read
+      actions: read
       checks: write
       pull-requests: write
 
