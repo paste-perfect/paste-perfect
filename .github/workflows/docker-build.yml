@@ -86,7 +86,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner (remote — non-PR)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         if: github.event_name != 'pull_request'
         env:
           TRIVY_USERNAME: ${{ github.repository_owner }}
@@ -98,7 +98,7 @@ jobs:
           severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Run Trivy vulnerability scanner (local — PR)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         if: github.event_name == 'pull_request'
         with:
           image-ref: "${{ steps.docker-build.outputs.imageid }}"
