@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Set IMAGE_NAME
         run: echo "IMAGE_NAME=ghcr.io/${REPO,,}" >> $GITHUB_ENV
@@ -71,7 +71,7 @@ jobs:
         run: echo "TIMESTAMP=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
 
       - name: Build and push
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
         id: docker-build
         env:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
@@ -79,23 +79,36 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy vulnerability scanner (remote — non-PR)
         uses: aquasecurity/trivy-action@0.35.0
-        if: ${{ github.event_name != 'pull_request' }}
+        if: github.event_name != 'pull_request'
+        env:
+          TRIVY_USERNAME: ${{ github.repository_owner }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         with:
-          image-ref: "${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
+          image-ref: "${{ env.IMAGE_NAME }}@${{ steps.docker-build.outputs.digest }}"
+          format: "sarif"
+          output: "trivy-results-docker.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Run Trivy vulnerability scanner (local — PR)
+        uses: aquasecurity/trivy-action@0.35.0
+        if: github.event_name == 'pull_request'
+        with:
+          image-ref: "${{ steps.docker-build.outputs.imageid }}"
           format: "sarif"
           output: "trivy-results-docker.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 # v4
-        if: ${{ github.event_name != 'pull_request' }}
+        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
+        if: always()
         with:
           sarif_file: "trivy-results-docker.sarif"

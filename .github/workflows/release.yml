@@ -34,14 +34,14 @@ jobs:
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
         with:
           node-version: "lts/*"
 
@@ -52,9 +52,13 @@ jobs:
         run: npm audit signatures
 
       - name: Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: npx semantic-release
+        run: |
+          npx semantic-release
+          echo "released=$([[ -n \"$SEMANTIC_RELEASE_NEXT_RELEASE_VERSION\" ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+
 
       - name: Create PR to update dev branch
         if: github.ref == 'refs/heads/main'
