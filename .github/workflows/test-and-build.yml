@@ -8,8 +8,9 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -20,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
           node-version: "lts/*" # Use latest LTS version
           cache: "npm"
@@ -31,14 +32,13 @@ jobs:
       - name: Install dependencies
         run: npm ci # Uses package-lock.json for reproducible installs
 
-      - name: Lint code
-        run: npm run lint:check
-
-      - name: Check code formatting
-        run: npm run format:check
+      - name: Lint and format checks
+        run: |
+          npm run lint:check
+          npm run format:check
 
       - name: Create reports directory
-        run: mkdir -p reports/jest
+        run: mkdir -p reports/jest reports/playwright
 
       - name: Run unit tests
         run: npm run test:unit:ci
@@ -48,43 +48,57 @@ jobs:
 
       - name: Get Playwright version
         id: playwright-version
-        run: echo "version=$(npm list @playwright/test --depth=0 --json | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
+        run: |
+          echo "version=$(npm list @playwright/test --depth=0 --json \
+            | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps
+      - name: Install Playwright browsers and dependencies
+        run: |
+          npx playwright install-deps
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            npx playwright install
+          fi
 
       - name: Run snapshot tests
         run: npm run test:snapshots
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7  # upload test results
+      - name: Upload test reports
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # upload test results
         if: ${{ !cancelled() }} # run this step even if previous step failed
         with:
           name: test-reports
           path: reports/
+          retention-days: 7
 
   report:
     name: Generate Test Reports
     runs-on: ubuntu-latest
     needs: test-and-build
+    # Required by dorny/test-reporter
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: write
 
     steps:
       - name: Generate JEST test report
-        uses: dorny/test-reporter@df6247429542221bc30d46a036ee47af1102c451 # v2
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2
         with:
           artifact: test-reports
           name: JEST Tests
           path: "jest/report.xml"
           reporter: jest-junit
+
       - name: Generate Snapshot test report
-        uses: dorny/test-reporter@df6247429542221bc30d46a036ee47af1102c451 # v2
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2
         with:
           artifact: test-reports
           name: Snapshot Tests

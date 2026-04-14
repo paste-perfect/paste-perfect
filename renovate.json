@@ -22,16 +22,9 @@
   "timezone": "Europe/Berlin",
   "prConcurrentLimit": 10,
   "prHourlyLimit": 5,
-  "packageRules": [
-    {
-      "description": "Security updates can run immediately",
-      "vulnerabilityAlerts": {
-        "enabled": true
-      },
-      "schedule": ["at any time"],
-      "matchPackageNames": ["*"]
-    }
-  ],
+  "vulnerabilityAlerts": {
+    "schedule": ["at any time"]
+  },
   "ignorePaths": ["docker-compose.yml"],
   "ignoreUnstable": true
 }
