@@ -108,3 +108,17 @@ jobs:
               exit 1
             fi
           fi
+    outputs:
+      released: ${{ steps.release.outputs.released }}
+
+  deploy-production:
+    name: Trigger Production Deployment
+    needs: release
+    # Only deploy when a release was actually created
+    if: needs.release.outputs.released == 'true'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      environment: prod
+      ref: main
+

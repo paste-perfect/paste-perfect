@@ -103,3 +103,16 @@ jobs:
           name: Snapshot Tests
           path: "playwright/report.xml"
           reporter: jest-junit
+
+  deploy-dev:
+    name: Trigger Dev Deployment
+    needs: [ test-and-build, report ]
+    permissions:
+      contents: write # Needed for gh-pages push
+    # Only deploy on pushes (not PRs) to the dev branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      environment: dev
+      ref: dev
