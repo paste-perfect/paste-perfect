@@ -2,7 +2,7 @@ name: Deploy App
 
 on:
   workflow_run:
-    workflows: [ "Test and Build" ]
+    workflows: [ "Test and Build", "Release" ]
     branches: [ dev, main ]
     types: [ completed ]
 
@@ -19,7 +19,12 @@ jobs:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     # Only deploy when the test pipeline actually succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      (
+        (github.event.workflow_run.head_branch == 'dev' && github.event.workflow_run.name == 'Test and Build') ||
+        (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.name == 'Release')
+      )
 
     steps:
       - name: Checkout repository
