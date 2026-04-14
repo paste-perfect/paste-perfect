@@ -15,6 +15,20 @@ export const test = base.extend<{ page: CodeHighlighterPage }>({
     page.assertions = createAssertions(page);
     page.utils = createUtils(page);
 
+    // Disable spellcheck globally for all textareas to prevent Playwright flakiness
+    await page.addInitScript(() => {
+      const observer = new MutationObserver(() => {
+        const textareas = document.querySelectorAll('textarea:not([spellcheck="false"])');
+        textareas.forEach((textarea) => {
+          textarea.setAttribute("spellcheck", "false");
+        });
+      });
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+    });
+
     // Go to the app's root path
     await page.goto("/");
 
