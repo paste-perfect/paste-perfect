@@ -116,6 +116,9 @@ jobs:
     needs: release
     # Only deploy when a release was actually created
     if: needs.release.outputs.released == 'true'
+    permissions:
+      contents: write
+      actions: read
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
     with:

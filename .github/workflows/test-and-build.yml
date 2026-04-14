@@ -84,6 +84,7 @@ jobs:
     # Required by dorny/test-reporter
     permissions:
       contents: read
+      actions: read
       checks: write
       pull-requests: write
 
@@ -107,10 +108,11 @@ jobs:
   deploy-dev:
     name: Trigger Dev Deployment
     needs: [ test-and-build, report ]
-    permissions:
-      contents: write # Needed for gh-pages push
     # Only deploy on pushes (not PRs) to the dev branch
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    permissions:
+      contents: write
+      actions: read
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
     with:
