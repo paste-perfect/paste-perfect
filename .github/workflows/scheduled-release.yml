@@ -1,4 +1,4 @@
-name: Scheduled Release (dev → main)
+name: Scheduled Release (dev -> main)
 
 on:
   schedule:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   scheduled-merge:
-    name: Merge dev → main (lifecycle-only)
+    name: Merge dev -> main (lifecycle-only)
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,7 @@ jobs:
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
@@ -34,14 +34,14 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          # Only check the core CI workflows (Test and Build, docker-build)
           STATUS=$(gh api \
-            "repos/${{ github.repository }}/commits/dev/check-runs?per_page=100" \
+            "repos/${{ github.repository }}/commits/dev/check-runs?per_page=100&status=completed" \
             --jq '
               [.check_runs[]
                 | select(.name | test("Test and Build|docker-build"; "i"))
-                | select(.conclusion != null)
               ]
+              | group_by(.name)
+              | map(sort_by(.started_at) | last)
               | if length == 0 then "no_checks"
                 elif all(.conclusion == "success" or .conclusion == "skipped") then "green"
                 else "failing"
@@ -50,8 +50,7 @@ jobs:
           echo "Dev pipeline status: $STATUS"
 
           if [ "$STATUS" = "no_checks" ]; then
-            echo "⚠️  No CI check results found on dev. This may indicate checks have not run yet."
-            echo "   Treating as non-green to be safe. Aborting."
+            echo "⚠️  No CI check results found on dev. Treating as non-green to be safe. Aborting."
             exit 1
           fi
 
@@ -99,7 +98,7 @@ jobs:
           echo "should_merge=true" >> "$GITHUB_OUTPUT"
 
       # ── 3. Merge: find or create PR and merge immediately ─────────────────
-      - name: Find or create dev → main PR
+      - name: Find or create dev -> main PR
         if: steps.check-commits.outputs.should_merge == 'true'
         id: pr
         env:
@@ -116,16 +115,15 @@ jobs:
             echo "Found existing PR #$EXISTING"
             echo "pr_number=$EXISTING" >> "$GITHUB_OUTPUT"
           else
-            echo "Creating dev → main PR..."
+            echo "Creating dev -> main PR..."
 
-            # Ensure the 'dependencies' label exists before referencing it
             gh label create "dependencies" --color "0075ca" --description "Dependency updates" 2>/dev/null \
               || echo "ℹ️  Label 'dependencies' already exists."
 
             gh pr create \
               --base main \
               --head dev \
-              --title "chore(release): scheduled lifecycle merge dev → main" \
+              --title "chore(release): scheduled lifecycle merge dev -> main" \
               --body "Automated weekly merge. All commits are lifecycle/dependency updates only." \
               --label "dependencies"
 
@@ -141,7 +139,7 @@ jobs:
             echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Merge dev → main
+      - name: Merge dev -> main
         if: steps.check-commits.outputs.should_merge == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -158,3 +156,17 @@ jobs:
             --merge \
             --delete-branch=false
           echo "✅ dev merged into main via PR #$PR_NUMBER"
+
+#     Note: This requires the permission "issues: write"
+#      - name: Notify on scheduled merge failure
+#        if: failure()
+#        run: |
+#          echo "::error::Scheduled release failed. Check the workflow run for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+#          # Replace the line below with your preferred notification mechanism
+#          # e.g. curl to a Slack webhook, send a GitHub issue, etc.
+#          gh issue create \
+#            --title "⚠️ Scheduled Release Failed - $(date -u +'%Y-%m-%d')" \
+#            --body "The scheduled dev→main lifecycle merge failed. [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
+#            --label "bug" || echo "Could not create issue (may already exist or label missing)"
+#        env:
+#          GH_TOKEN: ${{ steps.app-token.outputs.token }}
