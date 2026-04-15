@@ -1,0 +1,81 @@
+name: Open Release PR (dev -> main)
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+concurrency:
+  group: open-dev-to-main-pr
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ensure-pr:
+    name: Ensure dev -> main release PR exists
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Create lifecycle label if missing
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh label create "lifecycle-release" \
+            --color "5319e7" \
+            --description "Automated weekly lifecycle release PR" 2>/dev/null || true
+
+      - name: Create or verify dev -> main PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          git fetch origin main dev
+
+          AHEAD=$(git rev-list --right-only --count origin/main...origin/dev)
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "ℹ️  dev is not ahead of main. No PR needed."
+            exit 0
+          fi
+
+          EXISTING=$(gh pr list \
+            --base main \
+            --head dev \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "ℹ️  Release PR #$EXISTING already exists."
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head dev \
+            --title "chore(release): promote dev to main" \
+            --label "lifecycle-release" \
+            --body "Automated release PR from **dev → main**.
+
+          ⏳ **This PR is not auto-merged on creation.**
+          The [scheduled-release workflow](.github/workflows/scheduled-release.yml) runs every **Monday at 08:00 UTC** and enables auto-merge only when:
+          1. All commits since the last release are lifecycle/dependency updates only.
+          2. All required CI checks are passing."
+
+          echo "✅ Release PR created."
