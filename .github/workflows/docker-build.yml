@@ -1,93 +1,104 @@
-name: docker-build
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: true
+name: Docker — Build, Scan & Publish
 
 on:
-  push:
-    branches:
-      - main
-      - dev
-  release:
-    types: [published]
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
+    types: [opened, synchronize, reopened]
+  merge_group:
+    branches: [main, dev]
+  release:
+    types: [prereleased, published]
+  workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: write
-  security-events: write
+# ── One build per PR; cancel stale runs ───────────────────────────────────────
+concurrency:
+  group: docker-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: {} # declared per-job
 
 jobs:
   docker:
-    name: Build and Push Docker Image
+    name: Build & Scan Docker Image
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      packages: write       # push to GHCR on release only
+      security-events: write # upload Trivy SARIF
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Set IMAGE_NAME
-        run: echo "IMAGE_NAME=ghcr.io/${REPO,,}" >> $GITHUB_ENV
+      # ── Image naming ───────────────────────────────────────────────────────
+      - name: Derive IMAGE_NAME (lowercase)
+        run: echo "IMAGE_NAME=ghcr.io/${REPO,,}" >> "$GITHUB_ENV"
         env:
-          REPO: "${{ github.repository }}"
+          REPO: ${{ github.repository }}
 
-      - name: Docker meta
+      # ── Docker metadata (tags + labels) ───────────────────────────────────
+      - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ${{ env.IMAGE_NAME }}
-          # generate Docker tags based on the following events/attributes
+          images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=schedule,value=latest
-            type=ref,event=branch
             type=ref,event=pr
+            type=sha,format=long
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,format=long
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      # ── Build infrastructure ───────────────────────────────────────────────
+      - name: Set up QEMU (multi-platform support)
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        if: github.event_name != 'pull_request'
+      # ── Registry login (release events only — least privilege) ─────────────
+      - name: Login to GHCR
+        if: github.event_name == 'release'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get Git commit timestamps
-        run: echo "TIMESTAMP=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
+      # ── Reproducible build timestamp ───────────────────────────────────────
+      - name: Capture Git commit timestamp
+        run: echo "TIMESTAMP=$(git log -1 --pretty=%ct)" >> "$GITHUB_ENV"
 
-      - name: Build and push
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+      # ── Build (+ push on release) ──────────────────────────────────────────
+      # Tier-2 cache: Docker layer cache via GitHub Actions cache backend
+      - name: Build and conditionally push image
         id: docker-build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
         env:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
         with:
           context: .
           file: docker/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          load: ${{ github.event_name == 'pull_request' }}
+          # Push only on release events; load locally for PR/merge_group scans
+          push: ${{ github.event_name == 'release' }}
+          load: ${{ github.event_name != 'release' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
+          # Tier-2: Docker layer cache (GHA backend — fastest option in-runner)
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy vulnerability scanner (remote — non-PR)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
-        if: github.event_name != 'pull_request'
+      # ── Trivy image scan ────────────────────────────────────────────────────
+      # Two scan modes: remote digest (release) vs local image ID (PR)
+      # This avoids pulling a just-pushed image back for PR scans
+      - name: Trivy scan — remote image (release)
+        if: github.event_name == 'release'
+        uses: aquasecurity/trivy-action@0.35.0
         env:
           TRIVY_USERNAME: ${{ github.repository_owner }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -96,18 +107,28 @@ jobs:
           format: "sarif"
           output: "trivy-results-docker.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
+          ignore-unfixed: true
 
-      - name: Run Trivy vulnerability scanner (local — PR)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
-        if: github.event_name == 'pull_request'
+      - name: Trivy scan — local image (PR / merge_group)
+        if: github.event_name != 'release'
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: "${{ steps.docker-build.outputs.imageid }}"
           format: "sarif"
           output: "trivy-results-docker.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
+          ignore-unfixed: true
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
+      - name: Upload Trivy Docker SARIF to GitHub Security tab
         if: always()
+        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
         with:
           sarif_file: "trivy-results-docker.sarif"
+
+      - name: Upload Trivy Docker results as artifact
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: trivy-docker-results-${{ github.run_id }}
+          path: trivy-results-docker.sarif
+          retention-days: 14

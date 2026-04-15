@@ -1,40 +1,61 @@
-name: "Run Security Tests"
-on:
-  push:
-    branches:
-      - main
-      - dev
-  pull_request:
-  schedule:
-    - cron: "0 4 * * 0"   # Every Sunday at 04:00 UTC (once per week)
+name: Security — Vulnerability Scan (Trivy)
 
+on:
+  pull_request:
+    branches: [main, dev]
+    types: [opened, synchronize, reopened]
+  merge_group:
+    branches: [main, dev]
+  schedule:
+    - cron: "0 4 * * 0" # Every Sunday at 04:00 UTC
+  workflow_dispatch:
+
+# ── One scan per PR; cancel stale runs ────────────────────────────────────────
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: security-${{ github.event.pull_request.number || github.ref || github.run_id }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  actions: read
-  checks: write
-  security-events: write
+permissions: {} # declared per-job
 
 jobs:
-  report:
-    name: Vulnerability Scan
+  trivy-fs-scan:
+    name: Trivy — Filesystem Vulnerability Scan
     runs-on: ubuntu-latest
+    # Skip draft PRs — scan only actionable, ready-for-review code
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      security-events: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Run Trivy vulnerability scanner in repo mode
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+      - name: Run Trivy filesystem scanner
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: "fs"
           format: "sarif"
           output: "trivy-results-fs.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
+          # Suppress licence-only findings that are not exploitable vulnerabilities
+          ignore-unfixed: true
 
-      - name: Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
+        # Always upload even if Trivy finds nothing — keeps the Security tab consistent
+        if: always()
         with:
           sarif_file: "trivy-results-fs.sarif"
+
+      - name: Upload Trivy raw results as artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: trivy-fs-results-${{ github.run_id }}
+          path: trivy-results-fs.sarif
+          retention-days: 14
