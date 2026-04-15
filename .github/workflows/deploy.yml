@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: angular-dist-${{ github.run_id }}
           path: dist/paste-perfect/browser
@@ -90,7 +90,7 @@ jobs:
           branch: gh-pages
           folder: dist/paste-perfect/browser
           clean: true
-          ssh-key: ${{ secrets.DEPLOY_KEY_NEU }}
+          ssh-key: ${{ secrets.DEPLOY_KEY_NEW }}
 
   deploy-production:
     name: Deploy → Production
@@ -102,7 +102,7 @@ jobs:
 
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: angular-dist-${{ github.run_id }}
           path: dist/paste-perfect/browser
