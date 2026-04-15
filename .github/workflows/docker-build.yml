@@ -82,3 +82,38 @@ jobs:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
         with:
           context: .
+          file: docker/Dockerfile
+          push: ${{ github.event_name == 'release' }}
+          load: ${{ github.event_name != 'release' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy scanner (remote — release)
+        if: github.event_name == 'release'
+        uses: aquasecurity/trivy-action@0.35.0
+        env:
+          TRIVY_USERNAME: ${{ github.repository_owner }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          image-ref: "${{ env.IMAGE_NAME }}@${{ steps.docker-build.outputs.digest }}"
+          format: "sarif"
+          output: "trivy-results-docker.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Run Trivy scanner (local — PR / merge_group)
+        if: github.event_name != 'release'
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: "${{ steps.docker-build.outputs.imageid }}"
+          format: "sarif"
+          output: "trivy-results-docker.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Upload Trivy results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
+        with:
+          sarif_file: "trivy-results-docker.sarif"
