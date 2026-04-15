@@ -19,7 +19,7 @@ permissions:
   security-events: write
 
 jobs:
-  scan:
+  report:
     name: Vulnerability Scan
     runs-on: ubuntu-latest
     steps:
