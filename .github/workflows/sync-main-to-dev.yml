@@ -1,0 +1,147 @@
+name: Sync main -> dev
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: sync-main-to-dev
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Sync main into dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "releasebot[bot]"
+          git config user.email "releasebot[bot]@users.noreply.github.com"
+
+      - name: Build sync branch and resolve version conflicts
+        id: sync
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin main dev
+
+          # Check if main has anything new that dev doesn't
+          AHEAD=$(git rev-list --right-only --count origin/dev...origin/main)
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "dev is already up to date with main. Nothing to sync."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          SYNC_BRANCH="automation/main-to-dev-sync"
+          git checkout -B "$SYNC_BRANCH" origin/dev
+
+          # Attempt a clean merge first
+          set +e
+          git merge --no-ff --no-edit origin/main
+          MERGE_EXIT=$?
+          set -e
+
+          if [ $MERGE_EXIT -ne 0 ]; then
+            CONFLICTS=$(git diff --name-only --diff-filter=U || true)
+            echo "Conflicts detected in: $CONFLICTS"
+
+            # Only auto-resolve version-related files; fail on anything else
+            NON_VERSION=$(echo "$CONFLICTS" | grep -vE '^(package\.json|package-lock\.json|npm-shrinkwrap\.json)$' || true)
+            if [ -n "$NON_VERSION" ]; then
+              echo "❌ Unresolvable conflicts in non-version files:"
+              echo "$NON_VERSION"
+              exit 1
+            fi
+
+            # Accept main's version files as source of truth (stable beats RC)
+            for f in package.json package-lock.json npm-shrinkwrap.json; do
+              if echo "$CONFLICTS" | grep -qx "$f"; then
+                git checkout --theirs "$f"
+                git add "$f"
+              fi
+            done
+
+            git commit -m "chore(sync): resolve release version files from main [skip ci]"
+          fi
+
+          # Verify we actually have new commits to push
+          if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git push --force-with-lease origin "$SYNC_BRANCH"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          echo "sync_branch=$SYNC_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update sync PR
+        if: steps.sync.outputs.has_changes == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          SYNC_BRANCH="${{ steps.sync.outputs.sync_branch }}"
+
+          PR_NUMBER=$(gh pr list \
+            --base dev \
+            --head "$SYNC_BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            gh pr create \
+              --base dev \
+              --head "$SYNC_BRANCH" \
+              --title "chore(sync): merge main into dev" \
+              --body "Automated post-release sync from **main → dev**.
+
+          Auto-merge is enabled — this PR merges automatically once all required CI checks pass.
+          Version conflicts in \`package.json\` / \`package-lock.json\` have been resolved using the stable version from \`main\`."
+
+            PR_NUMBER=$(gh pr list \
+              --base dev \
+              --head "$SYNC_BRANCH" \
+              --state open \
+              --json number \
+              --jq '.[0].number')
+          else
+            echo "ℹ️  Reusing existing sync PR #$PR_NUMBER"
+          fi
+
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Enable auto-merge on sync PR
+        if: steps.sync.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh pr merge "${{ steps.pr.outputs.pr_number }}" \
+            --auto \
+            --merge \
+            --delete-branch \
+            || echo "ℹ️  Auto-merge already enabled or PR already merged."

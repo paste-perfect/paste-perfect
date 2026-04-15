@@ -5,13 +5,17 @@ on:
     - cron: "0 8 * * 1" # Every Monday at 08:00 UTC (after Renovate's "before 6am" window)
   workflow_dispatch:
 
+concurrency:
+  group: scheduled-dev-to-main
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
   scheduled-merge:
-    name: Merge dev -> main (lifecycle-only)
+    name: Enable auto-merge for lifecycle-only dev -> main PR
     runs-on: ubuntu-latest
 
     steps:
@@ -28,145 +32,61 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      # ── 1. Guard: dev pipeline must be green ──────────────────────────────
-      - name: Verify dev pipeline is green
-        id: check-pipeline
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Check if dev is ahead of main
+        id: ahead
         run: |
-          STATUS=$(gh api \
-            "repos/${{ github.repository }}/commits/dev/check-runs?per_page=100&status=completed" \
-            --jq '
-              [.check_runs[]
-                | select(.name | test("Test and Build|docker-build"; "i"))
-              ]
-              | group_by(.name)
-              | map(sort_by(.started_at) | last)
-              | if length == 0 then "no_checks"
-                elif all(.conclusion == "success" or .conclusion == "skipped") then "green"
-                else "failing"
-                end')
+          set -euo pipefail
+          git fetch origin main dev
 
-          echo "Dev pipeline status: $STATUS"
-
-          if [ "$STATUS" = "no_checks" ]; then
-            echo "⚠️  No CI check results found on dev. Treating as non-green to be safe. Aborting."
-            exit 1
+          AHEAD=$(git rev-list --right-only --count origin/main...origin/dev)
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "ℹ️  dev is not ahead of main. Nothing to release."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-          if [ "$STATUS" != "green" ]; then
-            echo "❌ Dev pipeline is not fully green (status=$STATUS). Aborting."
-            exit 1
-          fi
-
-          echo "✅ Dev pipeline is green."
-
-      # ── 2. Guard: only lifecycle commits since last merge into main ────────
-      - name: Check that dev only contains lifecycle commits since last merge
-        id: check-commits
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Validate all commits are lifecycle-only
+        if: steps.ahead.outputs.has_changes == 'true'
+        id: validate
         run: |
+          set -euo pipefail
+
           MERGE_BASE=$(git merge-base origin/dev origin/main)
-          echo "Merge base commit: $MERGE_BASE"
-
           COMMITS=$(git log "$MERGE_BASE"..origin/dev --pretty=format:"%s")
-          echo "Commits since last merge to main:"
+
+          echo "Commits to validate:"
           echo "$COMMITS"
 
-          if [ -z "$COMMITS" ]; then
-            echo "⚠️  No new commits on dev since last merge. Nothing to release."
-            echo "should_merge=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Allowed patterns:
-          #   - Renovate dependency updates: chore/fix/refactor(deps), build(deps)
-          #   - semantic-release sync/release commits: chore(sync), chore(release)
-          #   - Merge commits
-          LIFECYCLE_PATTERN="^(chore|fix|refactor|build)(\(deps(-dev)?\))?!?: |^chore\(sync\)|^chore\(release\)|^(Merge|merge) "
-
+          # Allowed: Renovate updates, sync/release automation, merge commits
+          LIFECYCLE_PATTERN='^(chore|fix|refactor|build)($$deps(-dev)?$$)?!?: |^chore$$sync$$|^chore$$release$$|^(Merge|merge) '
           NON_LIFECYCLE=$(echo "$COMMITS" | grep -vE "$LIFECYCLE_PATTERN" || true)
 
           if [ -n "$NON_LIFECYCLE" ]; then
-            echo "❌ Non-lifecycle commits found. Will not auto-merge:"
+            echo "❌ Non-lifecycle commits detected — skipping auto-merge:"
             echo "$NON_LIFECYCLE"
+            echo "should_merge=false" >> "$GITHUB_OUTPUT"
             exit 1
           fi
 
           echo "✅ All commits are lifecycle updates."
           echo "should_merge=true" >> "$GITHUB_OUTPUT"
 
-      # ── 3. Merge: find or create PR and merge immediately ─────────────────
-      - name: Find or create dev -> main PR
-        if: steps.check-commits.outputs.should_merge == 'true'
+      - name: Find or create dev -> main release PR
+        if: steps.validate.outputs.should_merge == 'true'
         id: pr
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          EXISTING=$(gh pr list \
+          set -euo pipefail
+
+          PR_NUMBER=$(gh pr list \
             --base main \
             --head dev \
             --state open \
             --json number \
             --jq '.[0].number')
 
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
-            echo "Found existing PR #$EXISTING"
-            echo "pr_number=$EXISTING" >> "$GITHUB_OUTPUT"
-          else
-            echo "Creating dev -> main PR..."
-
-            gh label create "dependencies" --color "0075ca" --description "Dependency updates" 2>/dev/null \
-              || echo "ℹ️  Label 'dependencies' already exists."
-
-            gh pr create \
-              --base main \
-              --head dev \
-              --title "chore(release): scheduled lifecycle merge dev -> main" \
-              --body "Automated weekly merge. All commits are lifecycle/dependency updates only." \
-              --label "dependencies"
-
-            PR_NUMBER=$(gh pr list \
-              --base main --head dev --state open \
-              --json number --jq '.[0].number')
-
-            if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-              echo "❌ PR was created but could not be retrieved. Aborting."
-              exit 1
-            fi
-
-            echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Merge dev -> main
-        if: steps.check-commits.outputs.should_merge == 'true'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          PR_NUMBER=${{ steps.pr.outputs.pr_number }}
-
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No PR to merge (was already up to date). Exiting."
-            exit 0
-          fi
+            gh label create "lifecycle-release" \
 
-          echo "Merging PR #$PR_NUMBER"
-          gh pr merge "$PR_NUMBER" \
-            --merge \
-            --delete-branch=false
-          echo "✅ dev merged into main via PR #$PR_NUMBER"
-
-#     Note: This requires the permission "issues: write"
-#      - name: Notify on scheduled merge failure
-#        if: failure()
-#        run: |
-#          echo "::error::Scheduled release failed. Check the workflow run for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-#          # Replace the line below with your preferred notification mechanism
-#          # e.g. curl to a Slack webhook, send a GitHub issue, etc.
-#          gh issue create \
-#            --title "⚠️ Scheduled Release Failed - $(date -u +'%Y-%m-%d')" \
-#            --body "The scheduled dev→main lifecycle merge failed. [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
-#            --label "bug" || echo "Could not create issue (may already exist or label missing)"
-#        env:
-#          GH_TOKEN: ${{ steps.app-token.outputs.token }}

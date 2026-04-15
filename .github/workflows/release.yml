@@ -1,14 +1,14 @@
 name: Release
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false # Never cancel an in-progress release
-
 on:
   push:
     branches:
       - main
       - dev
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # Never cancel an in-flight release
 
 permissions:
   contents: write
@@ -49,66 +49,10 @@ jobs:
       - name: Install dependencies
         run: npm clean-install
 
-      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+      - name: Verify dependency provenance signatures
         run: npm audit signatures
 
       - name: Release
-        id: release
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          npx semantic-release
-          echo "released=$([[ -n \"$SEMANTIC_RELEASE_NEXT_RELEASE_VERSION\" ]] && echo true || echo false)" >> $GITHUB_OUTPUT
-
-
-      - name: Create PR to update dev branch
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          # 1. Create the Pull Request (fail explicitly on unexpected errors)
-          if ! gh pr create --base dev --head main \
-            --title "chore(sync): update dev with latest release from main" \
-            --body "Syncing changes from main back to dev following a release."; then
-
-            # Check if the failure is just "PR already exists"
-            EXISTING=$(gh pr list --base dev --head main --state open --json number --jq '.[0].number')
-            if [ -z "$EXISTING" ] || [ "$EXISTING" = "null" ]; then
-              echo "❌ PR creation failed for an unexpected reason. Aborting."
-              exit 1
-            fi
-            echo "ℹ️  PR already exists: #$EXISTING"
-          fi
-
-          # 2. Retrieve the PR number
-          PR_NUMBER=$(gh pr list --base dev --head main --state open --json number --jq '.[0].number')
-
-          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "❌ Could not retrieve PR number after creation. Aborting."
-            exit 1
-          fi
-
-          echo "✅ Using PR #$PR_NUMBER"
-
-          # 3. Set Auto-Merge
-          gh pr merge "$PR_NUMBER" --auto --merge --delete-branch=false
-
-      - name: Create PR to create upcoming release
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          if ! gh pr create --base main --head dev \
-            --title "Upcoming Release" \
-            --body "This PR is managed automatically. It will only be merged by the scheduled lifecycle-check workflow."; then
-
-            EXISTING=$(gh pr list --base main --head dev --state open --json number --jq '.[0].number')
-            if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
-              echo "ℹ️  Upcoming Release PR already exists: #$EXISTING. Skipping..."
-            else
-              echo "❌ PR creation failed for an unexpected reason. Aborting."
-              exit 1
-            fi
-          fi
-    outputs:
-      released: ${{ steps.release.outputs.released }}
+        run: npx semantic-release
