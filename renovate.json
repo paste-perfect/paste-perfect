@@ -31,14 +31,14 @@
   "postUpdateOptions": ["npmDedupe"],
   "packageRules": [
     {
-      "matchPackagePatterns": ["*"],
       "allowedVersions": "!/-(rc|alpha|beta|canary|next)\\./",
-      "description": "Never upgrade a stable package to an RC/pre-release version"
+      "description": "Never upgrade a stable package to an RC/pre-release version",
+      "matchPackageNames": ["*"]
     },
     {
-      "matchPackagePatterns": ["*"],
-      "stabilityDays": 3,
-      "description": "Wait 3 days after a stable release before auto-merging"
+      "minimumReleaseAge": "3 days",
+      "description": "Wait 3 days after a stable release before auto-merging",
+      "matchPackageNames": ["*"]
     }
   ]
 }
