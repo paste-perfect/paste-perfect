@@ -18,6 +18,11 @@ jobs:
   test-and-build:
     name: Test and Build PastePerfect
     runs-on: ubuntu-latest
+    # Skip PR trigger if it's an internal PR from dev or main (the push event handles these)
+    if: >
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      (github.event.pull_request.head.ref != 'dev' && github.event.pull_request.head.ref != 'main')
 
     steps:
       - name: Checkout repository
