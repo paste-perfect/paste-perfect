@@ -1,0 +1,145 @@
+name: Promote dev → main (PR + Lifecycle Label)
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: promote-dev-to-main
+  cancel-in-progress: true
+
+permissions: {} # declared per-job
+
+jobs:
+  ensure-release-pr:
+    name: Ensure dev → main release PR exists
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+
+      - name: Checkout (full history)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Ensure lifecycle labels exist
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh label create "automerge-lifecycle" \
+            --color "5319e7" \
+            --description "All commits are lifecycle/maintenance only — safe to auto-merge" \
+            2>/dev/null || true
+
+          gh label create "lifecycle-release" \
+            --color "0075ca" \
+            --description "Automated weekly lifecycle release PR" \
+            2>/dev/null || true
+
+      - name: Check divergence
+        id: ahead
+        run: |
+          git fetch origin main dev
+          AHEAD=$(git rev-list --right-only --count origin/main...origin/dev)
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+
+      - name: No-op if dev == main
+        if: steps.ahead.outputs.ahead == '0'
+        run: echo "ℹ️  dev is not ahead of main. No PR needed."
+
+      - name: Create or verify release PR
+        if: steps.ahead.outputs.ahead != '0'
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          PR_NUMBER=$(gh pr list \
+            --base main \
+            --head dev \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+            echo "ℹ️  Release PR #$PR_NUMBER already exists."
+            echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head dev \
+            --title "chore(release): promote dev to main" \
+            --label "lifecycle-release" \
+            --body "$(cat <<'EOF'
+          ## Automated Release PR: dev → main
+
+          ⏳ **Auto-merge is NOT enabled on creation.**
+
+          The [scheduled-release workflow](.github/workflows/scheduled-release.yml)
+          runs every **Sunday at 00:00 UTC** and enables auto-merge only when:
+
+          1. ✅ All commits since the last release are lifecycle/dependency updates.
+          2. ✅ All required CI checks are passing.
+
+          If \`feat:\` or \`fix:\` commits are detected, this PR will **not** be auto-merged
+          and requires a manual promotion decision.
+          EOF
+          )"
+
+          PR_NUMBER=$(gh pr list \
+            --base main \
+            --head dev \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "✅ Release PR #$PR_NUMBER created."
+
+      # ── Lifecycle Label Gate ──────────────────────────────────────────────
+      # Scans all commits in this PR. If every commit matches a maintenance
+      # type (chore, build, ci, docs, style, refactor, fix(deps)), apply
+      # the automerge-lifecycle label for the scheduled workflow to consume.
+      - name: Evaluate lifecycle label eligibility
+        if: steps.ahead.outputs.ahead != '0'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+
+          MERGE_BASE=$(git merge-base origin/dev origin/main)
+          COMMITS=$(git log "$MERGE_BASE"..origin/dev --pretty=format:"%s")
+
+          echo "Commit messages to evaluate:"
+          echo "$COMMITS"
+
+          # Lifecycle commit types: maintenance-only, no user-facing changes
+          LIFECYCLE_PATTERN='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?: |^chore\(sync\)|^chore\(release\)|^fix\(deps'
+
+          NON_LIFECYCLE=$(echo "$COMMITS" | grep -vE "$LIFECYCLE_PATTERN" || true)
+
+          if [ -z "$NON_LIFECYCLE" ]; then
+            echo "✅ All commits are lifecycle-type. Applying 'automerge-lifecycle' label."
+            gh pr edit "$PR_NUMBER" --add-label "automerge-lifecycle"
+          else
+            echo "ℹ️  Non-lifecycle commits found (feat/fix detected). Label NOT applied."
+            echo "Commits requiring manual review:"
+            echo "$NON_LIFECYCLE"
+            # Remove label if it was previously applied
+            gh pr edit "$PR_NUMBER" --remove-label "automerge-lifecycle" 2>/dev/null || true
+          fi
