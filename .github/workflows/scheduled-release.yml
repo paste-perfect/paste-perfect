@@ -59,7 +59,7 @@ jobs:
           echo "$COMMITS"
 
           # Allowed: Renovate updates, sync/release automation, merge commits
-          LIFECYCLE_PATTERN='^(chore|fix|refactor|build)($$deps(-dev)?$$)?!?: |^chore$$sync$$|^chore$$release$$|^(Merge|merge) '
+          LIFECYCLE_PATTERN='^(chore|fix|refactor|build)(\(deps(-dev)?\))?!?: |^chore\(sync\)|^chore\(release\)|^(Merge|merge) '
           NON_LIFECYCLE=$(echo "$COMMITS" | grep -vE "$LIFECYCLE_PATTERN" || true)
 
           if [ -n "$NON_LIFECYCLE" ]; then
@@ -89,4 +89,36 @@ jobs:
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
             gh label create "lifecycle-release" \
+              --color "5319e7" \
+              --description "Automated weekly lifecycle release PR" 2>/dev/null || true
 
+            gh pr create \
+              --base main \
+              --head dev \
+              --title "chore(release): promote dev to main" \
+              --label "lifecycle-release" \
+              --body "Automated weekly lifecycle merge. All commits validated as lifecycle/dependency updates."
+
+            PR_NUMBER=$(gh pr list \
+              --base main \
+              --head dev \
+              --state open \
+              --json number \
+              --jq '.[0].number')
+          fi
+
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Enable auto-merge (merges once CI passes)
+        if: steps.validate.outputs.should_merge == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          PR_NUMBER="${{ steps.pr.outputs.pr_number }}"
+          echo "Enabling auto-merge on PR #$PR_NUMBER..."
+          gh pr merge "$PR_NUMBER" \
+            --auto \
+            --merge \
+            --delete-branch=false \
+            || echo "ℹ️  Auto-merge already enabled."
+          echo "✅ Auto-merge enabled. GitHub will merge once all required checks are green."
