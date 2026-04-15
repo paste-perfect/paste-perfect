@@ -1,15 +1,25 @@
-name: "Run Security Tests"
+name: Run Security Tests
+
 on:
-  push:
+  pull_request:
     branches:
       - main
       - dev
-  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  merge_group:
+    branches:
+      - main
+      - dev
   schedule:
-    - cron: "0 4 * * 0"   # Every Sunday at 04:00 UTC (once per week)
+    - cron: "0 4 * * 0" # Every Sunday at 04:00 UTC
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: security-${{ github.event.pull_request.number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -22,11 +32,13 @@ jobs:
   report:
     name: Vulnerability Scan
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Run Trivy vulnerability scanner in repo mode
+      - name: Run Trivy vulnerability scanner (filesystem)
         uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: "fs"
@@ -34,7 +46,7 @@ jobs:
           output: "trivy-results-fs.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
 
-      - name: Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
         with:
           sarif_file: "trivy-results-fs.sarif"

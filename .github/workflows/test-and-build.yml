@@ -1,14 +1,23 @@
-name: "Test and Build"
+name: Test and Build
 
 on:
-  push:
+  pull_request:
     branches:
       - main
       - dev
-  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  merge_group:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+  group: test-and-build-${{ github.event.pull_request.number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -16,8 +25,9 @@ permissions:
 
 jobs:
   test-and-build:
-    name: Test and Build PastePerfect
+    name: Test and Build
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
 
     steps:
       - name: Checkout repository
@@ -26,11 +36,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
-          node-version: "lts/*" # Use latest LTS version
+          node-version: "lts/*"
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci # Uses package-lock.json for reproducible installs
+        run: npm ci
 
       - name: Lint and format checks
         run: |
@@ -50,10 +60,10 @@ jobs:
         id: playwright-version
         run: |
           echo "version=$(npm list @playwright/test --depth=0 --json \
-            | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
+            | jq -r '.dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -70,8 +80,8 @@ jobs:
         run: npm run test:snapshots
 
       - name: Upload test reports
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # upload test results
-        if: ${{ !cancelled() }} # run this step even if previous step failed
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: ${{ !cancelled() }}
         with:
           name: test-reports
           path: reports/
@@ -81,7 +91,7 @@ jobs:
     name: Generate Test Reports
     runs-on: ubuntu-latest
     needs: test-and-build
-    # Required by dorny/test-reporter
+    if: always() && !cancelled()
     permissions:
       contents: read
       actions: read
@@ -90,7 +100,7 @@ jobs:
 
     steps:
       - name: Generate JEST test report
-        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
         with:
           artifact: test-reports
           name: JEST Tests
@@ -98,7 +108,7 @@ jobs:
           reporter: jest-junit
 
       - name: Generate Snapshot test report
-        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
         with:
           artifact: test-reports
           name: Snapshot Tests
