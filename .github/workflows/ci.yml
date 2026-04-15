@@ -173,7 +173,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: snapshot-reports-${{ github.run_id }}
-          path: reports/playwright/
+          path: reports/
           retention-days: 7
 
   # ────────────────────────────────────────────────────────────────────────────
