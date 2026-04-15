@@ -1,0 +1,208 @@
+name: CI — Test, Lint & Build
+
+on:
+  pull_request:
+    branches: [ main, dev ]
+    types: [ opened, synchronize, reopened ]
+  merge_group:
+    branches: [ main, dev ]
+  workflow_dispatch:
+
+# ── Concurrency: one run per PR; cancel stale runs immediately ────────────────
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: { } # baseline: no permissions unless declared per-job
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Lint & Format (fast-fail gate, no Node artifact needed)
+  # ────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+
+      # Tier-1 cache: node_modules keyed on lockfile hash
+      - name: Restore node_modules cache
+        id: nm-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        with:
+          path: node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: nm-${{ runner.os }}-
+
+      - name: Install dependencies
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Format check
+        run: npm run format:check
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Unit Tests + Angular Build
+  # ────────────────────────────────────────────────────────────────────────────
+  test-build:
+    name: Unit Tests & Build
+    runs-on: ubuntu-latest
+    needs: lint
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+
+      # Tier-1 cache: node_modules
+      - name: Restore node_modules cache
+        id: nm-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        with:
+          path: node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: nm-${{ runner.os }}-
+
+      - name: Install dependencies
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Create reports directory
+        run: mkdir -p reports/jest reports/playwright
+
+      - name: Run unit tests
+        run: npm run test:unit:ci
+
+      - name: Build Angular app (production)
+        run: npm run build-prod
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: ${{ !cancelled() }}
+        with:
+          name: test-reports-${{ github.run_id }}
+          path: reports/
+          retention-days: 7
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 3 — Playwright Snapshot Tests
+  # Tier-2 cache: Playwright browser binaries (keyed on @playwright/test version)
+  # ────────────────────────────────────────────────────────────────────────────
+  snapshots:
+    name: Snapshot Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: lint
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+
+      # Tier-1: node_modules
+      - name: Restore node_modules cache
+        id: nm-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        with:
+          path: node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: nm-${{ runner.os }}-
+
+      - name: Install dependencies
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # Tier-2: Playwright browsers — invalidates only on version bump
+      - name: Resolve Playwright version
+        id: pw-version
+        run: |
+          echo "version=$(npm list @playwright/test --depth=0 --json \
+            | jq -r '.dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install
+
+      - name: Run snapshot tests
+        run: npm run test:snapshots
+
+      - name: Upload snapshot artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: ${{ !cancelled() }}
+        with:
+          name: snapshot-reports-${{ github.run_id }}
+          path: reports/playwright/
+          retention-days: 7
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 4 — Report (fan-in, always runs to publish PR annotations)
+  # ────────────────────────────────────────────────────────────────────────────
+  report:
+    name: Publish Test Reports
+    runs-on: ubuntu-latest
+    needs: [ test-build, snapshots ]
+    if: always() && !cancelled()
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Generate Jest report
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
+        with:
+          artifact: test-reports-${{ github.run_id }}
+          name: Jest Unit Tests
+          path: "jest/report.xml"
+          reporter: jest-junit
+
+      - name: Generate Playwright report
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
+        with:
+          artifact: snapshot-reports-${{ github.run_id }}
+          name: Playwright Snapshot Tests
+          path: "playwright/report.xml"
+          reporter: jest-junit
