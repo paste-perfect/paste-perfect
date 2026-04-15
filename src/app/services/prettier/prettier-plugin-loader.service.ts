@@ -104,7 +104,9 @@ export class PrettierPluginLoaderService {
       });
 
       // Rethrow with more context
-      throw new Error(`Failed to load Prettier plugin: ${pluginName} - ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to load Prettier plugin: ${pluginName} - ${error instanceof Error ? error.message : String(error)}`, {
+        cause: error,
+      });
     }
   }
 }
