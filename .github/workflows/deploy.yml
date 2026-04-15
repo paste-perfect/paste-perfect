@@ -1,24 +1,26 @@
-name: Deploy App
+name: Deploy — GitHub Pages
 
 on:
   release:
-    types:
-      - prereleased
-      - released
-      - published
-      - created
+    types: [prereleased, published]
 
-permissions:
-  contents: write
-
+# Never cancel an active deployment mid-flight — partial deploys are dangerous
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: false # Never cancel an active deployment mid-flight
+  cancel-in-progress: false
+
+permissions: {} # declared per-job
 
 jobs:
-  deploy:
-    name: Deploy to GitHub Pages (${{ github.ref_name }})
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Build the Angular app for the correct environment
+  # Separated from deploy so the build artifact is auditable independently
+  # ────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build Angular (${{ github.event.release.prerelease && 'Preview' || 'Production' }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -32,16 +34,56 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
+      # Tier-1: node_modules cache
+      - name: Restore node_modules cache
+        id: nm-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        with:
+          path: node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: nm-${{ runner.os }}-
+
       - name: Install dependencies
+        if: steps.nm-cache.outputs.cache-hit != 'true'
         run: npm ci
 
-      # ── dev → preview environment ──────────────────────────────────────────
-      - name: Build Angular app (Dev / Preview)
+      # ── dev pre-release → preview build ───────────────────────────────────
+      - name: Build (Preview / Dev environment)
         if: github.event.release.prerelease == true
         run: npm run build-preview
 
-      - name: Deploy to GitHub Pages (Dev environment)
-        if: github.event.release.prerelease == true
+      # ── main release → production build ───────────────────────────────────
+      - name: Build (Production environment)
+        if: github.event.release.prerelease == false
+        run: npm run build-prod
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: angular-dist-${{ github.run_id }}
+          path: dist/paste-perfect/browser
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Deploy to GitHub Pages
+  # Split by environment so permissions are scoped as tightly as possible
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy-preview:
+    name: Deploy → Preview (Dev environment)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event.release.prerelease == true
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-dist-${{ github.run_id }}
+          path: dist/paste-perfect/browser
+
+      - name: Deploy to GitHub Pages (Preview)
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f
         with:
           repository-name: paste-perfect/paste-perfect-test
@@ -50,13 +92,22 @@ jobs:
           clean: true
           ssh-key: ${{ secrets.DEPLOY_KEY_NEU }}
 
-      # ── main → production environment ─────────────────────────────────────
-      - name: Build Angular app (Production)
-        if: github.event.release.prerelease == false
-        run: npm run build-prod
+  deploy-production:
+    name: Deploy → Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event.release.prerelease == false
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-dist-${{ github.run_id }}
+          path: dist/paste-perfect/browser
 
       - name: Deploy to GitHub Pages (Production)
-        if: github.event.release.prerelease == false
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f
         with:
           branch: gh-pages
