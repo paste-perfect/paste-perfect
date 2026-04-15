@@ -26,5 +26,19 @@
     "schedule": ["at any time"]
   },
   "ignorePaths": ["docker-compose.yml"],
-  "ignoreUnstable": true
+  "ignoreUnstable": true,
+  "allowedVersions": "!/-(rc|alpha|beta|canary|next)\\./",
+  "postUpdateOptions": ["npmDedupe"],
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["*"],
+      "allowedVersions": "!/-(rc|alpha|beta|canary|next)\\./",
+      "description": "Never upgrade a stable package to an RC/pre-release version"
+    },
+    {
+      "matchPackagePatterns": ["*"],
+      "stabilityDays": 3,
+      "description": "Wait 3 days after a stable release before auto-merging"
+    }
+  ]
 }
