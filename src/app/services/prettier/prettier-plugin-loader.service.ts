@@ -29,6 +29,13 @@ export class PrettierPluginLoaderService {
     "prettier-plugin-nginx": () => import("prettier-plugin-nginx"),
     "prettier-plugin-sql": () => import("prettier-plugin-sql").then((m) => m.default),
     "prettier-plugin-toml": () => import("prettier-plugin-toml").then((m) => m.default),
+    "prettier-plugin-sort-json": () =>
+      import("prettier-plugin-sort-json").then(
+        (m): PrettierPlugin => ({
+          parsers: m.parsers,
+          options: m.options,
+        })
+      ),
   };
 
   /**
@@ -40,6 +47,7 @@ export class PrettierPluginLoaderService {
   public async getParserAndPlugins(language: LanguageDefinition): Promise<{
     parser: PrettierParserNames;
     plugins: PrettierPlugin[];
+    pluginOptions?: Record<string, unknown>;
   } | null> {
     // Get Prettier config from language definition or use default
     const config = language?.prettierConfiguration;
@@ -58,16 +66,30 @@ export class PrettierPluginLoaderService {
       }
     }
 
+    // Inject prettier-plugin-sort-json automatically for JSON parser
+    if (config.parser === "json") {
+      try {
+        const sortJsonPlugin = await this.loadPlugin("prettier-plugin-sort-json");
+        if (!requiredPlugins.includes(sortJsonPlugin)) {
+          requiredPlugins.push(sortJsonPlugin);
+        }
+      } catch (error) {
+        console.warn("Failed to load prettier-plugin-sort-json, JSON will be formatted without key sorting.", error);
+      }
+    }
+
     return {
       parser: config.parser,
       plugins: requiredPlugins,
+      // Pass plugin-specific options for sort-json when applicable
+      pluginOptions: config.parser === "json" ? { jsonRecursiveSort: true } : undefined,
     };
   }
 
   /**
    * Loads a Prettier plugin dynamically
    *
-   * @param pluginName - The name of the plugin to load (e.g., 'babel', 'typescript')
+   * @param pluginName - The name of the plugin to load
    * @returns A Promise that resolves to the loaded plugin
    * @throws Error if plugin loading fails
    */

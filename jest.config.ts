@@ -1,47 +1,27 @@
-/**
- * For a detailed explanation regarding each configuration property, visit:
- * https://jestjs.io/docs/configuration
- */
-
-import type { Config } from "jest";
+import type { Config } from 'jest';
+import { createCjsPreset } from 'jest-preset-angular/presets/index.js';
 
 const config: Config = {
-  // An array of regexp pattern strings used to skip coverage collection
-  coveragePathIgnorePatterns: ["/node_modules/"],
+  ...createCjsPreset(),
 
-  // Automatically clear mock calls and instances before every test
-  clearMocks: true,
+  // ── Setup ─────────────────────────────────────────────────────────────────
+  setupFilesAfterEnv: ["<rootDir>/setup-jest.ts"],
 
-  // Collect code coverage
-  collectCoverage: false,
-  // The directory where Jest should output its coverage files
-  coverageDirectory: "reports/jest/coverage",
-  coverageProvider: "v8",
-
-  // An array of glob patterns indicating a set of files for which coverage information should be collected
-  collectCoverageFrom: [
-    "src/app/**/*.ts",
-    // Ignore constants, regex and types as there is not much to test
-    "!src/app/**/constants/**",
-    "!src/app/**/regex/**",
-    "!src/app/**/types/**",
-  ],
-
-  // A list of reporter names that Jest uses when writing coverage reports
-  coverageReporters: ["json", "text", "lcov", "clover"],
-
-  // Where Jest should look for test files
-  roots: ["tests/unit-tests"],
-
-  // Transform TypeScript using ts-jest
+  // ── Transform ─────────────────────────────────────────────────────────────
   transform: {
-    "^.+\\.ts$": ["ts-jest", { tsconfig: "tsconfig.spec.json" }],
+    "^.+\\.(ts|js|mjs|cjs)$": [
+      "jest-preset-angular",
+      {
+        tsconfig: "tsconfig.spec.json",
+        stringifyContentPathRegex: "\\.html$",
+      },
+    ],
   },
 
-  // Extensions Jest should care about
-  moduleFileExtensions: ["ts", "js"],
+  // ── Module resolution ─────────────────────────────────────────────────────
+  moduleFileExtensions: ["ts", "js", "mjs", "cjs", "json"],
 
-  // Map TS path aliases to Jest module paths
+  // ── Path aliases ──────────────────────────────────────────────────────────
   moduleNameMapper: {
     "^@components/(.*)$": "<rootDir>/src/app/components/$1",
     "^@constants$": "<rootDir>/src/app/constants/index",
@@ -51,10 +31,23 @@ const config: Config = {
     "^@utils/(.*)$": "<rootDir>/src/app/utils/$1",
   },
 
-  // Use jsdom for DOM APIs
-  testEnvironment: "jsdom",
+  // ── Roots ─────────────────────────────────────────────────────────────────
+  roots: ["tests/unit-tests"],
 
-  // Use this configuration option to add custom reporters to Jest
+  // ── Coverage ──────────────────────────────────────────────────────────────
+  clearMocks: true,
+  collectCoverage: false,
+  coverageDirectory: "reports/jest/coverage",
+  coverageProvider: "v8",
+  collectCoverageFrom: [
+    "src/app/**/*.ts",
+    "!src/app/**/constants/**",
+    "!src/app/**/regex/**",
+    "!src/app/**/types/**",
+  ],
+  coverageReporters: ["json", "text", "lcov", "clover"],
+
+  // ── Reporters ─────────────────────────────────────────────────────────────
   reporters: [
     "default",
     ["jest-junit", { outputDirectory: "reports/jest", outputName: "report.xml" }],
