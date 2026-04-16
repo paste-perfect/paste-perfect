@@ -95,7 +95,7 @@ jobs:
           branch: gh-pages
           folder: dist/paste-perfect/browser
           clean: true
-          ssh-key: ${{ secrets.DEPLOY_KEY_NEU }}
+          ssh-key: ${{ secrets.DEPLOY_KEY_PREVIEW }}
 
   deploy-production:
     name: Deploy → Production
