@@ -123,6 +123,14 @@
           "options": {
             "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
           }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json",
+            "runnerConfig": "config/tests/vitest.config.ts",
+            "include": ["src/tests/unit-tests/**/*.spec.ts", "src/tests/unit-tests/**/*.test.ts"]
+          }
         }
       }
     }

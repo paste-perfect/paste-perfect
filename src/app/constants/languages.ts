@@ -1,8 +1,10 @@
 import prismComponents from "prismjs/components.js";
 import { getEntries } from "@utils/utils";
+import { normalizeToArray } from "@utils/normalization";
 import { LanguageDefinition } from "@types";
 import { PRETTIER_LANGUAGE_MAP } from "./prettier-language-map";
-import { normalizeToArray } from "@utils/languages-utils";
+
+export const HAS_PRETTIER_CONFIG_MARKER = "*";
 
 /**
  * Set of commonly used programming languages.
@@ -40,7 +42,7 @@ export const ALL_LANGUAGES: LanguageDefinition[] = [
       const hasPrettierConfiguration = !!prettierConfiguration;
       return {
         // Use provided title, or fallback to key
-        title: (value.title || key) + (hasPrettierConfiguration ? "*" : ""),
+        title: (value.title || key) + (hasPrettierConfiguration ? HAS_PRETTIER_CONFIG_MARKER : ""),
         // Language identifier
         value: key,
         // Extract alias titles

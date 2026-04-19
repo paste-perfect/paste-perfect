@@ -2,13 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
-    "types": ["jest"],
-    "esModuleInterop": true,
-    "emitDecoratorMetadata": true
+    "types": ["vitest/globals"]
   },
-  "include": [
-    "src/**/*.spec.ts",
-    "tests/**/*.spec.ts",
-    "setup-jest.ts"
-  ]
+  "include": ["src/tests/unit-test/**/*.spec.ts", "src/**/*.d.ts", "src/**/*.ts"],
+  "exclude": []
 }
