@@ -21,7 +21,6 @@ jobs:
 
   # ────────────────────────────────────────────────────────────────────────────
   # JOB 1 — Lint & Format
-  # Skipped automatically on draft PRs via the if: condition.
   # All downstream jobs (test-build, snapshots) depend on lint via needs:,
   # so they are also skipped transitively without needing their own guards.
   # ────────────────────────────────────────────────────────────────────────────
@@ -31,7 +30,7 @@ jobs:
     if: >
       github.event_name == 'merge_group' ||
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+      github.event_name == 'pull_request'
     permissions:
       contents: read
 
