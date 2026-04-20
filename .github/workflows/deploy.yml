@@ -77,12 +77,18 @@ jobs:
       contents: write
 
     steps:
+      # 1. Checkout the repo so the git action has a workspace
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # 2. Download the artifact
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: angular-dist-${{ github.run_id }}
           path: dist/paste-perfect/browser
 
+      # 3. Deploy
       - name: Deploy to GitHub Pages (Preview)
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f
         with:
@@ -101,12 +107,18 @@ jobs:
       contents: write
 
     steps:
+      # 1. Checkout the repo so the git action has a workspace
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # 2. Download the artifact
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: angular-dist-${{ github.run_id }}
           path: dist/paste-perfect/browser
 
+      # 3. Deploy
       - name: Deploy to GitHub Pages (Production)
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f
         with:
