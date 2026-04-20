@@ -33,6 +33,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      workflows: write
     outputs:
       has_changes: ${{ steps.merge.outputs.has_changes }}
       sync_branch: ${{ steps.merge.outputs.sync_branch }}
@@ -189,10 +190,13 @@ jobs:
     name: Open Sync PR → dev
     runs-on: ubuntu-latest
     needs: [staging-merge, validate-merge]
-    if: needs.staging-merge.outputs.has_changes == 'true'
+    # ALWAYS run if staging-merge succeeded and produced changes,
+    # even if validate-merge failed.
+    if: always() && needs.staging-merge.result == 'success' && needs.staging-merge.outputs.has_changes == 'true'
     permissions:
       contents: write
       pull-requests: write
+      workflows: write
 
     steps:
       - name: Generate GitHub App token
@@ -231,9 +235,8 @@ jobs:
           1. A staging branch (`automation/main-to-dev-sync`) was created from `dev`.
           2. `main` was merged into it.
           3. Version false-conflicts in `package.json` / `package-lock.json` were auto-resolved — **dev's RC/pre-release version is preserved**.
-          4. The merged state passed the Angular **build & unit test validation gate**.
 
-          Auto-merge is enabled — this PR merges automatically once all required CI checks pass.
+          _If the Validation Gate pipeline failed, auto-merge will be disabled so you can inspect the failure manually._
           EOF
           )"
 
@@ -250,6 +253,8 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Enable auto-merge
+        # ONLY enable auto-merge if the validation gate actually passed
+        if: needs.validate-merge.result == 'success'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
