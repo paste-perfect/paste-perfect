@@ -9,7 +9,7 @@ on:
       - ".github/CODEOWNERS"
   workflow_dispatch:
 
-# ── Only one sync can run at a time; cancel in-flight stale syncs ─────────────
+# ── Only one sync can run at a time; cancel in-flight stale syncs ────────────
 concurrency:
   group: sync-main-to-dev
   cancel-in-progress: true
@@ -23,6 +23,13 @@ jobs:
   staging-merge:
     name: "Staging Merge: main → automation/sync-staging"
     runs-on: ubuntu-latest
+    # ── Guard: skip semantic-release version-bump commits to prevent loops ───
+    # semantic-release pushes "chore(release): <version>" back to main after a
+    # release. Without this guard that push would kick off a redundant sync.
+    # Sync commits themselves are also filtered to prevent re-entrancy.
+    if: >
+      !startsWith(github.event.head_commit.message, 'chore(release):') &&
+      !startsWith(github.event.head_commit.message, 'chore(sync):')
     permissions:
       contents: write
       pull-requests: write
@@ -59,7 +66,7 @@ jobs:
 
           git fetch origin main dev
 
-          # ── Divergence check ─────────────────────────────────────────────
+          # ── Divergence check ──────────────────────────────────────────
           AHEAD=$(git rev-list --right-only --count origin/dev...origin/main)
           if [ "$AHEAD" -eq 0 ]; then
             echo "✅ dev is already up to date with main. Nothing to sync."
@@ -69,10 +76,10 @@ jobs:
 
           SYNC_BRANCH="automation/main-to-dev-sync"
 
-          # ── Create staging branch off current dev tip ────────────────────
+          # ── Create staging branch off current dev tip ──────────────────
           git checkout -B "$SYNC_BRANCH" origin/dev
 
-          # ── Attempt clean merge of main into staging branch ──────────────
+          # ── Attempt clean merge of main into staging branch ────────────
           set +e
           git merge --no-ff --no-edit origin/main \
             -m "chore(sync): merge main into dev [skip ci]"
@@ -80,7 +87,7 @@ jobs:
           set -e
 
           if [ $MERGE_EXIT -ne 0 ]; then
-            # ── Conflict Analysis ────────────────────────────────────────
+            # ── Conflict Analysis ─────────────────────────────────────
             CONFLICTS=$(git diff --name-only --diff-filter=U)
             echo "⚠️  Conflicts detected in:"
             echo "$CONFLICTS"
@@ -100,7 +107,7 @@ jobs:
 
             echo "🔍 Conflicts limited to version/lockfiles — applying False-Conflict resolution..."
 
-            # ── False-Conflict Resolution ────────────────────────────────
+            # ── False-Conflict Resolution ─────────────────────────────
             # Strategy: --ours (dev's RC/pre-release version wins)
             # Rationale: semantic-release manages version bumps on main;
             # dev carries RC suffixes (e.g. 1.2.0-rc.1). We preserve
@@ -120,7 +127,7 @@ jobs:
             echo "✅ False-conflict resolved. Dev's pre-release version retained."
           fi
 
-          # ── Verify staging branch actually diverged from dev ─────────────
+          # ── Verify staging branch actually diverged from dev ──────────
           if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)" ]; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -218,12 +225,12 @@ jobs:
               --body "$(cat <<'EOF'
           ## Automated Post-Release Sync: main → dev
 
-          This PR was created by the **Staging Merge** workflow after a push to \`main\`.
+          This PR was created by the **Staging Merge** workflow after a push to `main`.
 
           ### What happened?
-          1. A staging branch (\`automation/main-to-dev-sync\`) was created from \`dev\`.
-          2. \`main\` was merged into it.
-          3. Version false-conflicts in \`package.json\` / \`package-lock.json\` were auto-resolved — **dev's RC/pre-release version is preserved**.
+          1. A staging branch (`automation/main-to-dev-sync`) was created from `dev`.
+          2. `main` was merged into it.
+          3. Version false-conflicts in `package.json` / `package-lock.json` were auto-resolved — **dev's RC/pre-release version is preserved**.
           4. The merged state passed the Angular **build & unit test validation gate**.
 
           Auto-merge is enabled — this PR merges automatically once all required CI checks pass.

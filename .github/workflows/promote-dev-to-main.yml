@@ -15,6 +15,14 @@ jobs:
   ensure-release-pr:
     name: Ensure dev → main release PR exists
     runs-on: ubuntu-latest
+    # ── Guard: skip semantic-release version-bump commits to prevent loops ───
+    # semantic-release pushes "chore(release): <version>" back to dev after a
+    # pre-release. Without this guard that push would re-trigger this workflow
+    # and create/update the release PR unnecessarily.
+    # Sync commits are also filtered to avoid re-entrancy from the sync flow.
+    if: >
+      !startsWith(github.event.head_commit.message, 'chore(release):') &&
+      !startsWith(github.event.head_commit.message, 'chore(sync):')
     permissions:
       contents: read
       pull-requests: write
@@ -95,7 +103,7 @@ jobs:
           1. ✅ All commits since the last release are lifecycle/dependency updates.
           2. ✅ All required CI checks are passing.
 
-          If \`feat:\` or \`fix:\` commits are detected, this PR will **not** be auto-merged
+          If `feat:` or `fix:` commits are detected, this PR will **not** be auto-merged
           and requires a manual promotion decision.
           EOF
           )"
