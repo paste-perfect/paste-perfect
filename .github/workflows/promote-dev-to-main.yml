@@ -20,7 +20,7 @@ jobs:
     # Skip semantic-release version-bump and sync commits to prevent re-entrancy.
     if: >
       !startsWith(github.event.head_commit.message, 'chore(release):') &&
-      !startsWith(github.event.head_commit.message, 'chore(sync):]')
+      !startsWith(github.event.head_commit.message, 'chore(sync):')
     permissions:
       contents: read
       pull-requests: write

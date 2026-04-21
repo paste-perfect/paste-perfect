@@ -13,7 +13,7 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
-permissions: {} # baseline – declared per-job
+permissions: {} # declared per-job
 
 jobs:
 

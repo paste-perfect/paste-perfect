@@ -9,7 +9,7 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-permissions: {} # declared at job level
+permissions: {} # declared per-job
 
 jobs:
 
@@ -22,7 +22,7 @@ jobs:
     if: >
       !startsWith(github.event.head_commit.message, 'chore(release):') &&
       !startsWith(github.event.head_commit.message, 'chore(sync):') &&
-      !startsWith(github.event.head_commit.message, 'chore(promote):]')
+      !startsWith(github.event.head_commit.message, 'chore(promote):')
     permissions:
       contents: write
       issues: write
