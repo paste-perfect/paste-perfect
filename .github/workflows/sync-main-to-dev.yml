@@ -1,6 +1,3 @@
-Here is the fully reworked YAML with all changes from the correction table applied:
-
-  ```yaml
 name: Sync main → dev (Staging Merge)
 
 on:
