@@ -2,38 +2,43 @@ name: Sync main → dev (Staging Merge)
 
 on:
   push:
-    branches: [main]
-    # Only trigger when source files actually changed — skip pure tag pushes
+    branches: [ main ]
+    # Only trigger when source files changed — skip pure tag pushes.
     paths-ignore:
       - "**.md"
       - ".github/CODEOWNERS"
   workflow_dispatch:
 
-# ── Only one sync can run at a time; cancel in-flight stale syncs ─────────────
+# One sync at a time; never cancel to avoid corrupting the staging branch.
 concurrency:
   group: sync-main-to-dev
-  cancel-in-progress: true
+  cancel-in-progress: false
 
-permissions: {} # all permissions declared per-job
+permissions: {} # declared per-job
 
 jobs:
-  # ────────────────────────────────────────────────────────────────────────────
-  # STAGE 1 — Merge main into a staging branch & resolve version conflicts
-  # ────────────────────────────────────────────────────────────────────────────
+
+  # ── STAGE 1: Merge main into staging branch & resolve version conflicts ──────
   staging-merge:
-    name: "Staging Merge: main → automation/sync-staging"
+    name: "Staging Merge: main → automation/main-to-dev-sync"
     runs-on: ubuntu-latest
+    # Skip semantic-release version-bump and sync commits to prevent re-entrancy.
+    if: >
+      !startsWith(github.event.head_commit.message, 'chore(release):') &&
+      !startsWith(github.event.head_commit.message, 'chore(sync):')
     permissions:
       contents: write
       pull-requests: write
     outputs:
       has_changes: ${{ steps.merge.outputs.has_changes }}
       sync_branch: ${{ steps.merge.outputs.sync_branch }}
+      has_conflicts: ${{ steps.merge.outputs.has_conflicts }}
+      conflict_files: ${{ steps.merge.outputs.conflict_files }}
 
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
@@ -49,7 +54,6 @@ jobs:
           git config user.name  "releasebot[bot]"
           git config user.email "releasebot[bot]@users.noreply.github.com"
 
-      # ── Core Staging Merge + False-Conflict Resolution Script ─────────────
       - name: Perform staging merge & resolve version conflicts
         id: merge
         env:
@@ -57,89 +61,105 @@ jobs:
         run: |
           set -euo pipefail
 
+          SYNC_BRANCH="automation/main-to-dev-sync"
+
           git fetch origin main dev
 
-          # ── Divergence check ─────────────────────────────────────────────
           AHEAD=$(git rev-list --right-only --count origin/dev...origin/main)
           if [ "$AHEAD" -eq 0 ]; then
-            echo "✅ dev is already up to date with main. Nothing to sync."
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "dev is already up to date with main. Nothing to sync."
+            echo "has_changes=false"        >> "$GITHUB_OUTPUT"
+            echo "has_conflicts=false"      >> "$GITHUB_OUTPUT"
+            echo "conflict_files="          >> "$GITHUB_OUTPUT"
+            echo "sync_branch=$SYNC_BRANCH" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          SYNC_BRANCH="automation/main-to-dev-sync"
-
-          # ── Create staging branch off current dev tip ────────────────────
           git checkout -B "$SYNC_BRANCH" origin/dev
 
-          # ── Attempt clean merge of main into staging branch ──────────────
           set +e
           git merge --no-ff --no-edit origin/main \
             -m "chore(sync): merge main into dev [skip ci]"
           MERGE_EXIT=$?
           set -e
 
+          HAS_REAL_CONFLICTS=false
+          CONFLICT_FILES_LIST=""
+
           if [ $MERGE_EXIT -ne 0 ]; then
-            # ── Conflict Analysis ────────────────────────────────────────
             CONFLICTS=$(git diff --name-only --diff-filter=U)
-            echo "⚠️  Conflicts detected in:"
+            echo "Conflicts detected in:"
             echo "$CONFLICTS"
 
-            # VERSION_FILES: package.json & lockfiles only
             VERSION_FILES_PATTERN='^(package\.json|package-lock\.json|npm-shrinkwrap\.json)$'
+            VERSION_CONFLICTS=$(echo "$CONFLICTS"     | grep -E  "$VERSION_FILES_PATTERN" | grep -v '^$' || true)
+            NON_VERSION_CONFLICTS=$(echo "$CONFLICTS" | grep -vE "$VERSION_FILES_PATTERN" | grep -v '^$' || true)
 
-            # Any conflict outside version files → HARD FAIL (real conflict)
-            NON_VERSION=$(echo "$CONFLICTS" \
-              | grep -vE "$VERSION_FILES_PATTERN" || true)
-
-            if [ -n "$NON_VERSION" ]; then
-              echo "❌ Real (non-version) conflicts detected — manual resolution required:"
-              echo "$NON_VERSION"
-              exit 1
-            fi
-
-            echo "🔍 Conflicts limited to version/lockfiles — applying False-Conflict resolution..."
-
-            # ── False-Conflict Resolution ────────────────────────────────
-            # Strategy: --ours (dev's RC/pre-release version wins)
-            # Rationale: semantic-release manages version bumps on main;
-            # dev carries RC suffixes (e.g. 1.2.0-rc.1). We preserve
-            # dev's pre-release version to avoid semantic-release
-            # desync on the next release cycle.
+            # Auto-resolve version false-conflicts: --ours keeps dev's RC version.
+            # Rationale: dev carries RC suffixes (e.g. 1.2.0-rc.1); preserving it
+            # prevents semantic-release desync on the next release cycle.
             for f in package.json package-lock.json npm-shrinkwrap.json; do
-              if echo "$CONFLICTS" | grep -qx "$f"; then
-                echo "  → Resolving '$f' with --ours (dev's RC version preserved)"
+              if echo "$VERSION_CONFLICTS" | grep -qx "$f"; then
+                echo "  → Resolving '$f' with --ours (dev RC version preserved)"
                 git checkout --ours "$f"
                 git add "$f"
               fi
             done
 
+            if [ -n "$NON_VERSION_CONFLICTS" ]; then
+              echo "Real conflicts detected — aborting merge for manual resolution:"
+              echo "$NON_VERSION_CONFLICTS"
+              HAS_REAL_CONFLICTS=true
+              CONFLICT_FILES_LIST=$(echo "$NON_VERSION_CONFLICTS" | tr '\n' ',' | sed 's/,$//')
+
+              git merge --abort || true
+
+              # Reset staging branch to clean dev tip so the PR target exists.
+              git checkout -B "$SYNC_BRANCH" origin/dev
+              git push --force-with-lease origin "$SYNC_BRANCH" || true
+
+              echo "has_changes=true"                  >> "$GITHUB_OUTPUT"
+              echo "sync_branch=$SYNC_BRANCH"          >> "$GITHUB_OUTPUT"
+              echo "has_conflicts=$HAS_REAL_CONFLICTS" >> "$GITHUB_OUTPUT"
+              echo "conflict_files=$CONFLICT_FILES_LIST" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
             git commit \
               -m "chore(sync): resolve version false-conflict — preserve dev RC version [skip ci]"
-
-            echo "✅ False-conflict resolved. Dev's pre-release version retained."
+            echo "False-conflict resolved. Dev's pre-release version retained."
           fi
 
-          # ── Verify staging branch actually diverged from dev ─────────────
-          if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)" ]; then
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          # Tree diff is the reliable signal — commit count alone is insufficient
+          # because the merge commit itself makes HEAD appear "ahead" even when
+          # the resulting tree is identical to dev (e.g. cherry-picked commits).
+          DIFF_COUNT=$(git diff --name-only origin/dev HEAD | wc -l | tr -d ' ')
+          if [ "$DIFF_COUNT" -eq 0 ]; then
+            echo "Merged tree is identical to dev tip — no effective changes to sync."
+            echo "has_changes=false"        >> "$GITHUB_OUTPUT"
+            echo "has_conflicts=false"      >> "$GITHUB_OUTPUT"
+            echo "conflict_files="          >> "$GITHUB_OUTPUT"
+            echo "sync_branch=$SYNC_BRANCH" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git push --force-with-lease origin "$SYNC_BRANCH"
 
-          echo "has_changes=true"    >> "$GITHUB_OUTPUT"
-          echo "sync_branch=$SYNC_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "has_changes=true"                    >> "$GITHUB_OUTPUT"
+          echo "sync_branch=$SYNC_BRANCH"            >> "$GITHUB_OUTPUT"
+          echo "has_conflicts=$HAS_REAL_CONFLICTS"   >> "$GITHUB_OUTPUT"
+          echo "conflict_files=$CONFLICT_FILES_LIST" >> "$GITHUB_OUTPUT"
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # STAGE 2 — Validation Gate: build & test the MERGED state
-  # The PR is only opened (and auto-merge enabled) after this gate is green.
-  # ────────────────────────────────────────────────────────────────────────────
+  # ── STAGE 2: Validate the merged state before opening a PR ──────────────────
   validate-merge:
     name: "Validation Gate: Build & Test Merged State"
     runs-on: ubuntu-latest
     needs: staging-merge
-    if: needs.staging-merge.outputs.has_changes == 'true'
+    # Skip when real conflicts are present — the staging branch is at dev tip,
+    # not the merged state, so building it would give a false-green result.
+    if: >
+      needs.staging-merge.outputs.has_changes == 'true' &&
+      needs.staging-merge.outputs.has_conflicts == 'false'
     permissions:
       contents: read
 
@@ -156,7 +176,6 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      # Tier-1: node_modules cache
       - name: Restore node_modules cache
         id: nm-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
@@ -175,14 +194,14 @@ jobs:
       - name: Build Angular app on merged state
         run: npm run build-prod
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # STAGE 3 — Open PR and enable auto-merge (only if validation passed)
-  # ────────────────────────────────────────────────────────────────────────────
+  # ── STAGE 3: Open sync PR and enable auto-merge if validation passed ─────────
   open-sync-pr:
     name: Open Sync PR → dev
     runs-on: ubuntu-latest
-    needs: [staging-merge, validate-merge]
-    if: needs.staging-merge.outputs.has_changes == 'true'
+    needs: [ staging-merge, validate-merge ]
+    # Always run if staging-merge succeeded with changes — even if validate-merge
+    # was skipped (conflicts) or failed — so the PR is created for manual inspection.
+    if: always() && needs.staging-merge.result == 'success' && needs.staging-merge.outputs.has_changes == 'true'
     permissions:
       contents: write
       pull-requests: write
@@ -190,18 +209,98 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+
+      - name: Checkout (full history for tree-diff re-verification)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Build PR body
+        id: pr-body
+        env:
+          HAS_CONFLICTS: ${{ needs.staging-merge.outputs.has_conflicts }}
+          CONFLICT_FILES: ${{ needs.staging-merge.outputs.conflict_files }}
+        run: |
+          set -euo pipefail
+
+          if [ "$HAS_CONFLICTS" = "true" ]; then
+            CONFLICT_LIST=$(printf '%s' "$CONFLICT_FILES" \
+              | tr ',' '\n' \
+              | grep -v '^$' \
+              | sed 's|.*|- `&`|')
+
+            cat > /tmp/pr_body.md << 'ENDBODY'
+          ## ⚠️ Automated Sync: main → dev — MANUAL CONFLICT RESOLUTION REQUIRED
+
+          This PR was created by the **Staging Merge** workflow after a push to `main`.
+
+          ### ❌ Real merge conflicts were detected
+
+          The merge was **aborted cleanly**. The staging branch is currently at the `dev` tip.
+          Please perform the merge locally, resolve all conflicts, and push to unblock:
+
+          ENDBODY
+
+            printf '%s\n\n' "$CONFLICT_LIST" >> /tmp/pr_body.md
+
+            cat >> /tmp/pr_body.md << 'ENDBODY'
+          ### How to resolve
+          ```bash
+          git fetch origin
+          git checkout automation/main-to-dev-sync
+          git merge origin/main
+          # Edit each conflicting file, remove conflict markers, then:
+          git add <resolved-files>
+          git commit -m "fix(sync): resolve merge conflicts"
+          git push
+          ```
+
+          > _Auto-merge is **disabled** on this PR. Once conflicts are resolved and CI passes, merge manually or re-enable auto-merge._
+          ENDBODY
+
+          else
+            cat > /tmp/pr_body.md << 'ENDBODY'
+          ## Automated Post-Release Sync: main → dev
+
+          This PR was created by the **Staging Merge** workflow after a push to `main`.
+
+          ### What happened?
+          1. A staging branch (`automation/main-to-dev-sync`) was created from `dev`.
+          2. `main` was merged into it.
+          3. Version false-conflicts in `package.json` / `package-lock.json` were auto-resolved — **dev's RC/pre-release version is preserved**.
+
+          _If the Validation Gate pipeline failed, auto-merge will be disabled so you can inspect the failure manually._
+          ENDBODY
+          fi
 
       - name: Create or reuse sync PR
         id: pr
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           SYNC_BRANCH: ${{ needs.staging-merge.outputs.sync_branch }}
+          HAS_CONFLICTS: ${{ needs.staging-merge.outputs.has_conflicts }}
         run: |
           set -euo pipefail
+
+          git fetch origin dev "$SYNC_BRANCH"
+
+          # ── Tree-diff guard — skipped intentionally when conflicts exist.
+          # In the conflict path, staging-merge parks the sync branch at the dev
+          # tip (after aborting the merge), so the trees will always be identical.
+          # The PR still needs to be opened as the manual-resolution signal.
+          if [ "$HAS_CONFLICTS" != "true" ]; then
+            DIFF_COUNT=$(git diff --name-only origin/dev origin/"$SYNC_BRANCH" | wc -l | tr -d ' ')
+            if [ "$DIFF_COUNT" -eq 0 ]; then
+              echo "Sync branch tree is identical to dev (race condition or cherry-pick overlap). Skipping PR creation."
+              echo "pr_number=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
 
           PR_NUMBER=$(gh pr list \
             --base dev \
@@ -211,38 +310,46 @@ jobs:
             --jq '.[0].number')
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            TITLE="chore(sync): merge main into dev"
+            if [ "$HAS_CONFLICTS" = "true" ]; then
+              TITLE="⚠️ chore(sync): merge main into dev — conflicts require manual resolution"
+            fi
+
             gh pr create \
               --base dev \
               --head "$SYNC_BRANCH" \
-              --title "chore(sync): merge main into dev" \
-              --body "$(cat <<'EOF'
-          ## Automated Post-Release Sync: main → dev
+              --title "$TITLE" \
+              --body-file /tmp/pr_body.md
 
-          This PR was created by the **Staging Merge** workflow after a push to \`main\`.
-
-          ### What happened?
-          1. A staging branch (\`automation/main-to-dev-sync\`) was created from \`dev\`.
-          2. \`main\` was merged into it.
-          3. Version false-conflicts in \`package.json\` / \`package-lock.json\` were auto-resolved — **dev's RC/pre-release version is preserved**.
-          4. The merged state passed the Angular **build & unit test validation gate**.
-
-          Auto-merge is enabled — this PR merges automatically once all required CI checks pass.
-          EOF
-          )"
-
-            PR_NUMBER=$(gh pr list \
-              --base dev \
-              --head "$SYNC_BRANCH" \
-              --state open \
-              --json number \
-              --jq '.[0].number')
+            # Retry to handle GitHub API eventual-consistency after create.
+            PR_NUMBER=""
+            for i in 1 2 3; do
+              PR_NUMBER=$(gh pr list \
+                --base dev \
+                --head "$SYNC_BRANCH" \
+                --state open \
+                --json number \
+                --jq '.[0].number')
+              [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ] && break
+              sleep 3
+            done
           else
-            echo "ℹ️  Reusing existing sync PR #$PR_NUMBER"
+            echo "Reusing existing sync PR #$PR_NUMBER — updating body."
+            gh pr edit "$PR_NUMBER" --body-file /tmp/pr_body.md
           fi
 
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "pr_number=" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Enable auto-merge
+        # Only enable when there are no real conflicts AND validation passed.
+        if: >
+          needs.staging-merge.outputs.has_conflicts == 'false' &&
+          needs.validate-merge.result == 'success' &&
+          steps.pr.outputs.pr_number != ''
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -250,4 +357,4 @@ jobs:
             --auto \
             --merge \
             --delete-branch \
-            || echo "ℹ️  Auto-merge already enabled or PR already merged."
+            || echo "Auto-merge already enabled or PR already merged."

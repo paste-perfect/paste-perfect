@@ -2,19 +2,27 @@ name: Release (Semantic Release)
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
 
-# Never cancel an in-flight release
+# Never cancel an in-flight release.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-permissions: { } # declared at job level
+permissions: {} # declared per-job
 
 jobs:
+
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    # Guard against infinite loop: semantic-release pushes a version-bump commit
+    # back to the branch after creating a GitHub Release. This filter also covers
+    # sync/promote automation commits for the same reason.
+    if: >
+      !startsWith(github.event.head_commit.message, 'chore(release):') &&
+      !startsWith(github.event.head_commit.message, 'chore(sync):') &&
+      !startsWith(github.event.head_commit.message, 'chore(promote):')
     permissions:
       contents: write
       issues: write
@@ -34,6 +42,8 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
+          # App token is required so the version-bump push triggers downstream
+          # workflows (GITHUB_TOKEN pushes intentionally do not re-trigger them).
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
@@ -43,7 +53,6 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      # Tier-1: node_modules cache
       - name: Restore node_modules cache
         id: nm-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
