@@ -2,9 +2,9 @@ name: Release (Semantic Release)
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
 
-# Never cancel an in-flight release
+# Never cancel an in-flight release.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -12,24 +12,23 @@ concurrency:
 permissions: {} # declared at job level
 
 jobs:
+
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    # ── Guard against infinite loop ───────────────────────────────────────────────
-    # semantic-release pushes a "chore(release): <version>" commit back to the
-    # branch after creating the GitHub Release. Without this guard, that commit
-    # would re-trigger this workflow, causing an infinite loop.
-    # Also filter sync/promote automation commits for the same reason.
+    # Guard against infinite loop: semantic-release pushes a version-bump commit
+    # back to the branch after creating a GitHub Release. This filter also covers
+    # sync/promote automation commits for the same reason.
     if: >
       !startsWith(github.event.head_commit.message, 'chore(release):') &&
       !startsWith(github.event.head_commit.message, 'chore(sync):') &&
-      !startsWith(github.event.head_commit.message, 'chore(promote):')
+      !startsWith(github.event.head_commit.message, 'chore(promote):]')
     permissions:
-      contents: write       # push version-bump commit + create GitHub Release
-      issues: write         # comment on issues closed by a release
-      pull-requests: write  # comment on PRs closed by a release
-      id-token: write       # needed by some semantic-release plugins
-      packages: write       # publish packages if configured
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+      packages: write
 
     steps:
       - name: Generate GitHub App token
@@ -43,9 +42,8 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
-          # GitHub App token is required so the version-bump push back to the
-          # branch triggers downstream workflows (the built-in GITHUB_TOKEN
-          # push intentionally does NOT re-trigger other workflow runs).
+          # App token is required so the version-bump push triggers downstream
+          # workflows (GITHUB_TOKEN pushes intentionally do not re-trigger them).
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
@@ -55,7 +53,6 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      # Tier-1: node_modules cache
       - name: Restore node_modules cache
         id: nm-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
