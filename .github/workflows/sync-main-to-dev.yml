@@ -129,11 +129,11 @@ jobs:
               # Capture list BEFORE aborting
               CONFLICT_FILES_LIST=$(echo "$NON_VERSION_CONFLICTS" | tr '\n' ',' | sed 's/,$//')
 
-              git merge --abort
+              git merge --abort || true
 
               # Re-create the branch at the clean dev tip so the PR target exists
               git checkout -B "$SYNC_BRANCH" origin/dev
-              git push --force-with-lease origin "$SYNC_BRANCH"
+              git push --force-with-lease origin "$SYNC_BRANCH" || true
 
               echo "has_changes=true"                    >> "$GITHUB_OUTPUT"
               echo "sync_branch=$SYNC_BRANCH"            >> "$GITHUB_OUTPUT"
@@ -312,6 +312,21 @@ jobs:
         run: |
           set -euo pipefail
 
+          git fetch origin dev "$SYNC_BRANCH"
+
+          # ── Tree-diff guard — skipped intentionally when conflicts exist.
+          # In the conflict path, staging-merge parks the sync branch at the dev
+          # tip (after aborting the merge), so the trees will always be identical.
+          # The PR still needs to be opened as the manual-resolution signal.
+          if [ "$HAS_CONFLICTS" != "true" ]; then
+            DIFF_COUNT=$(git diff --name-only origin/dev origin/"$SYNC_BRANCH" | wc -l | tr -d ' ')
+            if [ "$DIFF_COUNT" -eq 0 ]; then
+              echo "Sync branch tree is identical to dev (race condition or cherry-pick overlap). Skipping PR creation."
+              echo "pr_number=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
           PR_NUMBER=$(gh pr list \
             --base dev \
             --head "$SYNC_BRANCH" \
@@ -331,18 +346,27 @@ jobs:
               --title "$TITLE" \
               --body-file /tmp/pr_body.md
 
-            PR_NUMBER=$(gh pr list \
-              --base dev \
-              --head "$SYNC_BRANCH" \
-              --state open \
-              --json number \
-              --jq '.[0].number')
+            PR_NUMBER=""
+            for i in 1 2 3; do
+              PR_NUMBER=$(gh pr list \
+                --base dev \
+                --head "$SYNC_BRANCH" \
+                --state open \
+                --json number \
+                --jq '.[0].number')
+              [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ] && break
+              sleep 3
+            done
           else
-            echo "ℹ️  Reusing existing sync PR #$PR_NUMBER — updating body"
+            echo "Reusing existing sync PR #$PR_NUMBER — updating body."
             gh pr edit "$PR_NUMBER" --body-file /tmp/pr_body.md
           fi
 
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "pr_number=" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Enable auto-merge
         # Only enable auto-merge when:
