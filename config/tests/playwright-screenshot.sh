@@ -59,7 +59,13 @@ done
 # --- Build Image ---
 if $FORCE_REBUILD || ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo -e "${BLUE}🔨 Building Playwright Docker image...${NC}"
-    docker build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" .
+
+    if $FORCE_REBUILD; then
+        # Force Docker to ignore all cached layers
+        docker build --no-cache -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" .
+    else
+        docker build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" .
+    fi
 else
     echo -e "${GREEN}✅ Using cached Docker image: ${IMAGE_NAME}${NC}"
 fi
@@ -135,6 +141,7 @@ set +e
 docker run "${DOCKER_ARGS[@]}" --rm \
     --init \
     ${IPC_ARG} \
+    --security-opt seccomp=unconfined \
     --name "$CONTAINER_NAME" \
     -p "${UI_PORT}:${UI_PORT}" \
     -p "${REPORT_PORT}:${REPORT_PORT}" \
