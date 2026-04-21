@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { PlaywrightTestConfig } from "playwright/types/test";
 
 export const BASE_URL = process.env["PLAYWRIGHT_BASE_URL"] || "http://localhost:4200/paste-perfect/";
-const CI = Boolean(process.env["CI"]);
+const CI = process.env["CI"] === "true";
 // const UI_PORT = Number(process.env["UI_PORT"]) || 9323;
 const REPORT_PORT = Number(process.env["REPORT_PORT"]) || 9324;
 
@@ -34,7 +34,6 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        channel: "chromium",
         viewport: {
           width: 1280,
           height: 720,

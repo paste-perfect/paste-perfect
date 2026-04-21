@@ -9,8 +9,9 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # --- Configuration ---
-UI_PORT="${UI_PORT:-9323}"
+PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL:-http://localhost:4200/paste-perfect/}"
 REPORT_PORT="${REPORT_PORT:-9324}"
+UI_PORT="${UI_PORT:-9323}"
 CONFIG_PATH="config/tests/playwright.config.ts"
 DOCKERFILE_PATH="config/tests/playwright-screenshot-tests.Dockerfile"
 
@@ -65,11 +66,12 @@ fi
 
 # --- TTY Detection ---
 if [ -t 0 ]; then
-    DOCKER_ARGS="-it"
+    DOCKER_ARGS=(-it)
 else
-    DOCKER_ARGS=""
+    DOCKER_ARGS=()
 fi
 
+EXIT_CODE=0  # Default in case docker run is interrupted
 WAIT_PID=""
 
 # --- Cleanup Logic ---
@@ -86,7 +88,11 @@ cleanup() {
     fi
 }
 
-trap cleanup INT TERM EXIT
+# Clean up and force an exit code of 130 if interrupted
+trap 'cleanup; exit 130' INT TERM
+
+# Just clean up on normal script completion
+trap 'cleanup' EXIT
 
 # --- UI Mode Handling ---
 if $IS_UI_MODE; then
@@ -110,17 +116,25 @@ if $IS_UI_MODE; then
     WAIT_PID=$!
 fi
 
+# --- Build IPC flag for CI (Linux only) ---
+# --ipc=host bypasses Docker's default 64MB /dev/shm limit to prevent Chromium crashes.
+# This works on Linux CI (e.g. GitHub Actions) but not on macOS/Windows Docker Desktop.
+if [ "$CI" = "true" ]; then
+  IPC_ARG="--ipc=host"
+else
+  IPC_ARG="--shm-size=2gb"
+fi
+
 # --- Run Playwright in Docker ---
 echo -e "${BLUE}▶ Starting Playwright container...${NC}"
+echo -e "${BLUE}  Base URL: ${PLAYWRIGHT_BASE_URL}${NC}"
 
 # Temporarily disable exit-on-error to capture test exit codes naturally
 set +e
 
-# Note: --ipc=host bypasses Docker's default 64MB /dev/shm limit to prevent Chromium crashes.
-# If on macOS/Windows Docker Desktop and this fails, replace --ipc=host with --shm-size=2gb
-docker run ${DOCKER_ARGS} --rm \
+docker run "${DOCKER_ARGS[@]}" --rm \
     --init \
-    --ipc=host \
+    ${IPC_ARG} \
     --name "$CONTAINER_NAME" \
     -p "${UI_PORT}:${UI_PORT}" \
     -p "${REPORT_PORT}:${REPORT_PORT}" \
@@ -128,7 +142,7 @@ docker run ${DOCKER_ARGS} --rm \
     -v /app/node_modules \
     -w /app \
     -e "CI=${CI}" \
-    -e "PLAYWRIGHT_BASE_URL=http://localhost:4200/paste-perfect/" \
+    -e "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL}" \
     -e "UI_PORT=${UI_PORT}" \
     -e "REPORT_PORT=${REPORT_PORT}" \
     --add-host=host.docker.internal:host-gateway \
@@ -139,7 +153,7 @@ EXIT_CODE=$?
 set -e
 
 # Suppress Ctrl+C / SIGKILL noise
-if [ $EXIT_CODE -eq 130 ] || [ $EXIT_CODE -eq 137 ]; then
+if [[ "${EXIT_CODE:-0}" -eq 130 ]] || [[ "${EXIT_CODE:-0}" -eq 137 ]]; then
     echo -e "\n${YELLOW}⏹ Tests interrupted by user.${NC}"
     exit 0
 fi
