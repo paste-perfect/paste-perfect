@@ -9,10 +9,10 @@ on:
       - ".github/CODEOWNERS"
   workflow_dispatch:
 
-# ── Only one sync can run at a time; cancel in-flight stale syncs ────────────
+# ── Only one sync can run at a time; queue — never cancel to avoid corrupt staging branch ──
 concurrency:
   group: sync-main-to-dev
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions: {} # all permissions declared per-job
 
@@ -36,11 +36,14 @@ jobs:
     outputs:
       has_changes: ${{ steps.merge.outputs.has_changes }}
       sync_branch: ${{ steps.merge.outputs.sync_branch }}
+      has_conflicts: ${{ steps.merge.outputs.has_conflicts }}
+      conflict_files: ${{ steps.merge.outputs.conflict_files }}
 
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        # Pinned to a specific commit SHA for supply-chain security
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
@@ -64,17 +67,20 @@ jobs:
         run: |
           set -euo pipefail
 
+          SYNC_BRANCH="automation/main-to-dev-sync"
+
           git fetch origin main dev
 
           # ── Divergence check ──────────────────────────────────────────
           AHEAD=$(git rev-list --right-only --count origin/dev...origin/main)
           if [ "$AHEAD" -eq 0 ]; then
             echo "✅ dev is already up to date with main. Nothing to sync."
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "has_changes=false"              >> "$GITHUB_OUTPUT"
+            echo "has_conflicts=false"            >> "$GITHUB_OUTPUT"
+            echo "conflict_files="               >> "$GITHUB_OUTPUT"
+            echo "sync_branch=$SYNC_BRANCH"      >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          SYNC_BRANCH="automation/main-to-dev-sync"
 
           # ── Create staging branch off current dev tip ──────────────────
           git checkout -B "$SYNC_BRANCH" origin/dev
@@ -86,6 +92,9 @@ jobs:
           MERGE_EXIT=$?
           set -e
 
+          HAS_REAL_CONFLICTS=false
+          CONFLICT_FILES_LIST=""
+
           if [ $MERGE_EXIT -ne 0 ]; then
             # ── Conflict Analysis ─────────────────────────────────────
             CONFLICTS=$(git diff --name-only --diff-filter=U)
@@ -95,58 +104,77 @@ jobs:
             # VERSION_FILES: package.json & lockfiles only
             VERSION_FILES_PATTERN='^(package\.json|package-lock\.json|npm-shrinkwrap\.json)$'
 
-            # Any conflict outside version files → HARD FAIL (real conflict)
-            NON_VERSION=$(echo "$CONFLICTS" \
-              | grep -vE "$VERSION_FILES_PATTERN" || true)
+            # Separate version-file conflicts from real conflicts
+            # Trim blank lines to avoid false-positive -n checks
+            VERSION_CONFLICTS=$(echo "$CONFLICTS"     | grep -E  "$VERSION_FILES_PATTERN" | grep -v '^$' || true)
+            NON_VERSION_CONFLICTS=$(echo "$CONFLICTS" | grep -vE "$VERSION_FILES_PATTERN" | grep -v '^$' || true)
 
-            if [ -n "$NON_VERSION" ]; then
-              echo "❌ Real (non-version) conflicts detected — manual resolution required:"
-              echo "$NON_VERSION"
-              exit 1
-            fi
-
-            echo "🔍 Conflicts limited to version/lockfiles — applying False-Conflict resolution..."
-
-            # ── False-Conflict Resolution ─────────────────────────────
-            # Strategy: --ours (dev's RC/pre-release version wins)
-            # Rationale: semantic-release manages version bumps on main;
-            # dev carries RC suffixes (e.g. 1.2.0-rc.1). We preserve
-            # dev's pre-release version to avoid semantic-release
-            # desync on the next release cycle.
+            # ── Auto-resolve version false-conflicts (--ours: dev RC wins) ──
             for f in package.json package-lock.json npm-shrinkwrap.json; do
-              if echo "$CONFLICTS" | grep -qx "$f"; then
+              if echo "$VERSION_CONFLICTS" | grep -qx "$f"; then
                 echo "  → Resolving '$f' with --ours (dev's RC version preserved)"
                 git checkout --ours "$f"
                 git add "$f"
               fi
             done
 
-            git commit \
-              -m "chore(sync): resolve version false-conflict — preserve dev RC version [skip ci]"
+            if [ -n "$NON_VERSION_CONFLICTS" ]; then
+              # ── Real conflicts: abort the merge cleanly, then push the
+              #    staging branch at the dev tip so a PR can still be opened.
+              #    The PR body will instruct the developer to resolve locally.
+              echo "⚠️  Real conflicts detected — aborting merge for manual resolution:"
+              echo "$NON_VERSION_CONFLICTS"
+              HAS_REAL_CONFLICTS=true
 
-            echo "✅ False-conflict resolved. Dev's pre-release version retained."
+              # Capture list BEFORE aborting
+              CONFLICT_FILES_LIST=$(echo "$NON_VERSION_CONFLICTS" | tr '\n' ',' | sed 's/,$//')
+
+              git merge --abort
+
+              # Re-create the branch at the clean dev tip so the PR target exists
+              git checkout -B "$SYNC_BRANCH" origin/dev
+              git push --force-with-lease origin "$SYNC_BRANCH"
+
+              echo "has_changes=true"                    >> "$GITHUB_OUTPUT"
+              echo "sync_branch=$SYNC_BRANCH"            >> "$GITHUB_OUTPUT"
+              echo "has_conflicts=$HAS_REAL_CONFLICTS"   >> "$GITHUB_OUTPUT"
+              echo "conflict_files=$CONFLICT_FILES_LIST" >> "$GITHUB_OUTPUT"
+              exit 0
+            else
+              # Only version conflicts → clean commit
+              git commit \
+                -m "chore(sync): resolve version false-conflict — preserve dev RC version [skip ci]"
+              echo "✅ False-conflict resolved. Dev's pre-release version retained."
+            fi
           fi
 
           # ── Verify staging branch actually diverged from dev ──────────
           if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)" ]; then
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "has_changes=false"              >> "$GITHUB_OUTPUT"
+            echo "has_conflicts=false"            >> "$GITHUB_OUTPUT"
+            echo "conflict_files="               >> "$GITHUB_OUTPUT"
+            echo "sync_branch=$SYNC_BRANCH"      >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git push --force-with-lease origin "$SYNC_BRANCH"
 
-          echo "has_changes=true"    >> "$GITHUB_OUTPUT"
-          echo "sync_branch=$SYNC_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "has_changes=true"                    >> "$GITHUB_OUTPUT"
+          echo "sync_branch=$SYNC_BRANCH"            >> "$GITHUB_OUTPUT"
+          echo "has_conflicts=$HAS_REAL_CONFLICTS"   >> "$GITHUB_OUTPUT"
+          echo "conflict_files=$CONFLICT_FILES_LIST" >> "$GITHUB_OUTPUT"
 
   # ────────────────────────────────────────────────────────────────────────────
   # STAGE 2 — Validation Gate: build & test the MERGED state
-  # The PR is only opened (and auto-merge enabled) after this gate is green.
+  # Skipped entirely when real conflicts are present (can't build broken code).
   # ────────────────────────────────────────────────────────────────────────────
   validate-merge:
     name: "Validation Gate: Build & Test Merged State"
     runs-on: ubuntu-latest
     needs: staging-merge
-    if: needs.staging-merge.outputs.has_changes == 'true'
+    if: >
+      needs.staging-merge.outputs.has_changes == 'true' &&
+      needs.staging-merge.outputs.has_conflicts == 'false'
     permissions:
       contents: read
 
@@ -184,13 +212,15 @@ jobs:
 
   # ────────────────────────────────────────────────────────────────────────────
   # STAGE 3 — Open PR and enable auto-merge (only if validation passed)
+  # When real conflicts exist the PR is opened but auto-merge is NOT enabled,
+  # and the PR body clearly lists every conflicting file.
   # ────────────────────────────────────────────────────────────────────────────
   open-sync-pr:
     name: Open Sync PR → dev
     runs-on: ubuntu-latest
     needs: [staging-merge, validate-merge]
     # ALWAYS run if staging-merge succeeded and produced changes,
-    # even if validate-merge failed.
+    # even if validate-merge was skipped (conflicts) or failed.
     if: always() && needs.staging-merge.result == 'success' && needs.staging-merge.outputs.has_changes == 'true'
     permissions:
       contents: write
@@ -199,16 +229,82 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        # Pinned to a specific commit SHA for supply-chain security
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+
+      - name: Build PR body & write to file
+        id: pr-body
+        env:
+          HAS_CONFLICTS: ${{ needs.staging-merge.outputs.has_conflicts }}
+          CONFLICT_FILES: ${{ needs.staging-merge.outputs.conflict_files }}
+        run: |
+          set -euo pipefail
+
+          if [ "$HAS_CONFLICTS" = "true" ]; then
+            # Sanitize and format the comma-separated conflict list into markdown bullets.
+            # Each filename is treated as a literal string — no shell expansion.
+            CONFLICT_LIST=$(printf '%s' "$CONFLICT_FILES" \
+              | tr ',' '\n' \
+              | grep -v '^$' \
+              | while IFS= read -r fname; do
+                  printf -- '- `%s`\n' "$fname"
+                done)
+
+            # Write the body to a temp file to avoid heredoc injection via filenames
+            cat > /tmp/pr_body.md << 'ENDBODY'
+          ## ⚠️ Automated Sync: main → dev — MANUAL CONFLICT RESOLUTION REQUIRED
+
+          This PR was created by the **Staging Merge** workflow after a push to `main`.
+
+          ### ❌ Real merge conflicts were detected
+
+          The merge was **aborted cleanly**. The staging branch is currently at the `dev` tip.
+          Please perform the merge locally, resolve all conflicts, and push to unblock:
+
+          ENDBODY
+
+            # Append the dynamic conflict list safely (no heredoc expansion risk)
+            printf '%s\n\n' "$CONFLICT_LIST" >> /tmp/pr_body.md
+
+            cat >> /tmp/pr_body.md << 'ENDBODY'
+          ### How to resolve
+          ```bash
+          git fetch origin
+          git checkout automation/main-to-dev-sync
+          git merge origin/main
+          # Edit each conflicting file, remove conflict markers, then:
+          git add <resolved-files>
+          git commit -m "fix(sync): resolve merge conflicts"
+          git push
+          ```
+
+          > _Auto-merge is **disabled** on this PR. Once conflicts are resolved and CI passes, merge manually or re-enable auto-merge._
+          ENDBODY
+
+          else
+            cat > /tmp/pr_body.md << 'ENDBODY'
+          ## Automated Post-Release Sync: main → dev
+
+          This PR was created by the **Staging Merge** workflow after a push to `main`.
+
+          ### What happened?
+          1. A staging branch (`automation/main-to-dev-sync`) was created from `dev`.
+          2. `main` was merged into it.
+          3. Version false-conflicts in `package.json` / `package-lock.json` were auto-resolved — **dev's RC/pre-release version is preserved**.
+
+          _If the Validation Gate pipeline failed, auto-merge will be disabled so you can inspect the failure manually._
+          ENDBODY
+          fi
 
       - name: Create or reuse sync PR
         id: pr
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           SYNC_BRANCH: ${{ needs.staging-merge.outputs.sync_branch }}
+          HAS_CONFLICTS: ${{ needs.staging-merge.outputs.has_conflicts }}
         run: |
           set -euo pipefail
 
@@ -220,23 +316,16 @@ jobs:
             --jq '.[0].number')
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            TITLE="chore(sync): merge main into dev"
+            if [ "$HAS_CONFLICTS" = "true" ]; then
+              TITLE="⚠️ chore(sync): merge main into dev — conflicts require manual resolution"
+            fi
+
             gh pr create \
               --base dev \
               --head "$SYNC_BRANCH" \
-              --title "chore(sync): merge main into dev" \
-              --body "$(cat <<'EOF'
-          ## Automated Post-Release Sync: main → dev
-
-          This PR was created by the **Staging Merge** workflow after a push to `main`.
-
-          ### What happened?
-          1. A staging branch (`automation/main-to-dev-sync`) was created from `dev`.
-          2. `main` was merged into it.
-          3. Version false-conflicts in `package.json` / `package-lock.json` were auto-resolved — **dev's RC/pre-release version is preserved**.
-
-          _If the Validation Gate pipeline failed, auto-merge will be disabled so you can inspect the failure manually._
-          EOF
-          )"
+              --title "$TITLE" \
+              --body-file /tmp/pr_body.md
 
             PR_NUMBER=$(gh pr list \
               --base dev \
@@ -245,14 +334,19 @@ jobs:
               --json number \
               --jq '.[0].number')
           else
-            echo "ℹ️  Reusing existing sync PR #$PR_NUMBER"
+            echo "ℹ️  Reusing existing sync PR #$PR_NUMBER — updating body"
+            gh pr edit "$PR_NUMBER" --body-file /tmp/pr_body.md
           fi
 
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Enable auto-merge
-        # ONLY enable auto-merge if the validation gate actually passed
-        if: needs.validate-merge.result == 'success'
+        # Only enable auto-merge when:
+        #   1. There are no real merge conflicts, AND
+        #   2. The validation gate actually passed
+        if: >
+          needs.staging-merge.outputs.has_conflicts == 'false' &&
+          needs.validate-merge.result == 'success'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
