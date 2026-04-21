@@ -1,15 +1,15 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
-import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
 import { SettingsService } from "@services/settings.service";
 import { IndentationMode } from "@constants";
 import { LanguageDefinition } from "@types";
 import * as prettier from "prettier/standalone";
 import { Plugin as PrettierPlugin } from "prettier";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
 
 // ---------------------------------------------------------------------------
-// Mock prettier/standalone globally
+// Module mock — must be at top level, before any imports that use the module
 // ---------------------------------------------------------------------------
 
 vi.mock("prettier/standalone", () => ({
@@ -52,9 +52,7 @@ const makePluginResult = (parser: string, pluginOptions?: Record<string, unknown
 
 describe("PrettierFormattingService", () => {
   let service: PrettierFormattingService;
-  let pluginLoaderMock: {
-    getParserAndPlugins: ReturnType<typeof vi.fn>;
-  };
+  let pluginLoaderMock: { getParserAndPlugins: ReturnType<typeof vi.fn> };
   let settingsServiceMock: { editorSettings: ReturnType<typeof makeSettings> };
 
   beforeEach(() => {
@@ -73,28 +71,28 @@ describe("PrettierFormattingService", () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    // Restores all spies AND resets vi.mocked() call history
+    vi.restoreAllMocks();
+    TestBed.resetTestingModule();
   });
 
-  // ── Instantiation ────────────────────────────────────────────────────────
+  // ── Instantiation ──────────────────────────────────────────────────────────
 
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
 
-  // ── formatCode — early exits ──────────────────────────────────────────────
+  // ── Early exits ───────────────────────────────────────────────────────────
 
   describe("formatCode — early exits", () => {
     it("should return original code unchanged when formatting is disabled", async () => {
-      settingsServiceMock.editorSettings = makeSettings({
-        enableFormatting: false,
-      });
+      settingsServiceMock.editorSettings = makeSettings({ enableFormatting: false });
       const result = await service.formatCode("const x = 1", makeLanguage());
       expect(result).toEqual({ code: "const x = 1", formattingSuccessful: true });
       expect(pluginLoaderMock.getParserAndPlugins).not.toHaveBeenCalled();
     });
 
-    it("should return empty string unchanged when code is an empty string", async () => {
+    it("should return an empty string unchanged without consulting the plugin loader", async () => {
       const result = await service.formatCode("", makeLanguage());
       expect(result).toEqual({ code: "", formattingSuccessful: true });
       expect(pluginLoaderMock.getParserAndPlugins).not.toHaveBeenCalled();
@@ -106,19 +104,24 @@ describe("PrettierFormattingService", () => {
       expect(pluginLoaderMock.getParserAndPlugins).not.toHaveBeenCalled();
     });
 
-    it("should return original code when plugin loader returns null", async () => {
+    it("should return original code unchanged when the plugin loader returns null", async () => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(null);
       const result = await service.formatCode("const x = 1;", makeLanguage());
       expect(result).toEqual({ code: "const x = 1;", formattingSuccessful: true });
     });
   });
 
-  // ── formatCode — successful formatting ────────────────────────────────────
+  // ── Successful formatting ─────────────────────────────────────────────────
 
   describe("formatCode — successful formatting", () => {
     beforeEach(() => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("babel"));
       vi.mocked(prettier.format).mockResolvedValue("const x = 1;\n");
+    });
+
+    it("should return formatted code with formattingSuccessful: true", async () => {
+      const result = await service.formatCode("const x=1", makeLanguage());
+      expect(result).toEqual({ code: "const x = 1;\n", formattingSuccessful: true });
     });
 
     it("should call prettier.format with the resolved parser and plugins", async () => {
@@ -133,32 +136,20 @@ describe("PrettierFormattingService", () => {
       expect(prettier.format).toHaveBeenCalledWith("const x=1", expect.objectContaining({ parser: "babel", plugins: [mockPlugin] }));
     });
 
-    it("should return formatted code and formattingSuccessful: true on success", async () => {
-      const result = await service.formatCode("const x=1", makeLanguage());
-      expect(result).toEqual({
-        code: "const x = 1;\n",
-        formattingSuccessful: true,
-      });
-    });
-
-    it("should pass tabWidth from settings to prettier", async () => {
+    it("should pass tabWidth from user settings to prettier", async () => {
       settingsServiceMock.editorSettings = makeSettings({ indentationSize: 4 });
       await service.formatCode("code", makeLanguage());
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ tabWidth: 4 }));
     });
 
     it("should pass useTabs: true when indentation mode is Tabs", async () => {
-      settingsServiceMock.editorSettings = makeSettings({
-        indentationMode: IndentationMode.Tabs,
-      });
+      settingsServiceMock.editorSettings = makeSettings({ indentationMode: IndentationMode.Tabs });
       await service.formatCode("code", makeLanguage());
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ useTabs: true }));
     });
 
     it("should pass useTabs: false when indentation mode is Spaces", async () => {
-      settingsServiceMock.editorSettings = makeSettings({
-        indentationMode: IndentationMode.Spaces,
-      });
+      settingsServiceMock.editorSettings = makeSettings({ indentationMode: IndentationMode.Spaces });
       await service.formatCode("code", makeLanguage());
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ useTabs: false }));
     });
@@ -173,7 +164,7 @@ describe("PrettierFormattingService", () => {
     });
   });
 
-  // ── formatCode — JSON key sorting ──────────────────────────────────────────
+  // ── JSON key sorting ──────────────────────────────────────────────────────
 
   describe("formatCode — JSON key sorting", () => {
     it("should include jsonRecursiveSort: true when formatting JSON", async () => {
@@ -187,34 +178,28 @@ describe("PrettierFormattingService", () => {
     });
   });
 
-  // ── formatCode — failure handling ───────────────────────────────────────────
+  // ── Failure handling ──────────────────────────────────────────────────────
 
   describe("formatCode — failure handling", () => {
-    it("should return original code with formattingSuccessful: false when prettier throws", async () => {
+    beforeEach(() => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("babel"));
       vi.mocked(prettier.format).mockRejectedValue(new Error("syntax error"));
-
-      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+      // Suppress expected console output globally for this block
+      vi.spyOn(console, "warn").mockImplementation(() => {
         /* empty */
       });
-      const result = await service.formatCode("const x =", makeLanguage());
-
-      expect(result).toEqual({
-        code: "const x =",
-        formattingSuccessful: false,
+      vi.spyOn(console, "log").mockImplementation(() => {
+        /* empty */
       });
-      consoleSpy.mockRestore();
     });
 
-    it("should not throw when prettier format rejects", async () => {
-      pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("babel"));
-      vi.mocked(prettier.format).mockRejectedValue(new Error("oops"));
-      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
-        /* empty */
-      });
+    it("should return the original code with formattingSuccessful: false when prettier throws", async () => {
+      const result = await service.formatCode("const x =", makeLanguage());
+      expect(result).toEqual({ code: "const x =", formattingSuccessful: false });
+    });
 
+    it("should not propagate the thrown error to the caller", async () => {
       await expect(service.formatCode("broken code", makeLanguage())).resolves.not.toThrow();
-      consoleSpy.mockRestore();
     });
   });
 });

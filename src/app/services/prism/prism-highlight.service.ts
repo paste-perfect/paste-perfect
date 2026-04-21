@@ -137,6 +137,7 @@ export class PrismHighlightService {
 
     // Transform the cloned structure for clipboard compatibility
     const linesCollector = new LinesCollector(mode, tabSize, showLineNumbers);
+    console.log("collect");
     linesCollector.collectLinesFromNodes(originalPre, clonedPre);
 
     return clonedPre;
