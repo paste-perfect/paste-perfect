@@ -5,6 +5,7 @@ on:
     branches: [dev]
   workflow_dispatch:
 
+# Only one promote run at a time; cancel stale runs on new dev pushes.
 concurrency:
   group: promote-dev-to-main
   cancel-in-progress: true
@@ -12,14 +13,11 @@ concurrency:
 permissions: {} # declared per-job
 
 jobs:
+
   ensure-release-pr:
     name: Ensure dev → main release PR exists
     runs-on: ubuntu-latest
-    # ── Guard: skip semantic-release version-bump commits to prevent loops ───
-    # semantic-release pushes "chore(release): <version>" back to dev after a
-    # pre-release. Without this guard that push would re-trigger this workflow
-    # and create/update the release PR unnecessarily.
-    # Sync commits are also filtered to avoid re-entrancy from the sync flow.
+    # Skip semantic-release version-bump and sync commits to prevent re-entrancy.
     if: >
       !startsWith(github.event.head_commit.message, 'chore(release):') &&
       !startsWith(github.event.head_commit.message, 'chore(sync):')
@@ -64,7 +62,7 @@ jobs:
 
       - name: No-op if dev == main
         if: steps.ahead.outputs.ahead == '0'
-        run: echo "ℹ️  dev is not ahead of main. No PR needed."
+        run: echo "dev is not ahead of main. No PR needed."
 
       - name: Create or verify release PR
         if: steps.ahead.outputs.ahead != '0'
@@ -82,7 +80,7 @@ jobs:
             --jq '.[0].number')
 
           if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-            echo "ℹ️  Release PR #$PR_NUMBER already exists."
+            echo "Release PR #$PR_NUMBER already exists."
             echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -103,7 +101,7 @@ jobs:
           1. ✅ All commits since the last release are lifecycle/dependency updates.
           2. ✅ All required CI checks are passing.
 
-          If `feat:` or `fix:` commits are detected, this PR will **not** be auto-merged
+          If \`feat:\` or \`fix:\` commits are detected, this PR will **not** be auto-merged
           and requires a manual promotion decision.
           EOF
           )"
@@ -116,12 +114,8 @@ jobs:
             --jq '.[0].number')
 
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "✅ Release PR #$PR_NUMBER created."
+          echo "Release PR #$PR_NUMBER created."
 
-      # ── Lifecycle Label Gate ──────────────────────────────────────────────
-      # Scans all commits in this PR. If every commit matches a maintenance
-      # type (chore, build, ci, docs, style, refactor, fix(deps)), apply
-      # the automerge-lifecycle label for the scheduled workflow to consume.
       - name: Evaluate lifecycle label eligibility
         if: steps.ahead.outputs.ahead != '0'
         env:
@@ -133,21 +127,17 @@ jobs:
           MERGE_BASE=$(git merge-base origin/dev origin/main)
           COMMITS=$(git log "$MERGE_BASE"..origin/dev --pretty=format:"%s")
 
-          echo "Commit messages to evaluate:"
+          echo "Commits to evaluate:"
           echo "$COMMITS"
 
-          # Lifecycle commit types: maintenance-only, no user-facing changes
           LIFECYCLE_PATTERN='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?: |^chore\(sync\)|^chore\(release\)|^fix\(deps'
-
           NON_LIFECYCLE=$(echo "$COMMITS" | grep -vE "$LIFECYCLE_PATTERN" || true)
 
           if [ -z "$NON_LIFECYCLE" ]; then
-            echo "✅ All commits are lifecycle-type. Applying 'automerge-lifecycle' label."
+            echo "All commits are lifecycle-type. Applying 'automerge-lifecycle' label."
             gh pr edit "$PR_NUMBER" --add-label "automerge-lifecycle"
           else
-            echo "ℹ️  Non-lifecycle commits found (feat/fix detected). Label NOT applied."
-            echo "Commits requiring manual review:"
+            echo "Non-lifecycle commits found (feat/fix detected). Label NOT applied."
             echo "$NON_LIFECYCLE"
-            # Remove label if it was previously applied
             gh pr edit "$PR_NUMBER" --remove-label "automerge-lifecycle" 2>/dev/null || true
           fi

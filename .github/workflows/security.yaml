@@ -10,7 +10,7 @@ on:
     - cron: "0 4 * * 0" # Every Sunday at 04:00 UTC
   workflow_dispatch:
 
-# ── One scan per PR; cancel stale runs ────────────────────────────────────────
+# Cancel stale runs per PR; use run_id as fallback for scheduled/dispatch runs.
 concurrency:
   group: security-${{ github.event.pull_request.number || github.ref || github.run_id }}
   cancel-in-progress: true
@@ -18,10 +18,11 @@ concurrency:
 permissions: {} # declared per-job
 
 jobs:
+
   trivy-fs-scan:
     name: Trivy — Filesystem Vulnerability Scan
     runs-on: ubuntu-latest
-    # Skip draft PRs — scan only actionable, ready-for-review code
+    # Skip draft PRs — scan only ready-for-review code.
     if: >-
       github.event_name != 'pull_request' ||
       github.event.pull_request.draft == false
@@ -42,17 +43,15 @@ jobs:
           format: "sarif"
           output: "trivy-results-fs.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
-          # Suppress licence-only findings that are not exploitable vulnerabilities
           ignore-unfixed: true
 
-      - name: Upload Trivy SARIF to GitHub Security tab
+      - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
-        # Always upload even if Trivy finds nothing — keeps the Security tab consistent
         if: always()
         with:
           sarif_file: "trivy-results-fs.sarif"
 
-      - name: Upload Trivy raw results as artifact
+      - name: Upload raw results as artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: always()
         with:
