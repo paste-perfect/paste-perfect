@@ -30,7 +30,7 @@ export const test = base.extend<{ page: CodeHighlighterPage }>({
     });
 
     // Go to the app's root path
-    await page.goto("");
+    await page.goto("/");
 
     // Expose the final typed Page to the tests
     await use(page as CodeHighlighterPage);
