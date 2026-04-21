@@ -8,19 +8,11 @@ import { PrettierFormattingService } from "@services/prettier/prettier-formattin
 import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const HIGHLIGHTED = '<span class="token">hello</span>';
 const FORMATTED = "function hello() {}";
 const WITH_LINES = "1  function hello() {}";
 const SANITIZED = "1  function hello() {}";
 const NO_CODE_HTML = "<span>The highlighted code will appear here after pasting some code!</span>";
-
-// ---------------------------------------------------------------------------
-// Stub factories
-// ---------------------------------------------------------------------------
 
 const createPrismMock = () => ({ highlightCode: vi.fn().mockResolvedValue(HIGHLIGHTED) });
 const createPrettierMock = () => ({
@@ -40,10 +32,6 @@ class LanguageServiceStub {
 
 /** Yields to the microtask / macrotask queue so Angular effects can settle. */
 const flushEffects = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 
 describe("CodeService", () => {
   let service: CodeService;

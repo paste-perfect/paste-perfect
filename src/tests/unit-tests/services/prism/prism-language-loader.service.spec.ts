@@ -6,20 +6,12 @@ import { LocationStrategy } from "@angular/common";
 import { LanguageDefinition } from "@types";
 import { makeLanguage, createMessageMock } from "../../test-utils";
 
-// ---------------------------------------------------------------------------
-// 1. Hoisted shared state
-// ---------------------------------------------------------------------------
-
 const prismMock = vi.hoisted(() => ({
   languages: {} as Record<string, unknown>,
   highlight: vi.fn(),
 }));
 
 const mockSearchLanguage = vi.hoisted(() => vi.fn());
-
-// ---------------------------------------------------------------------------
-// 2. Module-level mocks
-// ---------------------------------------------------------------------------
 
 vi.mock("prismjs", () => ({
   default: prismMock,
@@ -35,10 +27,6 @@ vi.mock("@utils/languages-utils", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@utils/languages-utils")>();
   return { ...actual, searchLanguageByValue: mockSearchLanguage };
 });
-
-// ---------------------------------------------------------------------------
-// 3. Test Suite
-// ---------------------------------------------------------------------------
 
 describe("PrismLanguageLoaderService", () => {
   let service: PrismLanguageLoaderService;

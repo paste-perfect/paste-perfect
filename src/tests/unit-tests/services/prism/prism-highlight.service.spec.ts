@@ -1,12 +1,6 @@
-// Before: afterEach called BOTH vi.clearAllMocks() AND vi.restoreAllMocks().
-//         vi.clearAllMocks() is redundant — restoreAllMocks() is a strict superset.
-//         Inline `new Promise((r) => setTimeout(r, 0))` was repeated 3 times;
-//         extracted to a named `flushPromises` helper for clarity and DRY-ness.
-// After:  single vi.restoreAllMocks() in afterEach; shared flushPromises helper.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { MessageService } from "primeng/api";
-
 import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
 import { SettingsService } from "@services/settings.service";
@@ -14,18 +8,10 @@ import { SanitizerWrapper } from "@utils/sanitizer";
 import { LinesCollector } from "@utils/line-collector";
 import { makeLanguage, makeEditorSettings, createMockPreElement, createMessageMock } from "../../test-utils";
 
-// ---------------------------------------------------------------------------
-// 1. Hoisted shared state
-// ---------------------------------------------------------------------------
-
 const prismMock = vi.hoisted(() => ({
   languages: {} as Record<string, unknown>,
   highlight: vi.fn(),
 }));
-
-// ---------------------------------------------------------------------------
-// 2. Module-level mocks
-// ---------------------------------------------------------------------------
 
 vi.mock("prismjs", () => ({
   default: prismMock,
@@ -45,16 +31,8 @@ vi.mock("@constants", () => ({
   HTML_CODE_PRE_SELECTOR: "pre",
 }));
 
-// ---------------------------------------------------------------------------
-// 3. Helpers
-// ---------------------------------------------------------------------------
-
 /** Drains the microtask / macrotask queue so async fire-and-forget work settles. */
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-// ---------------------------------------------------------------------------
-// 4. Test Suite
-// ---------------------------------------------------------------------------
 
 describe("PrismHighlightService", () => {
   let service: PrismHighlightService;
@@ -69,7 +47,6 @@ describe("PrismHighlightService", () => {
   };
 
   beforeEach(() => {
-    // Reset the Prism languages registry to a clean slate.
     Object.keys(prismMock.languages).forEach((key) => delete prismMock.languages[key]);
     prismMock.languages["typescript"] = {};
     prismMock.highlight.mockReturnValue("");
@@ -79,7 +56,6 @@ describe("PrismHighlightService", () => {
       prismMock.languages[lang.value] = {};
     });
 
-    // Clipboard API stub
     clipboardWriteMock = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       value: { write: clipboardWriteMock },
@@ -111,7 +87,6 @@ describe("PrismHighlightService", () => {
   });
 
   afterEach(() => {
-    // restoreAllMocks() resets spy implementations AND call history — no need for clearAllMocks().
     vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
@@ -164,7 +139,7 @@ describe("PrismHighlightService", () => {
       mockPreElement = createMockPreElement();
       vi.spyOn(document, "querySelector").mockReturnValue(mockPreElement);
       collectLinesSpy = vi.spyOn(LinesCollector.prototype, "collectLinesFromNodes").mockImplementation(() => {
-        /* no-op */
+        /* empty */
       });
     });
 

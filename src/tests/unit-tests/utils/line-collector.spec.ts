@@ -28,8 +28,6 @@ describe("LinesCollector", () => {
         const collector = new LinesCollector(IndentationMode.Spaces, 2, false);
         const span = createStyledSpan("  indented line\nsecond line");
         original.appendChild(span);
-
-        // The collector expects cloned to be a structural clone of original initially
         cloned.appendChild(span.cloneNode(true));
 
         collector.collectLinesFromNodes(original, cloned);
@@ -51,10 +49,7 @@ describe("LinesCollector", () => {
         const p = cloned.querySelector("p");
         const indentationSpan = p?.querySelector("span");
 
-        // Check for non-breaking space
         expect(p?.textContent).toMatch(new RegExp(SpecialCharacters.NON_BREAKING_SPACE));
-
-        // Verify that the whitespace preservation style for MS Office is applied
         expect(indentationSpan?.getAttribute("style")).toContain("mso-spacerun:yes");
       });
 
@@ -70,8 +65,6 @@ describe("LinesCollector", () => {
         expect(paragraphs).toHaveLength(2);
         paragraphs.forEach((p) => {
           expect(p.textContent).toBe(SpecialCharacters.NON_BREAKING_SPACE);
-
-          // Empty lines are generated as spans with the non-breaking space and mso-spacerun
           const emptyLineSpan = p.querySelector("span");
           expect(emptyLineSpan?.getAttribute("style")).toContain("mso-spacerun:yes");
         });
@@ -82,7 +75,6 @@ describe("LinesCollector", () => {
       it("should split multi-line text, stamp tab-stop styles on paragraphs, and tab-counts on spans", () => {
         const tabSize = 2;
         const collector = new LinesCollector(IndentationMode.Tabs, tabSize, false);
-        // Using enough spaces that map to exactly 1 tab stop based on tabSize
         const span = createStyledSpan("  Tabbed text\nNext");
         original.appendChild(span);
         cloned.appendChild(span.cloneNode(true));
@@ -92,12 +84,10 @@ describe("LinesCollector", () => {
 
         expect(paragraphs).toHaveLength(2);
 
-        // Check paragraph tab stops
         paragraphs.forEach((p) => {
           expect(p.style.getPropertyValue("tab-stops") || p.getAttribute("style")).toMatch(/left/);
         });
 
-        // Check that the actual indentation span received the MS Office tab-count style
         const indentedSpan = paragraphs[0].querySelector("span");
         expect(indentedSpan?.getAttribute("style")).toContain("mso-tab-count:1");
       });
@@ -116,17 +106,14 @@ describe("LinesCollector", () => {
 
         collector.collectLinesFromNodes(original, cloned);
 
-        // Comments should be stripped from the final cloned output
         const hasComments = Array.from(cloned.childNodes).some((n) => n.nodeType === Node.COMMENT_NODE);
         expect(hasComments).toBe(false);
       });
     });
   });
 
-  // -------------------------------------------------------------------------
   describe("when hasLineNumbers is true", () => {
     beforeEach(() => {
-      // Mocking a line number element that the collector looks for
       const mockElement = document.createElement("span");
       mockElement.className = "line-number-gutter";
 
@@ -191,7 +178,6 @@ describe("LinesCollector", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
   describe("Style and Node handling", () => {
     it("should copy all CSS properties from a parent <span> to the child span", () => {
       const collector = new LinesCollector(IndentationMode.Spaces, 4, false);
@@ -201,9 +187,7 @@ describe("LinesCollector", () => {
 
       const child = document.createElement("span");
 
-      // applyParentSpanStyles is private; (as any) is the accepted pattern here
-      // since the behaviour is observable only through integration. If this
-      // method grows in complexity, promote it to a standalone pure function.
+      // applyParentSpanStyles is private and only observable through integration.
       (collector as any).applyParentSpanStyles(parent, child);
 
       expect(child.style.color).toBe("rgb(255, 0, 0)");

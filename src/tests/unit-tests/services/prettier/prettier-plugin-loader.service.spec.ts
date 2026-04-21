@@ -5,19 +5,11 @@ import { LanguageDefinition } from "@types";
 import { Plugin as PrettierPlugin } from "prettier";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const makeLanguage = (parser: string, plugins: string[] = []): LanguageDefinition =>
   ({ prettierConfiguration: { parser, plugins } }) as unknown as LanguageDefinition;
 
 const makeMockPlugin = (parserName: string): PrettierPlugin =>
   ({ parsers: { [parserName]: {} }, options: {} }) as unknown as PrettierPlugin;
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 
 describe("PrettierPluginLoaderService", () => {
   let service: PrettierPluginLoaderService;

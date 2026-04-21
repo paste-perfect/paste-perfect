@@ -5,10 +5,6 @@ import { LanguageService } from "@services/language.service";
 import { StorageService } from "@services/storage.service";
 import { createStorageMock } from "../test-utils";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const createService = (storedValue: string | null = null) => {
   const storageMock = createStorageMock(storedValue);
 
@@ -18,10 +14,6 @@ const createService = (storedValue: string | null = null) => {
 
   return { service: TestBed.inject(LanguageService), storageMock };
 };
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 
 describe("LanguageService", () => {
   afterEach(() => {

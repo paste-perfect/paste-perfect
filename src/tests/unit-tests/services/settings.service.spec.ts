@@ -6,10 +6,6 @@ import { SettingsService } from "@services/settings.service";
 import { StorageService } from "@services/storage.service";
 import { createStorageMock } from "../test-utils";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const DEFAULT_SETTINGS: HighlightingSettings = {
   indentationSize: 2,
   indentationMode: IndentationMode.Spaces,
@@ -26,10 +22,6 @@ const createService = (stored: HighlightingSettings | null = null) => {
 
   return { service: TestBed.inject(SettingsService), storageMock };
 };
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 
 describe("SettingsService", () => {
   afterEach(() => {
@@ -51,7 +43,6 @@ describe("SettingsService", () => {
     it("should merge stored values over the defaults on initialisation", () => {
       const stored: Partial<HighlightingSettings> = { indentationSize: 4, showLineNumbers: true };
       const { service } = createService(stored as HighlightingSettings);
-
       expect(service.editorSettings).toEqual({ ...DEFAULT_SETTINGS, ...stored });
     });
   });

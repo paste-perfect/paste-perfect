@@ -1,10 +1,8 @@
-// node-utils.spec.ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecialCharacters } from "@constants";
 import { NodeUtils } from "@utils/node-utils";
 
 describe("NodeUtils", () => {
-  // Defensive baseline — covers all nested describe blocks uniformly.
   afterEach(() => {
     vi.restoreAllMocks();
   });

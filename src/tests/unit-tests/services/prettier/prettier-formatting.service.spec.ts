@@ -13,10 +13,6 @@ vi.mock("prettier/standalone", () => ({
   format: vi.fn(),
 }));
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const makeLanguage = (parser = "babel"): LanguageDefinition =>
   ({ prettierConfiguration: { parser, plugins: [] } }) as unknown as LanguageDefinition;
 
@@ -25,10 +21,6 @@ const makePluginResult = (parser: string, pluginOptions?: Record<string, unknown
   plugins: [] as unknown as PrettierPlugin[],
   pluginOptions,
 });
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 
 describe("PrettierFormattingService", () => {
   let service: PrettierFormattingService;

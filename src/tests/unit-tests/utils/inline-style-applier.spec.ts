@@ -8,7 +8,6 @@ describe("InlineStyleApplier", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
-    // Isolate static state: no test should inherit styles captured by a sibling
     resetInlineStyleApplierState();
   });
 
@@ -34,7 +33,6 @@ describe("InlineStyleApplier", () => {
 
     it("should NOT store CSS properties whose value matches the browser default", () => {
       const root = document.createElement("div");
-      // font-weight: 400 is the UA default — must be excluded
       root.style.fontWeight = "400";
       container.appendChild(root);
 
@@ -60,7 +58,6 @@ describe("InlineStyleApplier", () => {
 
     it("should NOT apply a CSS property that has the browser's default value", () => {
       const original = document.createElement("span");
-      // font-style: normal is the default — should be skipped
       original.style.fontStyle = "normal";
       container.appendChild(original);
 
@@ -95,7 +92,6 @@ describe("InlineStyleApplier", () => {
     });
 
     it("should leave the element untouched when no root styles have been captured", () => {
-      // resetInlineStyleApplierState() in beforeEach guarantees empty state
       const target = document.createElement("span");
       InlineStyleApplier.applyStoredRootStyles(target);
 

@@ -7,19 +7,9 @@ import { ThemeService } from "@services/theme.service";
 import { StorageService } from "@services/storage.service";
 import { createStorageMock, createMessageMock } from "../test-utils";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const buildAllThemes = (): SelectableTheme[] => {
-  // Use a generic to tell TS exactly which theme type we are dealing with
   const mapThemes = <T extends Theme>(themeMap: Record<T, string>): SelectableTheme[] =>
-    (Object.entries(themeMap) as [T, string][])
-      .map(([value, label]) => ({
-        value,
-        label,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+    (Object.entries(themeMap) as [T, string][]).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
 
   return [...mapThemes(LIGHT_THEME_MAP), ...mapThemes(DARK_THEME_MAP)];
 };
@@ -36,10 +26,6 @@ const createService = (storedThemeValue: string | null = null) => {
 };
 
 const cleanupPrismLink = () => document.getElementById("prism-theme")?.remove();
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 
 describe("ThemeService", () => {
   afterEach(() => {

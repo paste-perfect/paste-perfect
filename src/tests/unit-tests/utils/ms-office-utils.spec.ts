@@ -5,7 +5,6 @@ import { MsOfficeUtils } from "@utils/ms-office-utils";
 
 describe("MsOfficeUtils", () => {
   let mockElement: HTMLElement;
-  // Spy references are re-created per test to guarantee clean state.
   let createSpanWithTextContentSpy: ReturnType<typeof vi.spyOn>;
   let appendInlineStyleSpy: ReturnType<typeof vi.spyOn>;
 

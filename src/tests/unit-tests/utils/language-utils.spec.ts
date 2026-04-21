@@ -5,7 +5,6 @@ const DEFAULT_JAVASCRIPT_LANGUAGE = { title: "JavaScript*", value: "javascript" 
 const DEFAULT_TYPESCRIPT_LANGUAGE = { title: "TypeScript*", value: "typescript" };
 
 describe("Language Utils", () => {
-  // No spies in this suite, but afterEach is kept as a defensive baseline.
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -81,7 +80,7 @@ describe("Language Utils", () => {
       });
 
       it("should NOT match against filter aliases (value field only)", () => {
-        // 'VBA' is a filterAlias for Visual Basic, not a value — must not match
+        // 'VBA' is a filterAlias for Visual Basic, not a value — must not match here
         expect(searchLanguageByValue("VBA")).toBeUndefined();
       });
     });

@@ -1,9 +1,7 @@
-// normalization.spec.ts
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeToArray } from "@utils/normalization";
 
 describe("Normalization", () => {
-  // Defensive baseline — no spies in this suite, but keeps teardown uniform.
   afterEach(() => {
     vi.restoreAllMocks();
   });
