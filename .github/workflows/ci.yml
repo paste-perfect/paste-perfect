@@ -2,29 +2,29 @@ name: CI — Test, Lint & Build
 
 on:
   pull_request:
-    branches: [ main, dev ]
-    types: [ opened, synchronize, reopened ]
+    branches: [main, dev]
+    types: [opened, synchronize, reopened]
   merge_group:
-    branches: [ main, dev ]
+    branches: [main, dev]
   workflow_dispatch:
 
-# ── Concurrency: one run per PR; cancel stale runs immediately ────────────────
+# Cancel stale runs when a PR receives a new push.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
-permissions: { } # baseline: no permissions unless declared per-job
+permissions: {} # declared per-job
 
 jobs:
-  # ────────────────────────────────────────────────────────────────────────────
-  # JOB 1 — Lint & Format (fast-fail gate, no Node artifact needed)
-  # ────────────────────────────────────────────────────────────────────────────
+
+  # ── JOB 1: Lint & Format ────────────────────────────────────────────────────
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false
+    if: >
+      github.event_name == 'merge_group' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request'
     permissions:
       contents: read
 
@@ -37,7 +37,6 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      # Tier-1 cache: node_modules keyed on lockfile hash
       - name: Restore node_modules cache
         id: nm-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
@@ -56,16 +55,12 @@ jobs:
       - name: Format check
         run: npm run format:check
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # JOB 2 — Unit Tests + Angular Build
-  # ────────────────────────────────────────────────────────────────────────────
+  # ── JOB 2: Unit Tests + Build ───────────────────────────────────────────────
+  # Runs after lint passes. Downstream jobs depend on this transitively.
   test-build:
     name: Unit Tests & Build
     runs-on: ubuntu-latest
     needs: lint
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false
     permissions:
       contents: read
 
@@ -78,7 +73,6 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      # Tier-1 cache: node_modules
       - name: Restore node_modules cache
         id: nm-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
@@ -108,17 +102,11 @@ jobs:
           path: reports/
           retention-days: 7
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # JOB 3 — Playwright Snapshot Tests
-  # Tier-2 cache: Playwright browser binaries (keyed on @playwright/test version)
-  # ────────────────────────────────────────────────────────────────────────────
+  # ── JOB 3: Playwright Snapshot Tests ────────────────────────────────────────
   snapshots:
     name: Snapshot Tests (Playwright)
     runs-on: ubuntu-latest
     needs: lint
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false
     permissions:
       contents: read
 
@@ -131,7 +119,6 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      # Tier-1: node_modules
       - name: Restore node_modules cache
         id: nm-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
@@ -144,7 +131,6 @@ jobs:
         if: steps.nm-cache.outputs.cache-hit != 'true'
         run: npm ci
 
-      # Tier-2: Playwright browsers — invalidates only on version bump
       - name: Resolve Playwright version
         id: pw-version
         run: |
@@ -176,14 +162,17 @@ jobs:
           path: reports/
           retention-days: 7
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # JOB 4 — Report (fan-in, always runs to publish PR annotations)
-  # ────────────────────────────────────────────────────────────────────────────
+  # ── JOB 4: Publish Test Reports (fan-in) ────────────────────────────────────
+  # Runs even on upstream failure to publish results, but skips when upstream
+  # jobs were skipped (e.g. draft-PR guard) to avoid "no artifact found" errors.
   report:
     name: Publish Test Reports
     runs-on: ubuntu-latest
-    needs: [ test-build, snapshots ]
-    if: always() && !cancelled()
+    needs: [test-build, snapshots]
+    if: >
+      always() &&
+      !cancelled() &&
+      !contains(needs.*.result, 'skipped')
     permissions:
       contents: read
       actions: read
@@ -198,6 +187,7 @@ jobs:
           name: Jest Unit Tests
           path: "jest/report.xml"
           reporter: jest-junit
+          fail-on-error: false
 
       - name: Generate Playwright report
         uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
@@ -206,3 +196,4 @@ jobs:
           name: Playwright Snapshot Tests
           path: "playwright/report.xml"
           reporter: jest-junit
+          fail-on-error: false

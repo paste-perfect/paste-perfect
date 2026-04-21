@@ -2,10 +2,10 @@ name: Scheduled Release — Semantic Verification (dev → main)
 
 on:
   schedule:
-    - cron: "0 0 * * 0" # Sunday at 00:00 UTC
+    - cron: "0 0 * * 0" # Every Sunday at 00:00 UTC
   workflow_dispatch:
 
-# Never cancel a release in progress — let it finish or fail cleanly
+# Never cancel a release in progress — let it finish or fail cleanly.
 concurrency:
   group: scheduled-release
   cancel-in-progress: false
@@ -13,6 +13,7 @@ concurrency:
 permissions: {} # declared per-job
 
 jobs:
+
   semantic-verify-and-merge:
     name: Semantic Verification + Auto-merge
     runs-on: ubuntu-latest
@@ -23,7 +24,7 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
@@ -34,7 +35,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      # ── STEP 1: Divergence check ──────────────────────────────────────────
+      # ── STEP 1: Check if dev has commits that main doesn't ────────────────
       - name: Check if dev is ahead of main
         id: ahead
         run: |
@@ -43,16 +44,15 @@ jobs:
 
           AHEAD=$(git rev-list --right-only --count origin/main...origin/dev)
           if [ "$AHEAD" -eq 0 ]; then
-            echo "ℹ️  dev is not ahead of main. Nothing to release."
+            echo "dev is not ahead of main. Nothing to release."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           else
             echo "dev is $AHEAD commit(s) ahead of main."
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # ── STEP 2: Semantic Verification ─────────────────────────────────────
-      # Iterates EVERY commit between merge-base and dev tip.
-      # Any feat: or fix: (non-maintenance) commit aborts the auto-merge.
+      # ── STEP 2: Verify all commits are lifecycle-only ─────────────────────
+      # feat: or fix: commits abort auto-merge and require a manual release.
       - name: Semantic Verification — inspect all commits
         if: steps.ahead.outputs.has_changes == 'true'
         id: semantic
@@ -62,18 +62,14 @@ jobs:
           MERGE_BASE=$(git merge-base origin/dev origin/main)
           echo "Merge base: $MERGE_BASE"
 
-          # Collect full commit subject lines
           mapfile -t COMMIT_SUBJECTS < <(
             git log "$MERGE_BASE"..origin/dev --pretty=format:"%s"
           )
 
-          echo "──────────────────────────────────────────────"
           echo "Commits to verify (${#COMMIT_SUBJECTS[@]} total):"
           printf '  • %s\n' "${COMMIT_SUBJECTS[@]}"
-          echo "──────────────────────────────────────────────"
 
-          # Lifecycle types: chore, build, ci, docs, style, refactor, fix(deps)
-          # Merge commits from the sync workflow are also allowed
+          # Allowed: chore, build, ci, docs, style, refactor, fix(deps), sync, merge commits
           LIFECYCLE_REGEX='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?:|^fix\(deps|^chore\(sync\)|^chore\(release\)|^(Merge|merge) '
 
           ABORT=false
@@ -91,21 +87,17 @@ jobs:
 
           if [ "$ABORT" = "true" ]; then
             echo ""
-            echo "🚫 Semantic Verification FAILED."
-            echo "The following commits are NOT lifecycle-only:"
+            echo "Semantic Verification FAILED — non-lifecycle commits detected:"
             printf "$NON_LIFECYCLE_LIST"
-            echo ""
-            echo "Auto-merge aborted for safety."
+            echo "Auto-merge aborted. Manual release decision required."
             echo "should_merge=false" >> "$GITHUB_OUTPUT"
-            # Exit 0: don't fail the workflow; this is an expected safety abort
-            exit 0
+            exit 0  # Expected safety abort — do not fail the workflow
           fi
 
-          echo ""
-          echo "✅ Semantic Verification PASSED — all commits are lifecycle-type."
+          echo "Semantic Verification PASSED — all commits are lifecycle-type."
           echo "should_merge=true" >> "$GITHUB_OUTPUT"
 
-      # ── STEP 3: Locate or create the release PR ───────────────────────────
+      # ── STEP 3: Find or create the release PR ────────────────────────────
       - name: Find or create dev → main release PR
         if: steps.semantic.outputs.should_merge == 'true'
         id: pr
@@ -137,7 +129,7 @@ jobs:
               --body "$(cat <<'EOF'
           ## Weekly Scheduled Lifecycle Release
 
-          Triggered by the Sunday cron. All commits have passed **Semantic Verification**:
+          Triggered by the Sunday cron. All commits passed **Semantic Verification**:
           every commit is a lifecycle/maintenance type (chore, build, ci, docs, style, refactor, fix(deps)).
 
           Auto-merge is enabled — GitHub will squash-merge once all required checks are green.
@@ -156,18 +148,15 @@ jobs:
           echo "Operating on PR #$PR_NUMBER"
 
       # ── STEP 4: Enable auto squash-merge ─────────────────────────────────
-      - name: Enable auto squash-merge (merges when CI is green)
+      - name: Enable auto squash-merge
         if: steps.semantic.outputs.should_merge == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           PR_NUMBER="${{ steps.pr.outputs.pr_number }}"
-          echo "Enabling auto squash-merge on PR #$PR_NUMBER..."
-
           gh pr merge "$PR_NUMBER" \
             --auto \
             --squash \
             --delete-branch=false \
-            || echo "ℹ️  Auto-merge already enabled or PR already merged."
-
-          echo "✅ Auto squash-merge enabled. GitHub will merge PR #$PR_NUMBER once all checks are green."
+            || echo "Auto-merge already enabled or PR already merged."
+          echo "Auto squash-merge enabled on PR #$PR_NUMBER."
