@@ -1,6 +1,6 @@
 {
   "name": "paste-perfect",
-  "version": "2.6.11-rc.5",
+  "version": "2.6.17",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -57,7 +57,7 @@
   "devDependencies": {
     "@angular/build": "21.2.7",
     "@angular/cli": "21.2.7",
-    "@angular/compiler-cli": "21.2.8",
+    "@angular/compiler-cli": "21.2.9",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.59.1",
     "@semantic-release/commit-analyzer": "13.0.1",
