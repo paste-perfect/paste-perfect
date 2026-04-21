@@ -229,11 +229,15 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        # Pinned to a specific commit SHA for supply-chain security
         uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.ref }}
 
       - name: Build PR body & write to file
         id: pr-body
