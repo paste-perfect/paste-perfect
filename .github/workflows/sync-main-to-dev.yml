@@ -21,7 +21,7 @@ jobs:
   # STAGE 1 — Merge main into a staging branch & resolve version conflicts
   # ────────────────────────────────────────────────────────────────────────────
   staging-merge:
-    name: "Staging Merge: main → automation/sync-staging"
+    name: "Staging Merge: main → automation/main-to-dev-sync"
     runs-on: ubuntu-latest
     # ── Guard: skip semantic-release version-bump commits to prevent loops ───
     # semantic-release pushes "chore(release): <version>" back to main after a
@@ -127,15 +127,22 @@ jobs:
             echo "✅ False-conflict resolved. Dev's pre-release version retained."
           fi
 
-          # ── Verify staging branch actually diverged from dev ──────────
-          if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)" ]; then
+          # ── Tree-level guard: verify merged result actually differs from dev ──
+          # A commit-count check (origin/dev..HEAD) is insufficient — the merge
+          # commit itself always makes HEAD appear "ahead" even when main's changes
+          # were already cherry-picked into dev, making the tree identical.
+          # GitHub rejects PR creation with "No commits between dev and <branch>"
+          # in that case. A tree diff is the only reliable signal.
+          DIFF_COUNT=$(git diff --name-only origin/dev HEAD | wc -l)
+          if [ "$DIFF_COUNT" -eq 0 ]; then
+            echo "✅ Merged tree is identical to dev tip — no effective changes to sync."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git push --force-with-lease origin "$SYNC_BRANCH"
 
-          echo "has_changes=true"    >> "$GITHUB_OUTPUT"
+          echo "has_changes=true"         >> "$GITHUB_OUTPUT"
           echo "sync_branch=$SYNC_BRANCH" >> "$GITHUB_OUTPUT"
 
   # ────────────────────────────────────────────────────────────────────────────
@@ -204,6 +211,12 @@ jobs:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
+      - name: Checkout (for git commands in re-verification)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
       - name: Create or reuse sync PR
         id: pr
         env:
@@ -211,6 +224,21 @@ jobs:
           SYNC_BRANCH: ${{ needs.staging-merge.outputs.sync_branch }}
         run: |
           set -euo pipefail
+
+          # ── Re-verify the sync branch still has real file changes vs dev ──
+          # IMPORTANT: commit count is NOT sufficient here — the merge commit
+          # itself always makes the branch appear "ahead" even when the merged
+          # tree is identical to dev (e.g. all main commits were already
+          # cherry-picked into dev). GitHub rejects gh pr create with
+          # "No commits between dev and <branch>" in that case.
+          # A tree diff is the only reliable signal.
+          git fetch origin dev "$SYNC_BRANCH"
+          DIFF_COUNT=$(git diff --name-only origin/dev origin/"$SYNC_BRANCH" | wc -l)
+          if [ "$DIFF_COUNT" -eq 0 ]; then
+            echo "✅ Sync branch tree is identical to dev (race condition or cherry-pick overlap). Skipping PR creation."
+            echo "pr_number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           PR_NUMBER=$(gh pr list \
             --base dev \
@@ -248,11 +276,11 @@ jobs:
             echo "ℹ️  Reusing existing sync PR #$PR_NUMBER"
           fi
 
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${PR_NUMBER:-}" >> "$GITHUB_OUTPUT"
 
       - name: Enable auto-merge
         # ONLY enable auto-merge if the validation gate actually passed
-        if: needs.validate-merge.result == 'success'
+        if: needs.validate-merge.result == 'success' && steps.pr.outputs.pr_number != ''
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
