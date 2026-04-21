@@ -33,7 +33,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      workflows: write
     outputs:
       has_changes: ${{ steps.merge.outputs.has_changes }}
       sync_branch: ${{ steps.merge.outputs.sync_branch }}
@@ -196,7 +195,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      workflows: write
 
     steps:
       - name: Generate GitHub App token
