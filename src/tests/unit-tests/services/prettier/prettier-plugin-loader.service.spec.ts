@@ -10,9 +10,7 @@ import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-
 // ---------------------------------------------------------------------------
 
 const makeLanguage = (parser: string, plugins: string[] = []): LanguageDefinition =>
-  ({
-    prettierConfiguration: { parser, plugins },
-  }) as unknown as LanguageDefinition;
+  ({ prettierConfiguration: { parser, plugins } }) as unknown as LanguageDefinition;
 
 const makeMockPlugin = (parserName: string): PrettierPlugin =>
   ({ parsers: { [parserName]: {} }, options: {} }) as unknown as PrettierPlugin;
@@ -33,23 +31,17 @@ describe("PrettierPluginLoaderService", () => {
     });
 
     service = TestBed.inject(PrettierPluginLoaderService);
-
-    // Always start with a clean cache to prevent cross-test state contamination
     (service as any).pluginCache.clear();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks(); // Restores all spyOn mocks, including private method spies
+    vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
-
-  // ── Instantiation ──────────────────────────────────────────────────────────
 
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
-
-  // ── getParserAndPlugins ────────────────────────────────────────────────────
 
   describe("getParserAndPlugins", () => {
     describe("guard clauses", () => {
@@ -84,10 +76,7 @@ describe("PrettierPluginLoaderService", () => {
 
       it("should skip a failing plugin and continue loading the remaining ones", async () => {
         const goodPlugin = makeMockPlugin("babel");
-        vi.spyOn(console, "warn").mockImplementation(() => {
-          /* empty */
-        });
-
+        vi.spyOn(console, "warn").mockImplementation(() => undefined);
         vi.spyOn(service as any, "loadPlugin")
           .mockRejectedValueOnce(new Error("failed"))
           .mockResolvedValueOnce(goodPlugin);
@@ -114,7 +103,6 @@ describe("PrettierPluginLoaderService", () => {
       });
 
       it("should not duplicate the sort-json plugin when already listed in configured plugins", async () => {
-        // Same instance returned for every call simulates a cache hit scenario
         const sortJsonPlugin = makeMockPlugin("json");
         vi.spyOn(service as any, "loadPlugin").mockResolvedValue(sortJsonPlugin);
 
@@ -125,9 +113,7 @@ describe("PrettierPluginLoaderService", () => {
       });
 
       it("should return an empty plugins array when sort-json fails to load", async () => {
-        vi.spyOn(console, "warn").mockImplementation(() => {
-          /* empty */
-        });
+        vi.spyOn(console, "warn").mockImplementation(() => undefined);
         vi.spyOn(service as any, "loadPlugin").mockRejectedValue(new Error("no sort-json"));
 
         const result = await service.getParserAndPlugins(makeLanguage("json", []));
@@ -137,8 +123,6 @@ describe("PrettierPluginLoaderService", () => {
       });
     });
   });
-
-  // ── loadPlugin (private, tested via cache + registry) ─────────────────────
 
   describe("loadPlugin", () => {
     it("should invoke the registry factory only once across two identical loads (cache hit)", async () => {
@@ -177,27 +161,18 @@ describe("PrettierPluginLoaderService", () => {
     it("should display an error toast and rethrow with context when a plugin fails to load", async () => {
       const loadError = new Error("import failed");
       (service as any).pluginRegistry["prettier-plugin-java"] = vi.fn().mockRejectedValue(loadError);
-      vi.spyOn(console, "error").mockImplementation(() => {
-        /* empty */
-      });
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
 
       await expect((service as any).loadPlugin("prettier-plugin-java")).rejects.toThrow(
         "Failed to load Prettier plugin: prettier-plugin-java"
       );
 
-      expect(messageServiceMock.add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: "error",
-          summary: "Prettier Plugin Error",
-        })
-      );
+      expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error", summary: "Prettier Plugin Error" }));
     });
 
     it("should not cache a plugin whose load failed", async () => {
       (service as any).pluginRegistry["prettier-plugin-nginx"] = vi.fn().mockRejectedValue(new Error("fail"));
-      vi.spyOn(console, "error").mockImplementation(() => {
-        /* empty */
-      });
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
 
       await expect((service as any).loadPlugin("prettier-plugin-nginx")).rejects.toThrow();
 

@@ -1,3 +1,5 @@
+// Before: `beforeEach` was consumed as a global (missing from the import list).
+// After:  all Vitest APIs are explicitly imported — consistent with every other spec file.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { StorageService } from "@services/storage.service";
@@ -14,18 +16,14 @@ describe("StorageService", () => {
   });
 
   afterEach(() => {
-    localStorage.clear();
-    vi.restoreAllMocks();
     TestBed.resetTestingModule();
+    vi.restoreAllMocks();
+    localStorage.clear();
   });
-
-  // ── Instantiation ──────────────────────────────────────────────────────────
 
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
-
-  // ── setItem ────────────────────────────────────────────────────────────────
 
   describe("setItem", () => {
     it("should persist a primitive string value to localStorage", () => {
@@ -57,8 +55,6 @@ describe("StorageService", () => {
       expect(spy).toHaveBeenCalledWith("key", JSON.stringify("value"));
     });
   });
-
-  // ── getItem ────────────────────────────────────────────────────────────────
 
   describe("getItem", () => {
     it("should return null when the key does not exist in localStorage", () => {

@@ -1,39 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { SettingsService } from "@services/settings.service";
-import { IndentationMode } from "@constants";
 import { LINE_NUMBER_CLASSES } from "@constants";
 import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-type EditorSettingsOverrides = Partial<{
-  showLineNumbers: boolean;
-  indentationSize: number;
-  indentationMode: IndentationMode;
-  enableFormatting: boolean;
-}>;
-
-const makeSettings = (overrides: EditorSettingsOverrides = {}) => ({
-  showLineNumbers: true,
-  indentationSize: 2,
-  indentationMode: IndentationMode.Spaces,
-  enableFormatting: true,
-  ...overrides,
-});
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
+import { makeEditorSettings } from "../../test-utils";
 
 describe("LineNumberingService", () => {
   let service: LineNumberingService;
-  let settingsServiceMock: { editorSettings: ReturnType<typeof makeSettings> };
+  let settingsServiceMock: { editorSettings: ReturnType<typeof makeEditorSettings> };
 
   beforeEach(() => {
-    settingsServiceMock = { editorSettings: makeSettings() };
+    settingsServiceMock = { editorSettings: makeEditorSettings() };
 
     TestBed.configureTestingModule({
       providers: [LineNumberingService, { provide: SettingsService, useValue: settingsServiceMock }],
@@ -47,18 +24,14 @@ describe("LineNumberingService", () => {
     TestBed.resetTestingModule();
   });
 
-  // ── Instantiation ──────────────────────────────────────────────────────────
-
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
 
-  // ── prependLineNumbers ─────────────────────────────────────────────────────
-
   describe("prependLineNumbers", () => {
     describe("guard clauses", () => {
       it("should return the original code unchanged when showLineNumbers is false", () => {
-        settingsServiceMock.editorSettings = makeSettings({ showLineNumbers: false });
+        settingsServiceMock.editorSettings = makeEditorSettings({ showLineNumbers: false });
         const code = "const x = 1;\nconst y = 2;";
         expect(service.prependLineNumbers(code)).toBe(code);
       });
@@ -108,8 +81,8 @@ describe("LineNumberingService", () => {
       it("should pad single-digit line numbers when total line count reaches two digits", () => {
         const code = Array.from({ length: 10 }, (_, i) => `line ${i + 1}`).join("\n");
         const lines = service.prependLineNumbers(code).split("\n");
-        expect(lines[0]).toContain(" 1"); // padded
-        expect(lines[9]).toContain("10"); // no padding needed
+        expect(lines[0]).toContain(" 1");
+        expect(lines[9]).toContain("10");
       });
 
       it("should not pad line numbers when there are fewer than 10 lines", () => {
@@ -136,7 +109,6 @@ describe("LineNumberingService", () => {
 
     describe("edge cases", () => {
       it("should handle a string that is a single newline character", () => {
-        // '\n'.split('\n') === ['', ''] → 2 spans
         const lines = service.prependLineNumbers("\n").split("\n");
         expect(lines).toHaveLength(2);
         lines.forEach((line) => expect(line).toContain(`class="${LINE_NUMBER_CLASSES}"`));

@@ -1,3 +1,4 @@
+// utils.spec.ts
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEntries } from "@utils/utils";
 
@@ -10,11 +11,12 @@ interface TestObj {
   c?: boolean;
 }
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
 describe("getEntries", () => {
+  // Defensive baseline — no spies in this suite, but keeps teardown uniform.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("basic behaviour", () => {
     it("should return entries for a simple object", () => {
       const obj = { a: 1, b: "hello" };
@@ -66,7 +68,6 @@ describe("getEntries", () => {
     it("should produce strongly-typed key-value pairs", () => {
       const obj = { x: 123, y: "abc" };
       const result = getEntries(obj);
-
       result.forEach(([key, value]: [unknown, unknown]) => {
         if (key === "x") expect(typeof value).toBe("number");
         if (key === "y") expect(typeof value).toBe("string");

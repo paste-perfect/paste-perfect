@@ -1,3 +1,4 @@
+// sanitizer.spec.ts
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { SpecialCharacters } from "@constants";
@@ -30,11 +31,12 @@ const DOUBLE_QUOTE_VARIANTS: [label: string, char: SpecialCharacters][] = [
   ["REVERSED_TRIPLE_PRIME", SpecialCharacters.REVERSED_TRIPLE_PRIME],
 ];
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
 describe("SanitizerWrapper", () => {
+  // Defensive baseline — no spies in this suite, but keeps teardown uniform.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("sanitizeInput", () => {
     describe("non-ASCII handling", () => {
       it("should replace non-ASCII dash characters with ASCII equivalents", () => {

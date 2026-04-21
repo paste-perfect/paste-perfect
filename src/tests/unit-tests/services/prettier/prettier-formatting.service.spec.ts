@@ -7,10 +7,7 @@ import { LanguageDefinition } from "@types";
 import * as prettier from "prettier/standalone";
 import { Plugin as PrettierPlugin } from "prettier";
 import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
-
-// ---------------------------------------------------------------------------
-// Module mock — must be at top level, before any imports that use the module
-// ---------------------------------------------------------------------------
+import { makeEditorSettings } from "../../test-utils";
 
 vi.mock("prettier/standalone", () => ({
   format: vi.fn(),
@@ -20,25 +17,8 @@ vi.mock("prettier/standalone", () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-type SettingsOverrides = Partial<{
-  enableFormatting: boolean;
-  indentationSize: number;
-  indentationMode: IndentationMode;
-  showLineNumbers: boolean;
-}>;
-
-const makeSettings = (overrides: SettingsOverrides = {}) => ({
-  enableFormatting: true,
-  indentationSize: 2,
-  indentationMode: IndentationMode.Spaces,
-  showLineNumbers: false,
-  ...overrides,
-});
-
 const makeLanguage = (parser = "babel"): LanguageDefinition =>
-  ({
-    prettierConfiguration: { parser, plugins: [] },
-  }) as unknown as LanguageDefinition;
+  ({ prettierConfiguration: { parser, plugins: [] } }) as unknown as LanguageDefinition;
 
 const makePluginResult = (parser: string, pluginOptions?: Record<string, unknown>) => ({
   parser,
@@ -53,11 +33,11 @@ const makePluginResult = (parser: string, pluginOptions?: Record<string, unknown
 describe("PrettierFormattingService", () => {
   let service: PrettierFormattingService;
   let pluginLoaderMock: { getParserAndPlugins: ReturnType<typeof vi.fn> };
-  let settingsServiceMock: { editorSettings: ReturnType<typeof makeSettings> };
+  let settingsServiceMock: { editorSettings: ReturnType<typeof makeEditorSettings> };
 
   beforeEach(() => {
     pluginLoaderMock = { getParserAndPlugins: vi.fn() };
-    settingsServiceMock = { editorSettings: makeSettings() };
+    settingsServiceMock = { editorSettings: makeEditorSettings() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -71,22 +51,17 @@ describe("PrettierFormattingService", () => {
   });
 
   afterEach(() => {
-    // Restores all spies AND resets vi.mocked() call history
     vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
-
-  // ── Instantiation ──────────────────────────────────────────────────────────
 
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
 
-  // ── Early exits ───────────────────────────────────────────────────────────
-
   describe("formatCode — early exits", () => {
     it("should return original code unchanged when formatting is disabled", async () => {
-      settingsServiceMock.editorSettings = makeSettings({ enableFormatting: false });
+      settingsServiceMock.editorSettings = makeEditorSettings({ enableFormatting: false });
       const result = await service.formatCode("const x = 1", makeLanguage());
       expect(result).toEqual({ code: "const x = 1", formattingSuccessful: true });
       expect(pluginLoaderMock.getParserAndPlugins).not.toHaveBeenCalled();
@@ -111,8 +86,6 @@ describe("PrettierFormattingService", () => {
     });
   });
 
-  // ── Successful formatting ─────────────────────────────────────────────────
-
   describe("formatCode — successful formatting", () => {
     beforeEach(() => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("babel"));
@@ -126,10 +99,7 @@ describe("PrettierFormattingService", () => {
 
     it("should call prettier.format with the resolved parser and plugins", async () => {
       const mockPlugin = { parsers: {}, options: {} } as unknown as PrettierPlugin;
-      pluginLoaderMock.getParserAndPlugins.mockResolvedValue({
-        parser: "babel",
-        plugins: [mockPlugin],
-      });
+      pluginLoaderMock.getParserAndPlugins.mockResolvedValue({ parser: "babel", plugins: [mockPlugin] });
 
       await service.formatCode("const x=1", makeLanguage());
 
@@ -137,19 +107,19 @@ describe("PrettierFormattingService", () => {
     });
 
     it("should pass tabWidth from user settings to prettier", async () => {
-      settingsServiceMock.editorSettings = makeSettings({ indentationSize: 4 });
+      settingsServiceMock.editorSettings = makeEditorSettings({ indentationSize: 4 });
       await service.formatCode("code", makeLanguage());
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ tabWidth: 4 }));
     });
 
     it("should pass useTabs: true when indentation mode is Tabs", async () => {
-      settingsServiceMock.editorSettings = makeSettings({ indentationMode: IndentationMode.Tabs });
+      settingsServiceMock.editorSettings = makeEditorSettings({ indentationMode: IndentationMode.Tabs });
       await service.formatCode("code", makeLanguage());
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ useTabs: true }));
     });
 
     it("should pass useTabs: false when indentation mode is Spaces", async () => {
-      settingsServiceMock.editorSettings = makeSettings({ indentationMode: IndentationMode.Spaces });
+      settingsServiceMock.editorSettings = makeEditorSettings({ indentationMode: IndentationMode.Spaces });
       await service.formatCode("code", makeLanguage());
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ useTabs: false }));
     });
@@ -164,8 +134,6 @@ describe("PrettierFormattingService", () => {
     });
   });
 
-  // ── JSON key sorting ──────────────────────────────────────────────────────
-
   describe("formatCode — JSON key sorting", () => {
     it("should include jsonRecursiveSort: true when formatting JSON", async () => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("json", { jsonRecursiveSort: true }));
@@ -178,19 +146,12 @@ describe("PrettierFormattingService", () => {
     });
   });
 
-  // ── Failure handling ──────────────────────────────────────────────────────
-
   describe("formatCode — failure handling", () => {
     beforeEach(() => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("babel"));
       vi.mocked(prettier.format).mockRejectedValue(new Error("syntax error"));
-      // Suppress expected console output globally for this block
-      vi.spyOn(console, "warn").mockImplementation(() => {
-        /* empty */
-      });
-      vi.spyOn(console, "log").mockImplementation(() => {
-        /* empty */
-      });
+      vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      vi.spyOn(console, "log").mockImplementation(() => undefined);
     });
 
     it("should return the original code with formattingSuccessful: false when prettier throws", async () => {

@@ -1,7 +1,13 @@
-import { describe, expect, it } from "vitest";
+// normalization.spec.ts
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeToArray } from "@utils/normalization";
 
 describe("Normalization", () => {
+  // Defensive baseline — no spies in this suite, but keeps teardown uniform.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("normalizeToArray", () => {
     describe("when the input is already an array", () => {
       it("should return the same array reference unchanged", () => {
