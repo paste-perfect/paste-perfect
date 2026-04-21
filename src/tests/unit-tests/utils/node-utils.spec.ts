@@ -1,14 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecialCharacters } from "@constants";
 import { NodeUtils } from "@utils/node-utils";
 
-// ---------------------------------------------------------------------------
-// NOTE: NodeUtils operates exclusively on native DOM APIs — no Angular
-// TestBed, no zone, and no async coordination required.
-// ---------------------------------------------------------------------------
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("NodeUtils", () => {
-  // ─── appendInlineStyle ────────────────────────────────────────────────────
   describe("appendInlineStyle", () => {
     let element: HTMLElement;
 
@@ -34,7 +32,6 @@ describe("NodeUtils", () => {
     });
   });
 
-  // ─── removeAllAttributesExceptStyle ───────────────────────────────────────
   describe("removeAllAttributesExceptStyle", () => {
     it("should remove all attributes except the style attribute", () => {
       const element = document.createElement("div");
@@ -60,7 +57,6 @@ describe("NodeUtils", () => {
     });
   });
 
-  // ─── removeChildren ───────────────────────────────────────────────────────
   describe("removeChildren", () => {
     it("should remove all child nodes from a parent element", () => {
       const parent = document.createElement("div");
@@ -73,7 +69,6 @@ describe("NodeUtils", () => {
     });
   });
 
-  // ─── factory helpers ──────────────────────────────────────────────────────
   describe("createSpanWithTextContent", () => {
     it("should create an HTMLSpanElement with the provided text content", () => {
       const span = NodeUtils.createSpanWithTextContent("Hello");
@@ -98,7 +93,6 @@ describe("NodeUtils", () => {
     });
   });
 
-  // ─── type-guard helpers ───────────────────────────────────────────────────
   describe("isHtmlElement", () => {
     it("should return true for an HTMLElement", () => {
       expect(NodeUtils.isHtmlElement(document.createElement("div"))).toBe(true);

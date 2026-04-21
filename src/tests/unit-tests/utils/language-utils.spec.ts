@@ -1,19 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { searchLanguageByTitle, searchLanguageByValue } from "@utils/languages-utils";
 
-const DEFAULT_JAVASCRIPT_LANGUAGE = {
-  title: "JavaScript*",
-  value: "javascript",
-};
+const DEFAULT_JAVASCRIPT_LANGUAGE = { title: "JavaScript*", value: "javascript" };
+const DEFAULT_TYPESCRIPT_LANGUAGE = { title: "TypeScript*", value: "typescript" };
 
-const DEFAULT_TYPESCRIPT_LANGUAGE = {
-  title: "TypeScript*",
-  value: "typescript",
-};
-
-// ---------------------------------------------------------------------------
 describe("Language Utils", () => {
-  // -------------------------------------------------------------------------
+  // No spies in this suite, but afterEach is kept as a defensive baseline.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("searchLanguageByTitle", () => {
     describe("exact and case-insensitive title matching", () => {
       it("should find a language by its exact title", () => {
@@ -25,18 +21,13 @@ describe("Language Utils", () => {
       });
 
       it("should find a language with special characters in its title (e.g. C++)", () => {
-        expect(searchLanguageByTitle("C++")).toMatchObject({
-          title: "C++",
-          value: "cpp",
-        });
+        expect(searchLanguageByTitle("C++")).toMatchObject({ title: "C++", value: "cpp" });
       });
     });
 
     describe("alias matching", () => {
-      const VISUAL_BASIC_LANGUAGE = {
-        title: "Visual Basic",
-        value: "visual-basic",
-      };
+      const VISUAL_BASIC_LANGUAGE = { title: "Visual Basic", value: "visual-basic" };
+
       it("should find a language when queried by a known filter alias", () => {
         expect(searchLanguageByTitle("VBA")).toMatchObject(VISUAL_BASIC_LANGUAGE);
       });
@@ -63,7 +54,6 @@ describe("Language Utils", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
   describe("searchLanguageByValue", () => {
     describe("exact and case-insensitive value matching", () => {
       it("should find a language by its exact value", () => {
@@ -91,7 +81,7 @@ describe("Language Utils", () => {
       });
 
       it("should NOT match against filter aliases (value field only)", () => {
-        // 'js' is a filterAlias for JavaScript, not a value — must not match
+        // 'VBA' is a filterAlias for Visual Basic, not a value — must not match
         expect(searchLanguageByValue("VBA")).toBeUndefined();
       });
     });

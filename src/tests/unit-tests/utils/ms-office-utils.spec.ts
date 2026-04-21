@@ -1,32 +1,24 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NodeUtils } from "@utils/node-utils";
 import { SpecialCharacters } from "@constants";
 import { MsOfficeUtils } from "@utils/ms-office-utils";
 
 describe("MsOfficeUtils", () => {
-  // ---------------------------------------------------------------------------
-  // Module-level spies
-  // ---------------------------------------------------------------------------
-  // We create these once at the top of the describe block
-  const createSpanWithTextContentSpy = vi.spyOn(NodeUtils, "createSpanWithTextContent");
-  const appendInlineStyleSpy = vi.spyOn(NodeUtils, "appendInlineStyle");
-
   let mockElement: HTMLElement;
+  // Spy references are re-created per test to guarantee clean state.
+  let createSpanWithTextContentSpy: ReturnType<typeof vi.spyOn>;
+  let appendInlineStyleSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    // Reset call history and implementation overrides before every test
-    vi.clearAllMocks();
-
-    // Create a fresh element for DOM-related tests
     mockElement = document.createElement("div");
+    createSpanWithTextContentSpy = vi.spyOn(NodeUtils, "createSpanWithTextContent");
+    appendInlineStyleSpy = vi.spyOn(NodeUtils, "appendInlineStyle");
   });
 
-  afterAll(() => {
-    // Fully restore original methods once all tests in this file are done
+  afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  // ─── createEmptyLineSpan ──────────────────────────────────────────────────
   describe("createEmptyLineSpan", () => {
     it("should create a span containing a non-breaking space and apply the mso-spacerun style", () => {
       const mockSpan = document.createElement("span");
@@ -40,7 +32,6 @@ describe("MsOfficeUtils", () => {
     });
   });
 
-  // ─── applyNoMarginStyle ───────────────────────────────────────────────────
   describe("applyNoMarginStyle", () => {
     it('should apply the "margin:0cm;" inline style to the element', () => {
       MsOfficeUtils.applyNoMarginStyle(mockElement);
@@ -48,7 +39,6 @@ describe("MsOfficeUtils", () => {
     });
   });
 
-  // ─── preserveWhiteSpace ───────────────────────────────────────────────────
   describe("preserveWhiteSpace", () => {
     it('should apply the "mso-spacerun:yes" style to preserve whitespace', () => {
       MsOfficeUtils.preserveWhiteSpace(mockElement);
@@ -56,7 +46,6 @@ describe("MsOfficeUtils", () => {
     });
   });
 
-  // ─── applyTabSpacing ──────────────────────────────────────────────────────
   describe("applyTabSpacing", () => {
     it("should apply the correct mso-tab-count style for a positive count", () => {
       MsOfficeUtils.applyTabSpacing(mockElement, 3);
@@ -69,7 +58,6 @@ describe("MsOfficeUtils", () => {
     });
   });
 
-  // ─── getTabStops ──────────────────────────────────────────────────────────
   describe("getTabStops", () => {
     it("should return an empty string when count is 0", () => {
       expect(MsOfficeUtils.getTabStops(0)).toBe("");

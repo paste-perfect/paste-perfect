@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { normalizeToArray } from "@utils/normalization";
 
 describe("Normalization", () => {
@@ -7,7 +8,7 @@ describe("Normalization", () => {
         const input = ["item1", "item2", "item3"];
         const result = normalizeToArray(input);
         expect(result).toBe(input);
-        expect(result).toEqual(["item1", "item2", "item3"]); // toEqual is fine here since it's a simple array
+        expect(result).toEqual(["item1", "item2", "item3"]);
       });
 
       it("should return an empty array unchanged", () => {

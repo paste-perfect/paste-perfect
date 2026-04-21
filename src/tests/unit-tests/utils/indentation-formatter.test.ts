@@ -1,32 +1,16 @@
-// indentation-formatter.spec.ts
-//
-// Renamed from indentation-formatter.test.ts → .spec.ts to match project
-// naming convention and co-location requirements.
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { IndentationFormatter } from "@utils/indentation-formatter";
 import { SpecialCharacters } from "@constants";
-import { describe, it, expect, afterEach, vi } from "vitest";
 
-// ---------------------------------------------------------------------------
-// Shared constant — avoids magic numbers inside individual test cases.
-// ---------------------------------------------------------------------------
 const TAB_SIZE = 2;
 
-// ---------------------------------------------------------------------------
 describe("IndentationFormatter", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  // =========================================================================
   describe("maskIndentation", () => {
-    // Table-driven approach keeps the describe/it hierarchy clean while
-    // still exercising every edge case.
-    const cases: {
-      desc: string;
-      input: string;
-      expected: string;
-      tabSize?: number;
-    }[] = [
+    const cases: { desc: string; input: string; expected: string; tabSize?: number }[] = [
       {
         desc: "leading spaces",
         input: "  const x = 1;",
@@ -58,23 +42,16 @@ describe("IndentationFormatter", () => {
 
     cases.forEach(({ desc, input, expected, tabSize }) => {
       it(`should mask ${desc}`, () => {
-        const result = IndentationFormatter.maskIndentation(input, tabSize ?? TAB_SIZE);
-        expect(result).toBe(expected);
+        expect(IndentationFormatter.maskIndentation(input, tabSize ?? TAB_SIZE)).toBe(expected);
       });
     });
   });
 
-  // =========================================================================
   describe("unmaskIndentationWithTabs", () => {
-    const cases: {
-      desc: string;
-      input: string;
-      expected: string;
-      tabSize?: number;
-    }[] = [
+    const cases: { desc: string; input: string; expected: string; tabSize?: number }[] = [
       {
         desc: "one full tab group plus one extra marker (tabSize=2)",
-        input: `${SpecialCharacters.MARKER.repeat(TAB_SIZE)}` + `${SpecialCharacters.MARKER}const x = 1;`,
+        input: `${SpecialCharacters.MARKER.repeat(TAB_SIZE)}${SpecialCharacters.MARKER}const x = 1;`,
         expected: "\t const x = 1;",
       },
       {
@@ -93,18 +70,15 @@ describe("IndentationFormatter", () => {
 
     cases.forEach(({ desc, input, expected, tabSize }) => {
       it(`should unmask with tabs for ${desc}`, () => {
-        const result = IndentationFormatter.unmaskIndentationWithTabs(input, tabSize ?? TAB_SIZE);
-        expect(result).toBe(expected);
+        expect(IndentationFormatter.unmaskIndentationWithTabs(input, tabSize ?? TAB_SIZE)).toBe(expected);
       });
     });
   });
 
-  // =========================================================================
   describe("unmaskIndentationWithNbsp", () => {
     it("should convert every marker character to a non-breaking space (\\u00A0)", () => {
       const input = `${SpecialCharacters.MARKER}${SpecialCharacters.MARKER}const x = 1;`;
       const expected = `${SpecialCharacters.NON_BREAKING_SPACE}` + `${SpecialCharacters.NON_BREAKING_SPACE}const x = 1;`;
-
       expect(IndentationFormatter.unmaskIndentationWithNbsp(input)).toBe(expected);
     });
 

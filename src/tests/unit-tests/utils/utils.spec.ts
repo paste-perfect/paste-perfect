@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEntries } from "@utils/utils";
 
 // ---------------------------------------------------------------------------
@@ -9,6 +9,10 @@ interface TestObj {
   b: string;
   c?: boolean;
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("getEntries", () => {
   describe("basic behaviour", () => {

@@ -1,28 +1,13 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IndentationMode, SpecialCharacters } from "@constants";
 import { LinesCollector } from "@utils/line-collector";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { createStyledSpan, createTextNode } from "../test-utils";
 
-// ---------------------------------------------------------------------------
-// DOM helpers
-// ---------------------------------------------------------------------------
-const createTextNode = (text: string): Text => document.createTextNode(text);
-
-const createStyledSpan = (text: string, style: Partial<CSSStyleDeclaration> = {}): HTMLSpanElement => {
-  const span = document.createElement("span");
-  Object.assign(span.style, style);
-  span.appendChild(createTextNode(text));
-  return span;
-};
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 describe("LinesCollector", () => {
   let original: HTMLElement;
   let cloned: HTMLElement;
 
   beforeEach(() => {
-    // Elements must be in the DOM for getComputedStyle to work inside the collector
     original = document.createElement("div");
     original.id = "original-test-container";
     cloned = document.createElement("div");
@@ -37,7 +22,6 @@ describe("LinesCollector", () => {
     document.body.innerHTML = "";
   });
 
-  // -------------------------------------------------------------------------
   describe("when hasLineNumbers is false", () => {
     describe("Spaces indentation mode", () => {
       it("should split multi-line text into separate <p> elements", () => {
@@ -95,7 +79,7 @@ describe("LinesCollector", () => {
     });
 
     describe("Tabs indentation mode", () => {
-      it("should split multi-line text, stamp tab-stop styles on paragraph, and tab-counts on spans", () => {
+      it("should split multi-line text, stamp tab-stop styles on paragraphs, and tab-counts on spans", () => {
         const tabSize = 2;
         const collector = new LinesCollector(IndentationMode.Tabs, tabSize, false);
         // Using enough spaces that map to exactly 1 tab stop based on tabSize
@@ -144,7 +128,7 @@ describe("LinesCollector", () => {
     beforeEach(() => {
       // Mocking a line number element that the collector looks for
       const mockElement = document.createElement("span");
-      mockElement.className = "line-number-gutter"; // Assuming this class is used
+      mockElement.className = "line-number-gutter";
 
       vi.spyOn(mockElement, "getBoundingClientRect").mockReturnValue({
         width: 50,
@@ -184,7 +168,6 @@ describe("LinesCollector", () => {
 
       expect(firstLineNumberSpan?.textContent).toBe("1. ");
       expect(firstLineNumberSpan?.getAttribute("style")).toContain("mso-spacerun:yes");
-
       expect(secondLineNumberSpan?.textContent).toBe("2. ");
       expect(secondLineNumberSpan?.getAttribute("style")).toContain("mso-spacerun:yes");
     });
@@ -199,12 +182,10 @@ describe("LinesCollector", () => {
       const p = cloned.querySelector("p");
       const spans = p?.querySelectorAll("span");
 
-      // 1. (Number) 2. (Nbsp Indentation) 3. (Text)
+      // 1. line number span  2. indentation span  3. text span
       expect(spans?.length).toBe(3);
-
       expect(spans?.[0].textContent).toBe("1. ");
       expect(spans?.[0].getAttribute("style")).toContain("mso-spacerun:yes");
-
       expect(spans?.[1].textContent).toContain(SpecialCharacters.NON_BREAKING_SPACE);
       expect(spans?.[1].getAttribute("style")).toContain("mso-spacerun:yes");
     });
@@ -214,14 +195,15 @@ describe("LinesCollector", () => {
   describe("Style and Node handling", () => {
     it("should copy all CSS properties from a parent <span> to the child span", () => {
       const collector = new LinesCollector(IndentationMode.Spaces, 4, false);
-
       const parent = document.createElement("span");
       parent.style.color = "rgb(255, 0, 0)";
       document.body.appendChild(parent);
 
       const child = document.createElement("span");
 
-      // Accessing private method for testing
+      // applyParentSpanStyles is private; (as any) is the accepted pattern here
+      // since the behaviour is observable only through integration. If this
+      // method grows in complexity, promote it to a standalone pure function.
       (collector as any).applyParentSpanStyles(parent, child);
 
       expect(child.style.color).toBe("rgb(255, 0, 0)");
@@ -234,7 +216,6 @@ describe("LinesCollector", () => {
       document.body.appendChild(parent);
 
       const child = document.createElement("span");
-
       (collector as any).applyParentSpanStyles(parent, child);
 
       expect(child.style.fontWeight).not.toBe("bold");
