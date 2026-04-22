@@ -2,8 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { PlaywrightTestConfig } from "playwright/types/test";
 
 export const BASE_URL = process.env["PLAYWRIGHT_BASE_URL"] || "http://localhost:4200/paste-perfect/";
-const CI = process.env["CI"] === "true";
-// const UI_PORT = Number(process.env["UI_PORT"]) || 9323;
+const CI = Boolean(process.env["CI"]);
 const REPORT_PORT = Number(process.env["REPORT_PORT"]) || 9324;
 
 const reporters: PlaywrightTestConfig["reporter"] = [
@@ -60,15 +59,18 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
-    launchOptions: {
-      timeout: 120 * 1000, // 2 mins
-    },
+    navigationTimeout: 30 * 1000, // 30 seconds for page.goto() etc.
     actionTimeout: 5 * 1000, // 5 seconds for actions (i.e., click, goto)
+    launchOptions: {
+      args: ["--disable-dev-shm-usage"], // Use /tmp instead of /dev/shm to prevent page crashes
+    },
   },
   webServer: {
     command: "npm run serve:test",
     reuseExistingServer: !CI,
     url: BASE_URL,
+    cwd: "../../", // Execute from the project root where package.json lives
+    timeout: 120 * 1000, // 2 minutes to start the dev server
   },
   workers: CI ? 1 : undefined,
 });

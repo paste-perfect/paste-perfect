@@ -103,7 +103,7 @@ trap 'cleanup' EXIT
 # --- UI Mode Handling ---
 if $IS_UI_MODE; then
     UI_ARGS=("--ui-host=0.0.0.0" "--ui-port=${UI_PORT}")
-    DOCKER_ARGS="-it"
+    DOCKER_ARGS=("-it")
 
     wait_and_print_url() {
         echo -e "${YELLOW}Waiting for Playwright UI to be ready...${NC}"
@@ -128,7 +128,7 @@ fi
 if [ "$CI" = "true" ]; then
   IPC_ARG="--ipc=host"
 else
-  IPC_ARG="--shm-size=2gb"
+  IPC_ARG="--shm-size=2g"
 fi
 
 # --- Run Playwright in Docker ---
