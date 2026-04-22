@@ -4,8 +4,6 @@ import { normalizeToArray } from "@utils/normalization";
 import { LanguageDefinition } from "@types";
 import { PRETTIER_LANGUAGE_MAP } from "./prettier-language-map";
 
-export const HAS_PRETTIER_CONFIG_MARKER = "*";
-
 /**
  * Set of commonly used programming languages.
  * These languages are considered "popular" and can be adjusted as needed.
@@ -39,10 +37,9 @@ export const ALL_LANGUAGES: LanguageDefinition[] = [
     .filter(([key]): boolean => key !== "meta") // Exclude metadata entry
     .map(([key, value]) => {
       const prettierConfiguration = PRETTIER_LANGUAGE_MAP[key];
-      const hasPrettierConfiguration = !!prettierConfiguration;
       return {
         // Use provided title, or fallback to key
-        title: (value.title || key) + (hasPrettierConfiguration ? HAS_PRETTIER_CONFIG_MARKER : ""),
+        title: value.title || key,
         // Language identifier
         value: key,
         // Extract alias titles

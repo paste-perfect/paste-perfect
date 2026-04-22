@@ -1,40 +1,17 @@
 import { LanguageDefinition } from "@types";
-import { ALL_LANGUAGES, HAS_PRETTIER_CONFIG_MARKER } from "@constants";
-
-// Helper to normalize stored titles by removing the marker if it exists
-const getNormalizedTitle = (language: LanguageDefinition) => {
-  const { title, prettierConfiguration } = language;
-
-  if (!!prettierConfiguration && title.endsWith(HAS_PRETTIER_CONFIG_MARKER)) {
-    // Dynamically slice based on the marker's length
-    return title.slice(0, -HAS_PRETTIER_CONFIG_MARKER.length).toLowerCase();
-  }
-
-  return title.toLowerCase();
-};
-
-/**
- * Removes the Prettier configuration marker from a title string if present.
- */
-const normalizeTitleMarker = (title: string): string => {
-  if (title.endsWith(HAS_PRETTIER_CONFIG_MARKER)) {
-    return title.slice(0, -HAS_PRETTIER_CONFIG_MARKER.length).toLowerCase();
-  }
-
-  return title.toLowerCase();
-};
+import { ALL_LANGUAGES } from "@constants";
 
 /**
  * Search for a language by its title (case-insensitive).
- * Prioritizes title matches (ignoring trailing "*") over filterAlias matches.
+ * Prioritizes title matches  over filterAlias matches.
  * @param languageTitle - The title to search for
  * @returns The LanguageDefinition if found, undefined otherwise
  */
 export const searchLanguageByTitle = (languageTitle: string): LanguageDefinition | undefined => {
-  const normalizedSearch = normalizeTitleMarker(languageTitle);
+  const normalizedSearch = languageTitle.trim().toLowerCase();
 
   // 1. Prioritize exact title matches
-  const titleMatch = ALL_LANGUAGES.find((lang) => getNormalizedTitle(lang) === normalizedSearch);
+  const titleMatch = ALL_LANGUAGES.find((lang) => lang.title.trim().toLowerCase() === normalizedSearch);
 
   if (titleMatch) return titleMatch;
 
