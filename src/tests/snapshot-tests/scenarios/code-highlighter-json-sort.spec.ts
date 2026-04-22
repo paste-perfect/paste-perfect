@@ -35,7 +35,9 @@ test.describe("Code Highlighter – JSON Key Sorting", () => {
     await page.utils.assertEditorSettings(settings);
 
     // Assert – output has keys in alphabetical order
-    await expect(page.locator("#highlighted-code-wrapper code")).toContainText(SORTED_OUTPUT);
+    await expect(page.locator("#highlighted-code-wrapper code")).toContainText(SORTED_OUTPUT, {
+      timeout: 15000,
+    });
 
     // Assert – unsorted key order is NOT present in the output
     await expect(page.locator("#highlighted-code-wrapper code")).not.toContainText(

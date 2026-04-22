@@ -37,7 +37,7 @@ describe("PrismLanguageLoaderService", () => {
 
   beforeEach(() => {
     mockSearchLanguage.mockReset();
-    Object.keys(prismMock.languages).forEach((key) => delete prismMock.languages[key]);
+    prismMock.languages = {};
 
     TestBed.configureTestingModule({
       providers: [
@@ -48,7 +48,11 @@ describe("PrismLanguageLoaderService", () => {
     });
 
     service = TestBed.inject(PrismLanguageLoaderService);
-    importLanguageSpy = vi.spyOn(service as any, "importLanguage").mockResolvedValue(undefined);
+
+    importLanguageSpy = vi.spyOn(service as any, "importLanguage").mockImplementation(async (...args: unknown[]) => {
+      const lang = args[0] as LanguageDefinition;
+      prismMock.languages[lang.value] = {};
+    });
   });
 
   afterEach(() => {
@@ -80,8 +84,6 @@ describe("PrismLanguageLoaderService", () => {
     });
 
     it("should call importLanguage when the language is not yet registered", async () => {
-      importLanguageSpy.mockResolvedValue(undefined);
-
       await service.loadPrismLanguage(makeLanguage("python"));
 
       expect(importLanguageSpy).toHaveBeenCalledWith(expect.objectContaining({ value: "python" }));
@@ -92,6 +94,7 @@ describe("PrismLanguageLoaderService", () => {
       importLanguageSpy.mockImplementation(async (...args: unknown[]) => {
         const lang = args[0] as LanguageDefinition;
         callOrder.push(lang.value);
+        prismMock.languages[lang.value] = {};
       });
 
       mockSearchLanguage.mockReturnValue(makeLanguage("markup"));
@@ -117,7 +120,6 @@ describe("PrismLanguageLoaderService", () => {
 
     it("should show a warning toast when a declared dependency cannot be found", async () => {
       mockSearchLanguage.mockReturnValue(undefined);
-      importLanguageSpy.mockResolvedValue(undefined);
       vi.spyOn(console, "warn").mockImplementation(() => {
         /* empty */
       });
@@ -128,7 +130,6 @@ describe("PrismLanguageLoaderService", () => {
     });
 
     it("should skip already-loaded dependencies (already in Prism.languages)", async () => {
-      importLanguageSpy.mockResolvedValue(undefined);
       prismMock.languages["markup"] = {};
       mockSearchLanguage.mockReturnValue(makeLanguage("markup"));
 
@@ -143,11 +144,12 @@ describe("PrismLanguageLoaderService", () => {
     it("should use the customImportPath when one is defined", async () => {
       const dynamicImportLanguageSpy = vi.fn().mockResolvedValue({});
 
-      importLanguageSpy.mockImplementationOnce(async (...args: unknown[]) => {
+      importLanguageSpy.mockImplementation(async (...args: unknown[]) => {
         const lang = args[0] as LanguageDefinition;
         if (lang.prismConfiguration.customImportPath) {
           await dynamicImportLanguageSpy(`/${lang.prismConfiguration.customImportPath}`);
         }
+        prismMock.languages[lang.value] = {};
       });
 
       await (service as any).importLanguage(makeLanguage("custom-lang", [], "assets/prism-custom.js"));
