@@ -59,11 +59,12 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
+    launchOptions: {
+      timeout: 120 * 1000,
+      args: ["--disable-dev-shm-usage", "--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox"],
+    },
     navigationTimeout: 30 * 1000, // 30 seconds for page.goto() etc.
     actionTimeout: 5 * 1000, // 5 seconds for actions (i.e., click, goto)
-    launchOptions: {
-      args: ["--disable-dev-shm-usage"], // Use /tmp instead of /dev/shm to prevent page crashes
-    },
   },
   webServer: {
     command: "npm run serve:test",

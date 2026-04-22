@@ -1,5 +1,5 @@
 # Use the official Playwright image (browsers pre-installed)
-FROM mcr.microsoft.com/playwright:v1.58.2-jammy@sha256:4698a73749c5848d3f5fcd42a2174d172fcad2b2283e087843b115424303a565
+FROM mcr.microsoft.com/playwright:v1.59.1-jammy@sha256:8a0360d39d1973be506dd59002904a774f6d697d4946c94063b3fd006461c8ff
 
 # Set the working directory
 WORKDIR /app
@@ -13,9 +13,6 @@ COPY package.json package-lock.json* ./
 
 # Install dependencies strictly from the lockfile
 RUN npm ci
-
-# Ensure the installed Playwright version's browser binaries match exactly
-RUN npx playwright install --with-deps chromium
 
 # Expose the port for Playwright's UI mode and HTML report server
 EXPOSE ${PLAYWRIGHT_PORT}

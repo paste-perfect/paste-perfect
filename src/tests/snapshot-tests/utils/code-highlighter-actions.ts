@@ -1,3 +1,4 @@
+import fs from "fs";
 import { Page } from "@playwright/test";
 import { CodeHighlighterActions } from "../types/types";
 import { IndentationMode } from "@constants";
@@ -6,16 +7,15 @@ import { getThemeValueFromTheme, getIndentationValueFromMode } from "./enum-mapp
 
 const SELECTORS = {
   copyButton: "#copy-to-clipboard-button",
-  closeSettingsButton: "#close-settings-dialog-button",
-  sourceCodeEditor: "#source-code-editor textarea",
-  fileUploadInput: "#file-upload-input",
-  openMobileSettingsButton: "p-button[aria-label='Open Settings'] button",
+  closeSettingsButton: "#highlighting-settings-dialog button[aria-label='Close Settings Dialog']",
+  sourceCodeEditor: "textarea#source-code",
+  openMobileSettingsButton: "#open-settings",
   enableFormattingCheckbox: "#enable-formatting",
   indentationSizeInput: "input#indentation-size:visible",
-  indentModeSelector: "#indent-mode-selector:visible",
-  languageSelector: "#language-selector-trigger:visible",
-  showLineNumbersCheckbox: "#show-line-numbers",
-  themeSelector: "#theme-selector-trigger:visible",
+  indentModeSelector: "#indent-mode:visible",
+  languageSelector: "#language-selector:visible",
+  showLineNumbersCheckbox: "#show-line-numbers:visible",
+  themeSelector: "#theme-selector:visible",
   highlightedCodeWrapper: "#highlighted-code-wrapper code",
 } as const;
 
@@ -62,11 +62,8 @@ export function createActions(page: Page): CodeHighlighterActions {
     },
 
     async loadSourceCodeFromFile(filePath: string, requiresFormatting: boolean) {
-      await page.locator(SELECTORS.fileUploadInput).setInputFiles(filePath);
-
-      if (requiresFormatting) {
-        await page.locator(SELECTORS.highlightedCodeWrapper).waitFor({ state: "visible" });
-      }
+      const fileContent = fs.readFileSync(filePath, "utf-8");
+      await this.inputSourceCode(fileContent, requiresFormatting);
     },
 
     async setupClipboardMocking() {
