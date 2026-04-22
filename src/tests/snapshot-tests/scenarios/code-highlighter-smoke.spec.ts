@@ -1,17 +1,18 @@
 import { expect } from "@playwright/test";
 import { test } from "../pages/code-highlighter.page";
 
-const sampleCode = `function helloWorld() {\n  console.log("Hello, world!");\n}`;
+const SAMPLE_CODE = `function helloWorld() {\n  console.log("Hello, world!");\n}`;
 
-test.describe("Code Highlighter Snapshot Smoke", () => {
-  test("should update highlighted output when code is entered", async ({ page }) => {
+test.describe("Code Highlighter – Smoke", () => {
+  test("updates highlighted output when code is entered", async ({ page }) => {
     await page.assertions.expectHasDesktopSettings();
-    await page.actions.inputSourceCode(sampleCode, false);
 
-    // Wait for async highlight
-    expect(await page.utils.getHighlightedCodeText()).toContain(sampleCode);
+    // Arrange
+    await page.actions.inputSourceCode(SAMPLE_CODE, false);
 
-    // Screenshot Testing
+    // Assert
+    await expect(page.locator("#highlighted-code-wrapper code")).toContainText(SAMPLE_CODE);
+
     await page.expectScreenshot("smoke-highlighted-output-fullpage.png");
   });
 });

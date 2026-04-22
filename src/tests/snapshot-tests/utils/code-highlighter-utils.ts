@@ -1,30 +1,40 @@
 import {
   CodeHighlighterPage,
   CodeHighlighterUtils,
-  ConfigureEditorSettings,
-  ConfigureEditorSettingsFromCode,
-  ConfigureEditorSettingsFromFile,
+  ClipboardSnapshot,
+  EditorSettings,
+  EditorSettingsWithCode,
+  EditorSettingsWithFile,
 } from "../types/types";
 import { searchLanguageByTitle } from "@utils/languages-utils";
 
 export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighlighterUtils {
-  const configureSettings = async (config: ConfigureEditorSettings): Promise<void> => {
-    const { enableFormatting, indentationMode, indentationSize, language, showLineNumbers, theme } = config;
-    const isPrettierSupportedByLanguage = searchLanguageByTitle(language)?.prettierConfiguration;
+  /**
+   * Applies all editor settings to the UI without asserting.
+   * Language is set first because it controls which other options are available.
+   */
+  const applySettings = async (settings: EditorSettings): Promise<void> => {
+    const { enableFormatting, indentationMode, indentationSize, language, showLineNumbers, theme } = settings;
 
-    // Language must be set in the beginning
     await page.actions.setLanguage(language);
-    await page.assertions.expectLanguage(language);
-
-    // Set all configuration values
     await page.actions.setEnableFormatting(enableFormatting);
     await page.actions.setIndentationSize(indentationSize);
     await page.actions.setIndentMode(indentationMode);
     await page.actions.setShowLineNumbers(showLineNumbers);
     await page.actions.setTheme(theme);
+  };
 
-    // Verify all configuration values
-    await page.assertions.expectEnableFormatting(isPrettierSupportedByLanguage ? enableFormatting : false);
+  /**
+   * Asserts all editor settings against the DOM.
+   * Automatically expects `enableFormatting` to be `false` when the selected
+   * language has no Prettier configuration.
+   */
+  const assertSettings = async (settings: EditorSettings): Promise<void> => {
+    const { enableFormatting, indentationMode, indentationSize, language, showLineNumbers, theme } = settings;
+    const languageSupportsPrettier = Boolean(searchLanguageByTitle(language)?.prettierConfiguration);
+
+    await page.assertions.expectLanguage(language);
+    await page.assertions.expectEnableFormatting(languageSupportsPrettier ? enableFormatting : false);
     await page.assertions.expectIndentationSize(indentationSize);
     await page.assertions.expectIndentMode(indentationMode);
     await page.assertions.expectShowLineNumbers(showLineNumbers);
@@ -32,23 +42,30 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
   };
 
   return {
-    async configureEditor(config: ConfigureEditorSettingsFromCode) {
-      await configureSettings(config);
+    async applyEditorSettings(settings: EditorSettings) {
+      await applySettings(settings);
+    },
+
+    async assertEditorSettings(settings: EditorSettings) {
+      await assertSettings(settings);
+    },
+
+    async applyEditorWithCode(config: EditorSettingsWithCode) {
+      await applySettings(config);
       await page.actions.inputSourceCode(config.code, config.enableFormatting);
     },
 
-    async configureEditorFromFile(config: ConfigureEditorSettingsFromFile) {
-      await configureSettings(config);
+    async applyEditorWithFile(config: EditorSettingsWithFile) {
+      await applySettings(config);
       await page.actions.loadSourceCodeFromFile(config.filePath, config.enableFormatting);
     },
 
-    async getClipboardContent() {
+    async getClipboardContent(): Promise<ClipboardSnapshot | null> {
       return page.evaluate(async () => {
-        if (!window.__copiedClipboardItem) return null;
-
         const item = window.__copiedClipboardItem;
-        const plainBlob = await item.getType("text/plain");
-        const htmlBlob = await item.getType("text/html");
+        if (!item) return null;
+
+        const [plainBlob, htmlBlob] = await Promise.all([item.getType("text/plain"), item.getType("text/html")]);
 
         return {
           plainText: (await plainBlob.text()).trim(),
@@ -57,7 +74,7 @@ export function createUtils(page: Omit<CodeHighlighterPage, "utils">): CodeHighl
       });
     },
 
-    async getHighlightedCodeText() {
+    async getHighlightedCodeText(): Promise<string> {
       return page.locator("#highlighted-code-wrapper code").innerText();
     },
   };

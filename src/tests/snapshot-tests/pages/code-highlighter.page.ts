@@ -5,34 +5,32 @@ import { createUtils } from "../utils/code-highlighter-utils";
 import { CodeHighlighterPage } from "../types/types";
 
 /**
- * This fixture 'test' extends the base fixture so we can
- * add our new methods to Playwright's `page` object.
+ * Injects a MutationObserver that disables spellcheck on all textareas before
+ * the page loads. Prevents Playwright flakiness caused by red-underline decorations
+ * interfering with text selection and clipboard actions.
  */
+function disableSpellcheckScript(): void {
+  const observer = new MutationObserver(() => {
+    document
+      .querySelectorAll<HTMLTextAreaElement>('textarea:not([spellcheck="false"])')
+      .forEach((el) => el.setAttribute("spellcheck", "false"));
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+}
+
 export const test = base.extend<{ page: CodeHighlighterPage }>({
   page: async ({ page }, use) => {
-    // Attach structured helpers to page
-    page.actions = createActions(page);
-    page.assertions = createAssertions(page);
-    page.utils = createUtils(page);
-
-    // Disable spellcheck globally for all textareas to prevent Playwright flakiness
-    await page.addInitScript(() => {
-      const observer = new MutationObserver(() => {
-        const textareas = document.querySelectorAll('textarea:not([spellcheck="false"])');
-        textareas.forEach((textarea) => {
-          textarea.setAttribute("spellcheck", "false");
-        });
-      });
-      observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-      });
-    });
-
-    // Go to the app's root path
+    await page.addInitScript(disableSpellcheckScript);
     await page.goto("/");
 
-    // Expose the final typed Page to the tests
+    const partialPage = page as Omit<CodeHighlighterPage, "utils">;
+    partialPage.actions = createActions(page);
+    partialPage.assertions = createAssertions(page);
+    (page as CodeHighlighterPage).utils = createUtils(partialPage);
+
     await use(page as CodeHighlighterPage);
   },
 });
+
+export { expect } from "../fixtures";

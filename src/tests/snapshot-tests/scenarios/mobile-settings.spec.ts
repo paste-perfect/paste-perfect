@@ -1,35 +1,38 @@
 import { test } from "../pages/code-highlighter.page";
-import { Theme } from "@types";
 import { DarkTheme } from "@constants";
 
+const MOBILE_VIEWPORT = { width: 600, height: 800 };
+const THEME = DarkTheme.A11yDark;
+
 test.describe("Mobile Settings Dialog", () => {
-  test("should open and close settings dialog on small screen", async ({ page }) => {
-    const theme: Theme = DarkTheme.A11yDark;
+  test("opens, reflects a setting change, and closes the settings dialog", async ({ page }) => {
+    // Arrange – switch to mobile viewport
+    await page.setViewportSize(MOBILE_VIEWPORT);
+    await page.locator("#configuration-card").waitFor({ state: "hidden" });
 
-    // Simulate a small screen (e.g., width < breakpoint-md)
-    await page.setViewportSize({ width: 600, height: 800 });
-
-    // Wait for CSS media queries to be re-evaluated
-    await page.waitForTimeout(100);
-
-    // Verify we see the mobile version of settings
+    // Assert – mobile layout is active
     await page.assertions.expectHasMobileSettings();
-
     await page.expectScreenshot("mobile-view-base.png");
 
-    // Open the mobile settings dialog
+    // Arrange – open the settings dialog
     await page.actions.openMobileSettingsPanel();
+
+    // Assert – dialog is visible with correct heading
     await page.assertions.expectSettingsDialogVisible();
     await page.assertions.expectSettingsDialogContains("Highlighting Settings");
     await page.expectScreenshot("mobile-view-dialog.png");
 
-    // Interact with a setting inside the dialog (e.g., change theme)
-    await page.actions.setTheme(theme);
-    await page.assertions.expectTheme(theme);
+    // Arrange – change a setting inside the dialog
+    await page.actions.setTheme(THEME);
+
+    // Assert – theme is reflected
+    await page.assertions.expectTheme(THEME);
     await page.expectScreenshot("mobile-view-dialog-theme.png");
 
-    // Close the dialog
+    // Arrange – close the dialog
     await page.actions.closeSettingsDialog();
+
+    // Assert – dialog is gone
     await page.assertions.expectSettingsDialogHidden();
     await page.expectScreenshot("mobile-view-updated-theme.png");
   });

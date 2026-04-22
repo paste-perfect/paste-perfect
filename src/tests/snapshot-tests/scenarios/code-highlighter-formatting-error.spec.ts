@@ -2,27 +2,31 @@ import { expect } from "@playwright/test";
 import { test } from "../pages/code-highlighter.page";
 import { IndentationMode, LightTheme } from "@constants";
 
-const invalidCode = `function (a: test) {`; // invalid JS syntax
+const LANGUAGE = "JavaScript";
+const INVALID_JS_CODE = `function (a: test) {`;
 
-test.describe("Code Highlighter Error Handling", () => {
-  test("should display proper error message when syntactically wrong code is inserted", async ({ page }) => {
+const EDITOR_SETTINGS = {
+  language: LANGUAGE,
+  theme: LightTheme.A11yLight,
+  indentationMode: IndentationMode.Spaces,
+  indentationSize: 4,
+  enableFormatting: true,
+  showLineNumbers: false,
+} as const;
+
+test.describe("Code Highlighter – Formatting Error", () => {
+  test("displays an error when code with invalid syntax is submitted", async ({ page }) => {
     await page.assertions.expectHasDesktopSettings();
-    await page.utils.configureEditor({
-      language: "JavaScript*" /* Pick a wrong language on purpose! */,
-      theme: LightTheme.A11yLight,
-      indentationMode: IndentationMode.Spaces,
-      indentationSize: 4,
-      enableFormatting: true,
-      showLineNumbers: false,
-      code: invalidCode,
-    });
 
-    await page.waitForTimeout(500); // Otherwise this test sometimes ran into timeout issues
+    // Arrange
+    await page.utils.applyEditorWithCode({ ...EDITOR_SETTINGS, code: INVALID_JS_CODE });
 
-    // Wait for async highlight
-    expect(await page.utils.getHighlightedCodeText()).toContain(invalidCode);
+    // Assert – settings
+    await page.utils.assertEditorSettings(EDITOR_SETTINGS);
 
-    // Screenshot Testing
+    // Assert – output contains the raw invalid input
+    await expect(page.locator("#highlighted-code-wrapper code")).toContainText(INVALID_JS_CODE);
+
     await page.expectScreenshot("error-message-display-fullpage.png");
   });
 });

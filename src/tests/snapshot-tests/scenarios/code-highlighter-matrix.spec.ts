@@ -5,7 +5,9 @@ import { test } from "../pages/code-highlighter.page";
 import { HighlightingSettings, Theme } from "@types";
 import { DarkTheme, IndentationMode, LightTheme } from "@constants";
 
-interface Mode extends HighlightingSettings {
+const TEST_DATA_DIR = path.join(__dirname, "../test-data");
+
+interface RenderMode extends HighlightingSettings {
   name: string;
   theme: Theme;
   fixtureDir: string;
@@ -14,28 +16,16 @@ interface Mode extends HighlightingSettings {
 interface TestCase {
   language: string;
   rawFilename: string;
-  fixture: string;
+  fixtureFilename: string;
 }
 
-const testCases: TestCase[] = [
-  {
-    language: "JavaScript*",
-    rawFilename: "javascript.js",
-    fixture: "javascript.html",
-  },
-  {
-    language: "Python",
-    rawFilename: "python.py",
-    fixture: "python.html",
-  },
-  {
-    language: "Markup*",
-    rawFilename: "markup.html",
-    fixture: "markup.html",
-  },
+const TEST_CASES: TestCase[] = [
+  { language: "JavaScript", rawFilename: "javascript.js", fixtureFilename: "javascript.html" },
+  { language: "Python", rawFilename: "python.py", fixtureFilename: "python.html" },
+  { language: "Markup", rawFilename: "markup.html", fixtureFilename: "markup.html" },
 ];
 
-const modes: Mode[] = [
+const RENDER_MODES: RenderMode[] = [
   {
     name: "Dark Mode with Tabs",
     theme: DarkTheme.PrismColdarkDark,
@@ -56,53 +46,56 @@ const modes: Mode[] = [
   },
 ];
 
-const TEST_DATA_DIR = "../test-data";
+for (const mode of RENDER_MODES) {
+  for (const { language, rawFilename, fixtureFilename } of TEST_CASES) {
+    const slug = `${language.toLowerCase().replace(/\s+/g, "-")}-${mode.fixtureDir}`;
+    const rawCodePath = path.join(TEST_DATA_DIR, "raw", rawFilename);
 
-for (const mode of modes) {
-  for (const { language, rawFilename, fixture } of testCases) {
-    const baseName = `${language.toLowerCase().replace(/\s+/g, "-")}-${mode.fixtureDir}`;
+    const editorSettings = {
+      ...mode,
+      language,
+    };
 
-    test.describe(`${language} (${mode.name})`, () => {
-      test(`should render syntax highlighting correctly [${baseName}]`, async ({ page }) => {
-        // Ensure that we have the desktop view
+    test.describe(`${language} – ${mode.name}`, () => {
+      test(`renders syntax highlighting correctly [${slug}]`, async ({ page }) => {
         await page.assertions.expectHasDesktopSettings();
-        const rawCodePath = path.join(__dirname, TEST_DATA_DIR, "raw", rawFilename);
 
-        await page.utils.configureEditorFromFile({
-          ...mode,
-          language,
-          filePath: rawCodePath,
-        });
+        // Arrange
+        await page.utils.applyEditorWithFile({ ...editorSettings, filePath: rawCodePath });
 
-        await page.expectScreenshot(`${baseName}-fullpage.png`);
+        // Assert – settings
+        await page.utils.assertEditorSettings(editorSettings);
+
+        // Assert – highlighted output is visible
+        await expect(page.locator("#highlighted-code-wrapper code")).toBeVisible();
+
+        await page.expectScreenshot(`${slug}-fullpage.png`);
       });
 
-      test(`should copy correct plain and HTML content to clipboard [${baseName}]`, async ({ page }) => {
-        // Ensure that we have the desktop view
+      test(`copies correct plain text and HTML to clipboard [${slug}]`, async ({ page }) => {
         await page.assertions.expectHasDesktopSettings();
 
-        const rawCodePath = path.join(__dirname, TEST_DATA_DIR, "raw", rawFilename);
-
-        await page.utils.configureEditorFromFile({
-          ...mode,
-          language,
-          filePath: rawCodePath,
-        });
-
+        // Arrange
+        await page.utils.applyEditorWithFile({ ...editorSettings, filePath: rawCodePath });
         await page.actions.setupClipboardMocking();
         await page.actions.clickCopyToClipboardButton();
 
-        const clipboardContent = await page.utils.getClipboardContent();
-        const expectedText = (await page.utils.getHighlightedCodeText()).trim();
-        expect(clipboardContent?.plainText).toBe(expectedText);
+        // Assert – plain text matches visible output
+        const expectedPlainText = (await page.utils.getHighlightedCodeText()).trim();
+        const clipboard = await page.utils.getClipboardContent();
 
-        const expectedHtmlPath = path.join(__dirname, TEST_DATA_DIR, mode.fixtureDir, fixture);
-        if (fs.existsSync(expectedHtmlPath)) {
-          const expectedHtml = fs.readFileSync(expectedHtmlPath, "utf-8").trim();
-          expect(clipboardContent?.htmlText).toBe(expectedHtml);
-        } else {
-          throw new Error(`Expected HTML fixture not found at path: ${expectedHtmlPath}`);
+        expect(clipboard).not.toBeNull();
+        expect(clipboard!.plainText).toBe(expectedPlainText);
+
+        // Assert – HTML matches stored fixture
+        const fixturePath = path.join(TEST_DATA_DIR, mode.fixtureDir, fixtureFilename);
+
+        if (!fs.existsSync(fixturePath)) {
+          throw new Error(`HTML fixture not found: ${fixturePath}`);
         }
+
+        const expectedHtml = fs.readFileSync(fixturePath, "utf-8").trim();
+        expect(clipboard!.htmlText).toBe(expectedHtml);
       });
     });
   }

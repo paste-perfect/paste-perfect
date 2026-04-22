@@ -1,23 +1,23 @@
 import { expect, Page as BasePage, PageAssertionsToHaveScreenshotOptions, test as baseTest } from "@playwright/test";
 
+// ---------------------------------------------------------------------------
+// Extended page type — adds `expectScreenshot` convenience helper
+// ---------------------------------------------------------------------------
+
 export type Page = BasePage & {
-  expectScreenshot: (name: string, options?: PageAssertionsToHaveScreenshotOptions) => Promise<void>;
+  /**
+   * Takes a full-page screenshot and asserts it matches the stored snapshot.
+   * @param name - Snapshot filename (e.g. `"my-test.png"`).
+   * @param options
+   */
+  expectScreenshot(name: string, options?: PageAssertionsToHaveScreenshotOptions): Promise<void>;
 };
 
-export const test = baseTest.extend<{
-  page: Page;
-}>({
+export const test = baseTest.extend<{ page: Page }>({
   page: async ({ page }, use) => {
-    page.expectScreenshot = async (name: string, options) => {
-      options = {
-        ...options,
-        fullPage: true,
-      };
+    page.expectScreenshot = (name, options) => expect(page).toHaveScreenshot(name, { fullPage: true, ...options });
 
-      await expect(page).toHaveScreenshot(name, options);
-    };
-
-    await use(page);
+    await use(page as Page);
   },
 });
 

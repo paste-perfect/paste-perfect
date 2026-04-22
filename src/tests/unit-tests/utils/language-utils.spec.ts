@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { searchLanguageByTitle, searchLanguageByValue } from "@utils/languages-utils";
 
-const DEFAULT_JAVASCRIPT_LANGUAGE = { title: "JavaScript*", value: "javascript" };
-const DEFAULT_TYPESCRIPT_LANGUAGE = { title: "TypeScript*", value: "typescript" };
+const DEFAULT_JAVASCRIPT_LANGUAGE = { title: "JavaScript", value: "javascript" };
+const DEFAULT_TYPESCRIPT_LANGUAGE = { title: "TypeScript", value: "typescript" };
 
 describe("Language Utils", () => {
   afterEach(() => {
