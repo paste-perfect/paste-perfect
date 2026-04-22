@@ -99,7 +99,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-reports-${{ github.run_id }}
-          path: reports/
+          path: reports/jest/
           retention-days: 7
 
   # ── JOB 3: Playwright Snapshot Tests ────────────────────────────────────────
@@ -159,7 +159,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: snapshot-reports-${{ github.run_id }}
-          path: reports/
+          path: reports/playwright/
           retention-days: 7
 
   # ── JOB 4: Publish Test Reports (fan-in) ────────────────────────────────────
@@ -185,7 +185,7 @@ jobs:
         with:
           artifact: test-reports-${{ github.run_id }}
           name: Jest Unit Tests
-          path: "jest/report.xml"
+          path: "report.xml"
           reporter: jest-junit
           fail-on-error: false
 
@@ -194,6 +194,6 @@ jobs:
         with:
           artifact: snapshot-reports-${{ github.run_id }}
           name: Playwright Snapshot Tests
-          path: "playwright/report.xml"
+          path: "report.xml"
           reporter: jest-junit
           fail-on-error: false
