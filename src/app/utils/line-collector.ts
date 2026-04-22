@@ -49,7 +49,6 @@ export class LinesCollector {
    * @param cloned The cloned Node, which will be cleared and rebuilt.
    */
   public collectLinesFromNodes(original: Node, cloned: Node): void {
-    console.log("123x");
     if (NodeUtils.isHtmlElement(cloned)) {
       NodeUtils.removeAllAttributesExceptStyle(cloned);
     }
