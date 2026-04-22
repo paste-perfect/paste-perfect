@@ -1,9 +1,23 @@
 import { defineConfig, devices } from "@playwright/test";
 import { PlaywrightTestConfig } from "playwright/types/test";
 
-export const BASE_URL = process.env["PLAYWRIGHT_BASE_URL"] || "http://localhost:4200/paste-perfect/";
+// ---------------------------------------------------------------------------
+// Constants & Environment Configuration
+// ---------------------------------------------------------------------------
+
+export const BASE_URL = process.env["PLAYWRIGHT_BASE_URL"] ?? "http://localhost:4200/paste-perfect/";
 const CI = Boolean(process.env["CI"]);
 const REPORT_PORT = Number(process.env["REPORT_PORT"]) || 9324;
+
+const HTML_REPORT_OUTPUT_FOLDER = "../../reports/playwright/html-report";
+const JUNIT_REPORT_OUTPUT_FILE = "../../reports/playwright/report.xml";
+const SNAPSHOT_PATH_TEMPLATE = "{testDir}/snapshots/{testFileName}/{arg}{ext}";
+const TEST_DIR = "../../src/tests/snapshot-tests";
+const WEB_SERVER_CWD = "../../";
+
+// ---------------------------------------------------------------------------
+// Reporters
+// ---------------------------------------------------------------------------
 
 const reporters: PlaywrightTestConfig["reporter"] = [
   [CI ? "github" : "list"],
@@ -13,7 +27,7 @@ const reporters: PlaywrightTestConfig["reporter"] = [
       open: CI ? "never" : "on-failure",
       host: "0.0.0.0",
       port: REPORT_PORT,
-      outputFolder: "../../reports/playwright/html-report",
+      outputFolder: HTML_REPORT_OUTPUT_FOLDER,
     },
   ],
 ];
@@ -22,10 +36,14 @@ if (CI) {
   reporters.push([
     "junit",
     {
-      outputFile: "../../reports/playwright/report.xml",
+      outputFile: JUNIT_REPORT_OUTPUT_FILE,
     },
   ]);
 }
+
+// ---------------------------------------------------------------------------
+// Playwright Config
+// ---------------------------------------------------------------------------
 
 export default defineConfig({
   projects: [
@@ -54,8 +72,8 @@ export default defineConfig({
   fullyParallel: true,
   reporter: reporters,
   retries: 0,
-  testDir: "../../src/tests/snapshot-tests",
-  snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",
+  testDir: TEST_DIR,
+  snapshotPathTemplate: SNAPSHOT_PATH_TEMPLATE,
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
@@ -70,7 +88,7 @@ export default defineConfig({
     command: "npm run serve:test",
     reuseExistingServer: !CI,
     url: BASE_URL,
-    cwd: "../../", // Execute from the project root where package.json lives
+    cwd: WEB_SERVER_CWD,
     timeout: 120 * 1000, // 2 minutes to start the dev server
   },
   workers: CI ? 1 : undefined,

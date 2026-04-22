@@ -8,12 +8,24 @@ BLUE='\033[1;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# --- Configuration ---
+# ==============================================================================
+# CONFIGURATION — override via environment variables or edit defaults here
+# ==============================================================================
+
+# URLs & Ports
 PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL:-http://localhost:4200/paste-perfect/}"
 REPORT_PORT="${REPORT_PORT:-9324}"
 UI_PORT="${UI_PORT:-9323}"
-CONFIG_PATH="config/tests/playwright.config.ts"
-DOCKERFILE_PATH="config/tests/playwright-screenshot-tests.Dockerfile"
+
+# Paths
+CONFIG_PATH="${CONFIG_PATH:-config/tests/playwright.config.ts}"
+DOCKERFILE_PATH="${DOCKERFILE_PATH:-config/tests/playwright-screenshot-tests.Dockerfile}"
+
+# Docker
+IMAGE_BASE_NAME="${IMAGE_BASE_NAME:-playwright-screenshot-tests}"
+CONTAINER_NAME_PREFIX="${CONTAINER_NAME_PREFIX:-playwright_runner}"
+
+# ==============================================================================
 
 # Generate a hash to auto-rebuild the image when dependencies change
 if command -v md5sum >/dev/null 2>&1; then
@@ -24,8 +36,8 @@ else
     LOCK_HASH="latest"
 fi
 
-CONTAINER_NAME="playwright_runner_$(date +%s)"
-IMAGE_NAME="playwright-screenshot-tests:${LOCK_HASH}"
+CONTAINER_NAME="${CONTAINER_NAME_PREFIX}_$(date +%s)"
+IMAGE_NAME="${IMAGE_BASE_NAME}:${LOCK_HASH}"
 
 # --- Pre-flight Checks ---
 if ! command -v docker &> /dev/null; then
@@ -62,9 +74,13 @@ if $FORCE_REBUILD || ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
 
     if $FORCE_REBUILD; then
         # Force Docker to ignore all cached layers
-        docker build --no-cache -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" .
+        docker build --no-cache \
+            -f "$DOCKERFILE_PATH" \
+            -t "$IMAGE_NAME" .
     else
-        docker build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" .
+        docker build \
+            -f "$DOCKERFILE_PATH" \
+            -t "$IMAGE_NAME" .
     fi
 else
     echo -e "${GREEN}✅ Using cached Docker image: ${IMAGE_NAME}${NC}"
@@ -133,7 +149,10 @@ fi
 
 # --- Run Playwright in Docker ---
 echo -e "${BLUE}▶ Starting Playwright container...${NC}"
-echo -e "${BLUE}  Base URL: ${PLAYWRIGHT_BASE_URL}${NC}"
+echo -e "${BLUE}  Base URL:    ${PLAYWRIGHT_BASE_URL}${NC}"
+echo -e "${BLUE}  UI Port:     ${UI_PORT}${NC}"
+echo -e "${BLUE}  Report Port: ${REPORT_PORT}${NC}"
+echo -e "${BLUE}  Image:       ${IMAGE_NAME}${NC}"
 
 # Temporarily disable exit-on-error to capture test exit codes naturally
 set +e
