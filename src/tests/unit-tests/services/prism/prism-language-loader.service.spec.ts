@@ -36,6 +36,7 @@ describe("PrismLanguageLoaderService", () => {
   const locationStrategyMock = { getBaseHref: vi.fn().mockReturnValue("/") };
 
   beforeEach(() => {
+    mockSearchLanguage.mockReset();
     Object.keys(prismMock.languages).forEach((key) => delete prismMock.languages[key]);
 
     TestBed.configureTestingModule({
