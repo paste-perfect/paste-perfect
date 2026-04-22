@@ -34,15 +34,19 @@ test.describe("Code Highlighter – JSON Key Sorting", () => {
     // Assert – settings applied correctly
     await page.utils.assertEditorSettings(settings);
 
-    // Assert – output has keys in alphabetical order
-    await expect(page.locator("#highlighted-code-wrapper code")).toContainText(SORTED_OUTPUT, {
-      timeout: 15000,
-    });
+    // Wait for formatting to complete — the output should change from the raw input
+    const codeLocator = page.locator("#highlighted-code-wrapper code");
 
-    // Assert – unsorted key order is NOT present in the output
-    await expect(page.locator("#highlighted-code-wrapper code")).not.toContainText(
-      '"zebra": 1,\n' // "zebra" should not come before "apple"
-    );
+    await expect(async () => {
+      const text = await codeLocator.textContent();
+      expect(text).toContain('"apple"');
+      // Verify sorted order: apple before zebra
+      const appleIdx = text!.indexOf('"apple"');
+      const zebraIdx = text!.indexOf('"zebra"');
+      expect(appleIdx).toBeLessThan(zebraIdx);
+    }).toPass({ timeout: 15000 });
+
+    await expect(codeLocator).toContainText(SORTED_OUTPUT);
   });
 
   test("does not sort JSON keys when formatting is disabled", async ({ page }) => {

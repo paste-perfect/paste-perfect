@@ -86,7 +86,7 @@ jobs:
         run: npm ci
 
       - name: Create reports directory
-        run: mkdir -p reports/jest reports/playwright
+        run: mkdir -p reports/vitest reports/playwright
 
       - name: Run unit tests
         run: npm run test:unit:ci
@@ -99,7 +99,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-reports-${{ github.run_id }}
-          path: reports/jest/
+          path: reports/
           retention-days: 7
 
   # ── JOB 3: Playwright Snapshot Tests ────────────────────────────────────────
@@ -159,7 +159,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: snapshot-reports-${{ github.run_id }}
-          path: reports/playwright/
+          path: reports/
           retention-days: 7
 
   # ── JOB 4: Publish Test Reports (fan-in) ────────────────────────────────────
@@ -180,13 +180,13 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Generate Jest report
+      - name: Generate Vitest report
         uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
         with:
           artifact: test-reports-${{ github.run_id }}
-          name: Jest Unit Tests
-          path: "report.xml"
-          reporter: jest-junit
+          name: Vitest Unit Tests
+          path: "vitest/report.xml"
+          reporter: vitest-junit
           fail-on-error: false
 
       - name: Generate Playwright report
@@ -194,6 +194,6 @@ jobs:
         with:
           artifact: snapshot-reports-${{ github.run_id }}
           name: Playwright Snapshot Tests
-          path: "report.xml"
-          reporter: jest-junit
+          path: "playwright/report.xml"
+          reporter: vitest-junit
           fail-on-error: false

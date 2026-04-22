@@ -37,7 +37,9 @@ describe("PrismLanguageLoaderService", () => {
 
   beforeEach(() => {
     mockSearchLanguage.mockReset();
-    prismMock.languages = {};
+    Object.keys(prismMock.languages).forEach((key) => {
+      delete prismMock.languages[key];
+    });
 
     TestBed.configureTestingModule({
       providers: [
@@ -57,6 +59,7 @@ describe("PrismLanguageLoaderService", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
     TestBed.resetTestingModule();
   });
 
@@ -132,6 +135,9 @@ describe("PrismLanguageLoaderService", () => {
     it("should skip already-loaded dependencies (already in Prism.languages)", async () => {
       prismMock.languages["markup"] = {};
       mockSearchLanguage.mockReturnValue(makeLanguage("markup"));
+
+      // Reset call count right before the action under test
+      importLanguageSpy.mockClear();
 
       await service.loadPrismLanguage(makeLanguage("jsx", ["markup"]));
 
