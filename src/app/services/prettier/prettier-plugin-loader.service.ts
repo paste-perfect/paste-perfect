@@ -3,6 +3,16 @@ import { MessageService } from "primeng/api";
 import { LanguageDefinition, PrettierParserNames, PrettierPluginType } from "@types";
 import { Plugin as PrettierPlugin } from "prettier";
 
+const unwrapPlugin = (m: unknown): PrettierPlugin => {
+  // 1. Check if 'm' is an object that actually has a 'default' property
+  if (m && typeof m === "object" && "default" in m) {
+    return (m as { default: PrettierPlugin }).default;
+  }
+
+  // 2. Otherwise, assume the module itself is the plugin (CommonJS fallback)
+  return m as PrettierPlugin;
+};
+
 /**
  * Service for dynamically loading Prettier plugins based on language requirements
  */
@@ -24,18 +34,12 @@ export class PrettierPluginLoaderService {
    * Mapping of plugin names to their import paths
    */
   private readonly pluginRegistry: Partial<Record<PrettierPluginType, () => Promise<PrettierPlugin>>> = {
-    "prettier-plugin-java": () => import("prettier-plugin-java").then((m) => m.default),
-    "prettier-plugin-gherkin": () => import("prettier-plugin-gherkin").then((m) => m.default),
-    "prettier-plugin-nginx": () => import("prettier-plugin-nginx"),
-    "prettier-plugin-sql": () => import("prettier-plugin-sql").then((m) => m.default),
-    "prettier-plugin-toml": () => import("prettier-plugin-toml").then((m) => m.default),
-    "prettier-plugin-sort-json": () =>
-      import("prettier-plugin-sort-json").then(
-        (m): PrettierPlugin => ({
-          parsers: m.parsers,
-          options: m.options,
-        })
-      ),
+    "prettier-plugin-java": () => import("prettier-plugin-java").then(unwrapPlugin),
+    "prettier-plugin-gherkin": () => import("prettier-plugin-gherkin").then(unwrapPlugin),
+    "prettier-plugin-nginx": () => import("prettier-plugin-nginx").then(unwrapPlugin),
+    "prettier-plugin-sql": () => import("prettier-plugin-sql").then(unwrapPlugin),
+    "prettier-plugin-toml": () => import("prettier-plugin-toml").then(unwrapPlugin),
+    "prettier-plugin-sort-json": () => import("prettier-plugin-sort-json").then(unwrapPlugin),
   };
 
   /**
