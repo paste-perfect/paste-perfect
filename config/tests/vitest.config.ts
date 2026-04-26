@@ -12,6 +12,14 @@ export default defineConfig({
         },
       },
     },
+    // Reset all mocks/spies and module registry between tests.
+    clearMocks: true,
+    mockReset: true, // resets implementations too — prevents cross-test leakage
+    restoreMocks: true, // restores original (un-spied) implementations
+    unstubEnvs: true,
+    unstubGlobals: true,
+    isolate: true,
+    pool: "forks",
   },
   resolve: {
     alias: {
