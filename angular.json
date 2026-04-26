@@ -45,7 +45,7 @@
             "browser": "src/main.ts",
             "baseHref": "/paste-perfect/",
             "polyfills": ["zone.js"],
-            "tsConfig": "tsconfig.json",
+            "tsConfig": "tsconfig.app.json",
             "assets": [
               {
                 "glob": "**/*",
@@ -89,8 +89,7 @@
               ],
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": false,
-              "aot": false
+              "sourceMap": false
             },
             "development": {
               "optimization": false,

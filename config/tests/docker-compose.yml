@@ -1,0 +1,79 @@
+name: paste-perfect-playwright
+
+# Single compose file for both headless and UI modes.
+#   Headless: npm run test:snapshots          (local — opens HTML report on failure)
+#             npm run test:snapshots:ci       (CI    — summary + junit only)
+#   UI mode : npm run test:snapshots:ui       (Playwright's built-in watch mode)
+#
+# Override defaults by placing a `.env` file next to this configuration.
+
+x-pw-base: &pw-base
+  image: mcr.microsoft.com/playwright:v1.59.1-jammy
+  ipc: host
+  extra_hosts:
+    - host.docker.internal:host-gateway
+  working_dir: /app
+  entrypoint: /bin/sh
+  stop_grace_period: 0s
+  volumes:
+    - ../../:/app
+    - npm-cache:/root/.npm
+    - node-modules:/app/node_modules
+
+services:
+  playwright:
+    <<: *pw-base
+    environment:
+      CI: ${CI:-false}
+      USE_DOCKER_HOST_WEBSERVER: ${USE_DOCKER_HOST_WEBSERVER:-false}
+      PLAYWRIGHT_BASE_URL: ${PLAYWRIGHT_BASE_URL:-}
+      WEBSERVER_PORT: ${WEBSERVER_PORT:-4200}
+      REPORT_PORT: ${REPORT_PORT:-9323}
+      FILE_CHANGES_DETECTION_SUPPORTED: ${FILE_CHANGES_DETECTION_SUPPORTED:-false}
+    ports:
+      - "${REPORT_PORT:-9323}:${REPORT_PORT:-9323}"
+    command:
+      - -c
+      - |
+        npm install
+        # Added $$ here 👇
+        npx playwright test --config=config/tests/playwright.config.ts $${PLAYWRIGHT_TEST_OPTIONS:-}
+        EXIT_CODE=$$?
+
+        if [ "$$EXIT_CODE" -ne 0 ] && [ "$$CI" != "true" ]; then
+          echo ""
+          echo "❌ Tests failed!"
+          echo "👉 View Report: http://localhost:${REPORT_PORT:-9323}"
+          echo ""
+          npx playwright show-report reports/playwright/html-report --host 0.0.0.0 --port ${REPORT_PORT:-9323}
+        fi
+
+        exit $$EXIT_CODE
+
+  playwright-ui:
+    <<: *pw-base
+    profiles: ["ui"]
+    ports:
+      - "${UI_PORT:-43008}:${UI_PORT:-43008}"
+      - "${WEBSERVER_PORT:-4200}:${WEBSERVER_PORT:-4200}"
+    environment:
+      CI: "false"
+      USE_DOCKER_HOST_WEBSERVER: ${USE_DOCKER_HOST_WEBSERVER:-false}
+      PLAYWRIGHT_BASE_URL: ${PLAYWRIGHT_BASE_URL:-}
+      FILE_CHANGES_DETECTION_SUPPORTED: ${FILE_CHANGES_DETECTION_SUPPORTED:-false}
+      WEBSERVER_PORT: ${WEBSERVER_PORT:-4200}
+      REPORT_PORT: ${REPORT_PORT:-9323}
+      CHOKIDAR_USEPOLLING: "true"
+    command:
+      - -c
+      - |
+        npm install
+        npx playwright test \
+          --config=config/tests/playwright.config.ts \
+          --ui-port=${UI_PORT:-43008} \
+          --ui-host=0.0.0.0 \
+          $${PLAYWRIGHT_TEST_OPTIONS:-} # Added $$ here 👇
+
+volumes:
+  npm-cache:
+  node-modules:

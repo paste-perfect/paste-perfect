@@ -13,158 +13,81 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
-permissions: {} # declared per-job
+permissions: {}
 
 jobs:
-
-  # ── JOB 1: Lint & Format ────────────────────────────────────────────────────
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'merge_group' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request'
     permissions:
       contents: read
-
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
           node-version: "lts/*"
           cache: "npm"
-
-      - name: Restore node_modules cache
+      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
         id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
         with:
           path: node_modules
           key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: nm-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
+      - if: steps.nm-cache.outputs.cache-hit != 'true'
         run: npm ci
+      - run: npm run lint:check
+      - run: npm run format:check
 
-      - name: Lint
-        run: npm run lint:check
-
-      - name: Format check
-        run: npm run format:check
-
-  # ── JOB 2: Unit Tests + Build ───────────────────────────────────────────────
-  # Runs after lint passes. Downstream jobs depend on this transitively.
+  # Unit tests + production build — runs natively on the runner (no Docker needed).
   test-build:
     name: Unit Tests & Build
     runs-on: ubuntu-latest
     needs: lint
     permissions:
       contents: read
-
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
           node-version: "lts/*"
           cache: "npm"
-
-      - name: Restore node_modules cache
+      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
         id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
         with:
           path: node_modules
           key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: nm-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
+      - if: steps.nm-cache.outputs.cache-hit != 'true'
         run: npm ci
-
-      - name: Create reports directory
-        run: mkdir -p reports/vitest reports/playwright
-
-      - name: Run unit tests
-        run: npm run test:unit:ci
-
-      - name: Build Angular app (production)
-        run: npm run build-prod
-
-      - name: Upload test artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      - run: mkdir -p reports/vitest reports/playwright
+      - run: npm run test:unit:ci
+      - run: npm run build-prod
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: ${{ !cancelled() }}
         with:
           name: test-reports-${{ github.run_id }}
           path: reports/
           retention-days: 7
 
-  # ── JOB 3: Playwright Snapshot Tests ────────────────────────────────────────
+  # Snapshot tests run inside the Playwright Docker image to guarantee
+  # pixel-identical rendering across local machines and CI.
   snapshots:
     name: Snapshot Tests (Playwright)
     runs-on: ubuntu-latest
     needs: lint
     permissions:
       contents: read
-
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
-        with:
-          node-version: "lts/*"
-          cache: "npm"
-
-      - name: Restore node_modules cache
-        id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: nm-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
-        run: npm ci
-
-      - name: Resolve Playwright version
-        id: pw-version
-        run: |
-          echo "version=$(npm list @playwright/test --depth=0 --json \
-            | jq -r '.dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
-
-      - name: Install Playwright system dependencies
-        run: npx playwright install-deps
-
-      - name: Install Playwright browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install
-
-      - name: Run snapshot tests
-        run: npm run test:snapshots
-
-      - name: Upload snapshot artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      - run: npm run test:snapshots:ci
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: ${{ !cancelled() }}
         with:
           name: snapshot-reports-${{ github.run_id }}
           path: reports/
           retention-days: 7
 
-  # ── JOB 4: Publish Test Reports (fan-in) ────────────────────────────────────
-  # Runs even on upstream failure to publish results, but skips when upstream
-  # jobs were skipped (e.g. draft-PR guard) to avoid "no artifact found" errors.
+  # Fan-in: publishes JUnit results as PR checks. Skipped if upstream was skipped.
   report:
     name: Publish Test Reports
     runs-on: ubuntu-latest
@@ -178,22 +101,21 @@ jobs:
       actions: read
       checks: write
       pull-requests: write
-
     steps:
-      - name: Generate Vitest report
+      - name: Vitest report
         uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
         with:
           artifact: test-reports-${{ github.run_id }}
           name: Vitest Unit Tests
           path: "vitest/report.xml"
-          reporter: vitest-junit
+          reporter: java-junit
           fail-on-error: false
 
-      - name: Generate Playwright report
+      - name: Playwright report
         uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
         with:
           artifact: snapshot-reports-${{ github.run_id }}
           name: Playwright Snapshot Tests
           path: "playwright/report.xml"
-          reporter: vitest-junit
+          reporter: java-junit
           fail-on-error: false

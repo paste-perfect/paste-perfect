@@ -1,95 +1,97 @@
 import { defineConfig, devices } from "@playwright/test";
-import { PlaywrightTestConfig } from "playwright/types/test";
+import type { PlaywrightTestConfig } from "@playwright/test";
+import path from "path";
+import env from "./playwright.env-vars";
+import fs from "fs";
 
 // ---------------------------------------------------------------------------
-// Constants & Environment Configuration
+// Paths & URLs
 // ---------------------------------------------------------------------------
 
-export const BASE_URL = process.env["PLAYWRIGHT_BASE_URL"] ?? "http://localhost:4200/paste-perfect/";
-const CI = Boolean(process.env["CI"]);
-const REPORT_PORT = Number(process.env["REPORT_PORT"]) || 9324;
+const WEB_SERVER_PORT = env.WEBSERVER_PORT;
+const REACH_HOST = env.USE_DOCKER_HOST_WEBSERVER ? "host.docker.internal" : "127.0.0.1";
+const BASE_URL = env.PLAYWRIGHT_BASE_URL || `http://${REACH_HOST}:${WEB_SERVER_PORT}/paste-perfect/`;
 
-const HTML_REPORT_OUTPUT_FOLDER = "../../reports/playwright/html-report";
-const JUNIT_REPORT_OUTPUT_FILE = "../../reports/playwright/report.xml";
-const SNAPSHOT_PATH_TEMPLATE = "{testDir}/snapshots/{testFileName}/{arg}{ext}";
-const TEST_DIR = "../../src/tests/snapshot-tests";
-const WEB_SERVER_CWD = "../../";
+const REPO_ROOT = path.resolve(__dirname, "../../");
+const TEST_DIR = path.join(REPO_ROOT, "src/tests/snapshot-tests");
 
-// ---------------------------------------------------------------------------
-// Reporters
-// ---------------------------------------------------------------------------
-
-const reporters: PlaywrightTestConfig["reporter"] = [
-  [CI ? "github" : "list"],
-  [
-    "html",
-    {
-      open: CI ? "never" : "on-failure",
-      host: "0.0.0.0",
-      port: REPORT_PORT,
-      outputFolder: HTML_REPORT_OUTPUT_FOLDER,
-    },
-  ],
-];
-
-if (CI) {
-  reporters.push([
-    "junit",
-    {
-      outputFile: JUNIT_REPORT_OUTPUT_FILE,
-    },
-  ]);
+if (!fs.existsSync(REPO_ROOT)) {
+  throw new Error(`\n❌ CRITICAL ERROR: Repository root directory not found at: ${REPO_ROOT}\n`);
+}
+if (!fs.existsSync(TEST_DIR)) {
+  throw new Error(
+    `\n❌ CRITICAL ERROR: Test directory not found at: ${TEST_DIR}\n👉 Ensure you are mapping the volumes correctly in docker-compose-new.yml.\n`
+  );
 }
 
+const HTML_REPORT_DIR = path.join(REPO_ROOT, "reports/playwright/html-report");
+const JUNIT_REPORT_FILE = path.join(REPO_ROOT, "reports/playwright/report.xml");
+const REPORT_PORT = env.REPORT_PORT;
+
 // ---------------------------------------------------------------------------
-// Playwright Config
+// Reporter
+// ---------------------------------------------------------------------------
+
+const reporter: PlaywrightTestConfig["reporter"] = [
+  [env.CI ? "github" : "list"],
+  ["html", { open: "never", host: "0.0.0.0", port: REPORT_PORT, outputFolder: HTML_REPORT_DIR }],
+  ...(env.CI ? [["junit", { outputFile: JUNIT_REPORT_FILE }] as [string, object]] : []),
+];
+
+// ---------------------------------------------------------------------------
+// Web server — skipped when an external server is configured
+// ---------------------------------------------------------------------------
+
+const webServer: PlaywrightTestConfig["webServer"] =
+  env.PLAYWRIGHT_BASE_URL || env.USE_DOCKER_HOST_WEBSERVER
+    ? undefined
+    : {
+        command: `npm run serve:test -- --host 127.0.0.1 --port ${WEB_SERVER_PORT}`,
+        url: BASE_URL,
+        cwd: REPO_ROOT,
+        reuseExistingServer: !env.CI,
+        stdout: "pipe",
+        stderr: "pipe",
+        timeout: 120_000,
+      };
+
+// ---------------------------------------------------------------------------
+// Config
 // ---------------------------------------------------------------------------
 
 export default defineConfig({
-  projects: [
-    {
-      name: "chromium",
-      use: {
-        ...devices["Desktop Chrome"],
-        channel: "chromium",
-        viewport: {
-          width: 1280,
-          height: 720,
-        },
-        deviceScaleFactor: 1, // no retina / high-DPI differences
-        locale: "en-US", // Force consistent locale
-        timezoneId: "UTC", // Force consistent timezone
-      },
-    },
-  ],
+  testDir: TEST_DIR,
+  snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",
+  fullyParallel: true,
+  forbidOnly: env.CI,
+  retries: env.CI ? 1 : 0,
+  workers: env.CI ? 1 : undefined,
+  reporter,
+  globalSetup: "./playwright.global-setup.ts",
   expect: {
     toMatchSnapshot: {
       maxDiffPixels: 0,
       maxDiffPixelRatio: 0,
     },
   },
-  forbidOnly: CI,
-  fullyParallel: true,
-  reporter: reporters,
-  retries: 0,
-  testDir: TEST_DIR,
-  snapshotPathTemplate: SNAPSHOT_PATH_TEMPLATE,
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
+    locale: "en-US",
+    timezoneId: "UTC",
+    viewport: { width: 1280, height: 720 },
+    deviceScaleFactor: 1,
+    navigationTimeout: 30_000,
+    actionTimeout: 5_000,
     launchOptions: {
-      timeout: 120 * 1000,
       args: ["--disable-dev-shm-usage", "--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox"],
     },
-    navigationTimeout: 30 * 1000, // 30 seconds for page.goto() etc.
-    actionTimeout: 5 * 1000, // 5 seconds for actions (i.e., click, goto)
   },
-  webServer: {
-    command: "npm run serve:test",
-    reuseExistingServer: !CI,
-    url: BASE_URL,
-    cwd: WEB_SERVER_CWD,
-    timeout: 120 * 1000, // 2 minutes to start the dev server
-  },
-  workers: CI ? 1 : undefined,
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
+  webServer,
 });
