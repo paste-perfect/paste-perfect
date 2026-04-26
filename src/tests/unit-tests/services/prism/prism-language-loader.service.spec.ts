@@ -133,11 +133,16 @@ describe("PrismLanguageLoaderService", () => {
     });
 
     it("should skip already-loaded dependencies (already in Prism.languages)", async () => {
+      // Re-establish a clean spy implementation for THIS test (don't rely on beforeEach
+      // surviving prior `mockRejectedValue` / `mockImplementation` calls in sibling tests).
+      importLanguageSpy.mockReset();
+      importLanguageSpy.mockImplementation(async (...args: unknown[]) => {
+        const lang = args[0] as LanguageDefinition;
+        prismMock.languages[lang.value] = {};
+      });
+
       prismMock.languages["markup"] = {};
       mockSearchLanguage.mockReturnValue(makeLanguage("markup"));
-
-      // Reset call count right before the action under test
-      importLanguageSpy.mockClear();
 
       await service.loadPrismLanguage(makeLanguage("jsx", ["markup"]));
 
