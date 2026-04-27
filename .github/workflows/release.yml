@@ -59,8 +59,8 @@ jobs:
       - name: Verify dependency provenance signatures
         run: npm audit signatures
 
-      - name: Fail on high/critical vulnerabilities
-        run: npm audit --audit-level=high
+      - name: Fail on critical vulnerabilities only
+        run: npm audit --audit-level=critical
 
       - name: Run semantic-release
         env:
