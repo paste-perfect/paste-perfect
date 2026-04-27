@@ -22,10 +22,8 @@ jobs:
   trivy-fs-scan:
     name: Trivy — Filesystem Vulnerability Scan
     runs-on: ubuntu-latest
-    # Skip draft PRs — scan only ready-for-review code.
     if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false
+      github.event_name != 'pull_request'
     permissions:
       contents: read
       actions: read
