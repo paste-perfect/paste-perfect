@@ -84,6 +84,11 @@
     "typescript-eslint": "^8.58.2",
     "vitest": "^4.1.4"
   },
+  "overrides": {
+    "lodash": "^4.18.0",
+    "lodash-es": "^4.18.0",
+    "uuid": "^14.0.0"
+  },
   "lint-staged": {
     "*.{ts,js}": [
       "eslint --fix",
