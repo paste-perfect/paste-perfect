@@ -125,7 +125,7 @@ jobs:
           set -euo pipefail
 
           MERGE_BASE=$(git merge-base origin/dev origin/main)
-          COMMITS=$(git log "$MERGE_BASE"..origin/dev --pretty=format:"%s")
+          COMMITS=$(git log "$MERGE_BASE"..origin/dev --pretty=tformat:"%s")
 
           echo "Commits to evaluate:"
           echo "$COMMITS"

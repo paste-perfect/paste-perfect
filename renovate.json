@@ -1,12 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    ":automergeAll",
+    ":automergeDigest",
+    ":automergeMinor",
+    ":automergePatch",
     ":automergeRequireAllStatusChecks",
     ":configMigration",
     ":enablePreCommit",
     ":enableVulnerabilityAlerts",
-    ":preserveSemverRanges",
     ":semanticCommitTypeAll(refactor)",
     "config:best-practices",
     "customManagers:dockerfileVersions",
@@ -22,23 +23,58 @@
   "timezone": "Europe/Berlin",
   "prConcurrentLimit": 10,
   "prHourlyLimit": 5,
-  "vulnerabilityAlerts": {
-    "schedule": ["at any time"]
-  },
   "ignorePaths": ["docker-compose.yml"],
   "ignoreUnstable": true,
-  "allowedVersions": "!/-(rc|alpha|beta|canary|next)\\./",
   "postUpdateOptions": ["npmDedupe"],
+  "rangeStrategy": "pin",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"],
+    "automerge": true
+  },
+  "vulnerabilityAlerts": {
+    "schedule": ["at any time"],
+    "automerge": false
+  },
   "packageRules": [
     {
-      "allowedVersions": "!/-(rc|alpha|beta|canary|next)\\./",
-      "description": "Never upgrade a stable package to an RC/pre-release version",
-      "matchPackageNames": ["*"]
+      "description": "Auto-merge pinned digests and patches",
+      "matchUpdateTypes": ["pin", "digest"],
+      "automerge": true
     },
     {
-      "minimumReleaseAge": "3 days",
-      "description": "Wait 3 days after a stable release before auto-merging",
-      "matchPackageNames": ["*"]
+      "description": "package.json: keep caret ranges, never pin",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["package.json", "**/package.json"],
+      "rangeStrategy": "bump"
+    },
+    {
+      "description": "Pin everything else (Actions SHAs, Docker digests)",
+      "matchManagers": ["github-actions", "dockerfile", "docker-compose"],
+      "rangeStrategy": "pin",
+      "pinDigests": true
+    },
+    {
+      "description": "Never auto-merge majors — require human review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "description": "Wait 3 days after stable release before auto-merging non-majors",
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group all Angular packages together so they always bump in lock-step",
+      "groupName": "angular monorepo",
+      "matchPackageNames": ["@angular/**", "@angular-devkit/**", "@schematics/**", "zone.js"],
+      "rangeStrategy": "bump"
+    },
+    {
+      "description": "Block RC / pre-release upgrades on stable packages",
+      "matchPackageNames": ["*"],
+      "allowedVersions": "!/-(rc|alpha|beta|canary|next)\\./"
     }
   ]
 }
