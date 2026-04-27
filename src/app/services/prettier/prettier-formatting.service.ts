@@ -43,19 +43,14 @@ export class PrettierFormattingService {
       // Get the appropriate parser and plugins for the language
       const result = await this.pluginLoader.getParserAndPlugins(language);
 
-      // Output the original code if no prettier was found
+      // Output the original code if no prettier config was found
       if (!result) {
         return { code, formattingSuccessful: true };
       }
 
-      const { parser, plugins } = result;
+      const { parser, plugins, pluginOptions } = result;
 
-      await prettier.format(code, {
-        parser,
-        plugins,
-      });
-
-      // Format the code with the appropriate parser and plugins
+      // Format the code with the appropriate parser, plugins, and any plugin-specific options
       return {
         code: await prettier.format(code, {
           parser,
@@ -69,6 +64,8 @@ export class PrettierFormattingService {
           bracketSpacing: true,
           arrowParens: "always",
           endOfLine: "lf",
+          // Spread any plugin-specific options (e.g. jsonRecursiveSort for prettier-plugin-sort-json)
+          ...pluginOptions,
         }),
         formattingSuccessful: true,
       };

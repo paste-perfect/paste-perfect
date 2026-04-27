@@ -1,6 +1,5 @@
 <!-- Container for all settings -->
 <div class="settings-container">
-  <!-- Language Selector -->
   <div class="settings-item">
     <label for="language-selector">Language</label>
     <p-select
@@ -13,18 +12,23 @@
       optionValue="value"
       [(ngModel)]="languageService.selectedLanguageValue"
     >
-      <!-- Style the group heading -->
       <ng-template let-group #languageGroup>
         <div class="group-heading">
-          <!-- Display an icon conditionally -->
           @if (group.value === "common") {
             <i class="pi pi-code"></i>
           } @else if (group.value === "others") {
             <i class="pi pi-bars"></i>
           }
-          <!-- Group label -->
           <span>{{ group.label }}</span>
         </div>
+      </ng-template>
+
+      <ng-template let-item #item>
+        <ng-container *ngTemplateOutlet="languageDisplay; context: { langContext: item }"></ng-container>
+      </ng-template>
+
+      <ng-template #selectedItem>
+        <ng-container *ngTemplateOutlet="languageDisplay; context: { langContext: languageService.selectedLanguage }"></ng-container>
       </ng-template>
     </p-select>
   </div>
@@ -191,3 +195,8 @@
     </div>
   </div>
 </p-popover>
+
+<!-- Language Selector -->
+<ng-template #languageDisplay let-lang="langContext">
+  <span>{{ lang.title }}{{ lang.prettierConfiguration ? "*" : "" }}</span>
+</ng-template>

@@ -16,7 +16,7 @@ jobs:
   # ── JOB 1: Build Angular ─────────────────────────────────────────────────────
   # Separated from deploy so the build artifact is independently auditable.
   build:
-    name: Build Angular (${{ github.event.release.prerelease && 'Preview' || 'Production' }})
+    name: Build Angular (${{ github.event.release.prerelease == true && 'Preview' || 'Production' }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,6 +25,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
+          persist-credentials: false
           ref: ${{ github.ref }}
 
       - name: Set up Node.js
@@ -33,17 +34,8 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      - name: Restore node_modules cache
-        id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: nm-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
-        run: npm ci
+      - name: Install dependencies (strict)
+        run: npm ci --no-audit --fund=false
 
       # ── dev pre-release → preview build ───────────────────────────────────
       - name: Build (Preview / Dev environment)
@@ -74,12 +66,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: angular-dist-${{ github.run_id }}
           path: dist/paste-perfect/browser
+
+      - name: Verify build artifact exists
+        run: |
+          test -f dist/paste-perfect/browser/index.html \
+            || (echo "::error::Build artifact missing or empty"; exit 1)
 
       - name: Deploy to GitHub Pages (Preview)
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f
@@ -88,7 +87,7 @@ jobs:
           branch: gh-pages
           folder: dist/paste-perfect/browser
           clean: true
-          ssh-key: ${{ secrets.DEPLOY_KEY_NEU }}
+          ssh-key: ${{ secrets.DEPLOY_KEY_PREVIEW }}
 
   # ── JOB 2b: Deploy Production ────────────────────────────────────────────────
   deploy-production:
@@ -102,12 +101,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: angular-dist-${{ github.run_id }}
           path: dist/paste-perfect/browser
+
+      - name: Verify build artifact exists
+        run: |
+          test -f dist/paste-perfect/browser/index.html \
+            || (echo "::error::Build artifact missing or empty"; exit 1)
 
       - name: Deploy to GitHub Pages (Production)
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f

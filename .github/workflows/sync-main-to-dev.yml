@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
@@ -176,17 +176,13 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      - name: Restore node_modules cache
-        id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: nm-${{ runner.os }}-
+      - name: Install dependencies (strict)
+        run: npm ci --no-audit --fund=false
 
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
-        run: npm ci
+      - name: Verify lockfile is in sync after merge
+        run: |
+          git diff --exit-code package-lock.json \
+            || (echo "::error::package-lock.json drifted after sync merge"; exit 1)
 
       - name: Run unit tests on merged state
         run: npm run test:unit:ci
@@ -201,7 +197,7 @@ jobs:
     needs: [ staging-merge, validate-merge ]
     # Always run if staging-merge succeeded with changes — even if validate-merge
     # was skipped (conflicts) or failed — so the PR is created for manual inspection.
-    if: always() && needs.staging-merge.result == 'success' && needs.staging-merge.outputs.has_changes == 'true'
+    if: ${{ !cancelled() && needs.staging-merge.result == 'success' && needs.staging-merge.outputs.has_changes == 'true' }}
     permissions:
       contents: write
       pull-requests: write
@@ -209,7 +205,7 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
         with:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}

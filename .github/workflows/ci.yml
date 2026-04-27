@@ -13,23 +13,22 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
-permissions: {} # declared per-job
+# No workflow-wide permissions; each job declares its own (least privilege).
+permissions: {}
 
 jobs:
-
   # ── JOB 1: Lint & Format ────────────────────────────────────────────────────
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'merge_group' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request'
     permissions:
       contents: read
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
@@ -37,35 +36,28 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      - name: Restore node_modules cache
-        id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: nm-${{ runner.os }}-
+      - name: Install dependencies (strict)
+        run: npm ci --no-audit --fund=false
 
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
-        run: npm ci
-
-      - name: Lint
+      - name: Run ESLint check
         run: npm run lint:check
 
-      - name: Format check
+      - name: Run Prettier format check
         run: npm run format:check
 
-  # ── JOB 2: Unit Tests + Build ───────────────────────────────────────────────
-  # Runs after lint passes. Downstream jobs depend on this transitively.
-  test-build:
-    name: Unit Tests & Build
+  # ── JOB 2: Lockfile Integrity ───────────────────────────────────────────────
+  lockfile-integrity:
+    name: Lockfile Integrity
     runs-on: ubuntu-latest
     needs: lint
     permissions:
       contents: read
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
@@ -73,28 +65,79 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      - name: Restore node_modules cache
-        id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+      - name: Install dependencies (strict)
+        run: npm ci --fund=false
+
+      - name: Fail if package-lock.json would change
+        run: |
+          git diff --exit-code package-lock.json \
+            || (echo "::error::package-lock.json is out of sync with package.json"; exit 1)
+
+      - name: Verify full dependency tree resolves
+        run: npm ls --all > /dev/null
+
+      - name: Verify dependency provenance signatures
+        run: npm audit signatures
+
+      - name: Fail on critical vulnerabilities only
+        run: npm audit --audit-level=critical
+
+  # ── JOB 3: Production Build ─────────────────────────────────────────────────
+  build:
+    name: Build (production)
+    runs-on: ubuntu-latest
+    needs: [lint, lockfile-integrity]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: nm-${{ runner.os }}-
+          persist-credentials: false
 
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
-        run: npm ci
+      - name: Set up Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        with:
+          node-version: "lts/*"
+          cache: "npm"
 
-      - name: Create reports directory
-        run: mkdir -p reports/jest reports/playwright
+      - name: Install dependencies (strict)
+        run: npm ci --no-audit --fund=false
 
-      - name: Run unit tests
-        run: npm run test:unit:ci
-
-      - name: Build Angular app (production)
+      - name: Build Angular app (production configuration)
         run: npm run build-prod
 
-      - name: Upload test artifacts
+  # ── JOB 4: Unit Tests (Vitest) ──────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint, lockfile-integrity]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+
+      - name: Install dependencies (strict)
+        run: npm ci --no-audit --fund=false
+
+      - name: Create Vitest reports directory
+        run: mkdir -p reports/vitest
+
+      - name: Run Vitest unit tests (CI mode)
+        run: npm run test:unit:ci
+
+      - name: Upload Vitest report artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: ${{ !cancelled() }}
         with:
@@ -102,59 +145,24 @@ jobs:
           path: reports/
           retention-days: 7
 
-  # ── JOB 3: Playwright Snapshot Tests ────────────────────────────────────────
+  # ── JOB 5: Snapshot Tests (Playwright in Docker) ────────────────────────────
   snapshots:
     name: Snapshot Tests (Playwright)
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, lockfile-integrity]
     permissions:
       contents: read
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          node-version: "lts/*"
-          cache: "npm"
+          persist-credentials: false
 
-      - name: Restore node_modules cache
-        id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: nm-${{ runner.os }}-
+      - name: Run Playwright snapshot tests (Docker)
+        run: npm run test:snapshots:ci
 
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
-        run: npm ci
-
-      - name: Resolve Playwright version
-        id: pw-version
-        run: |
-          echo "version=$(npm list @playwright/test --depth=0 --json \
-            | jq -r '.dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
-
-      - name: Install Playwright system dependencies
-        run: npx playwright install-deps
-
-      - name: Install Playwright browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install
-
-      - name: Run snapshot tests
-        run: npm run test:snapshots
-
-      - name: Upload snapshot artifacts
+      - name: Upload Playwright report artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: ${{ !cancelled() }}
         with:
@@ -162,17 +170,12 @@ jobs:
           path: reports/
           retention-days: 7
 
-  # ── JOB 4: Publish Test Reports (fan-in) ────────────────────────────────────
-  # Runs even on upstream failure to publish results, but skips when upstream
-  # jobs were skipped (e.g. draft-PR guard) to avoid "no artifact found" errors.
+  # ── JOB 6: Publish Test Reports ─────────────────────────────────────────────
   report:
     name: Publish Test Reports
     runs-on: ubuntu-latest
-    needs: [test-build, snapshots]
-    if: >
-      always() &&
-      !cancelled() &&
-      !contains(needs.*.result, 'skipped')
+    needs: [test, snapshots]
+    if: ${{ always() && !cancelled() }}
     permissions:
       contents: read
       actions: read
@@ -180,16 +183,21 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Generate Jest report
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Publish Vitest unit test report
         uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
         with:
           artifact: test-reports-${{ github.run_id }}
-          name: Jest Unit Tests
-          path: "jest/report.xml"
+          name: Vitest Unit Tests
+          path: "vitest/report.xml"
           reporter: jest-junit
           fail-on-error: false
 
-      - name: Generate Playwright report
+      - name: Publish Playwright snapshot test report
         uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
         with:
           artifact: snapshot-reports-${{ github.run_id }}
