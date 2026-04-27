@@ -33,6 +33,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
 
       - name: Derive IMAGE_NAME (lowercase)
         run: echo "IMAGE_NAME=ghcr.io/${REPO,,}" >> "$GITHUB_ENV"
@@ -79,7 +81,9 @@ jobs:
           file: docker/Dockerfile
           push: ${{ github.event_name == 'release' }}
           load: ${{ github.event_name != 'release' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ env.IMAGE_NAME }}:ci-scan-${{ github.run_id }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
           cache-from: type=gha
@@ -104,20 +108,20 @@ jobs:
         if: github.event_name != 'release'
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
-          image-ref: "${{ steps.docker-build.outputs.imageid }}"
+          image-ref: "${{ env.IMAGE_NAME }}:ci-scan-${{ github.run_id }}"
           format: "sarif"
           output: "trivy-results-docker.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
           ignore-unfixed: true
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        if: always()
+        if: ${{ !cancelled() && hashFiles('trivy-results-docker.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
         with:
           sarif_file: "trivy-results-docker.sarif"
 
       - name: Upload Trivy results as artifact
-        if: always()
+        if: ${{ !cancelled() && hashFiles('trivy-results-docker.sarif') != '' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: trivy-docker-results-${{ github.run_id }}

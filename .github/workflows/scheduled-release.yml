@@ -63,7 +63,7 @@ jobs:
           echo "Merge base: $MERGE_BASE"
 
           mapfile -t COMMIT_SUBJECTS < <(
-            git log "$MERGE_BASE"..origin/dev --pretty=format:"%s"
+            git log "$MERGE_BASE"..origin/dev --pretty=tformat:"%s"
           )
 
           echo "Commits to verify (${#COMMIT_SUBJECTS[@]} total):"

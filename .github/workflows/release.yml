@@ -53,20 +53,14 @@ jobs:
           node-version: "lts/*"
           cache: "npm"
 
-      - name: Restore node_modules cache
-        id: nm-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
-        with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: nm-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
-        run: npm ci
+      - name: Install dependencies (strict)
+        run: npm ci --no-audit --fund=false
 
       - name: Verify dependency provenance signatures
         run: npm audit signatures
+
+      - name: Fail on high/critical vulnerabilities
+        run: npm audit --audit-level=high
 
       - name: Run semantic-release
         env:
