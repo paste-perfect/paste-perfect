@@ -1,5 +1,5 @@
 import { StyleProperties } from "@types";
-import { getEntries } from "@utils/utils";
+import { getEntries } from "./utils";
 
 /**
  * Applies essential inline styles to HTML elements for clipboard copying.

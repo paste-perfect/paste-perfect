@@ -1,18 +1,22 @@
 import { LanguageDefinition } from "@types";
-import { ALL_LANGUAGES } from "../constants";
+import { ALL_LANGUAGES } from "@constants";
 
 /**
- * Search for a language by its title (case-insensitive)
+ * Search for a language by its title (case-insensitive).
+ * Prioritizes title matches  over filterAlias matches.
  * @param languageTitle - The title to search for
  * @returns The LanguageDefinition if found, undefined otherwise
  */
 export const searchLanguageByTitle = (languageTitle: string): LanguageDefinition | undefined => {
-  const normalizedTitle = languageTitle.toLowerCase().trim();
+  const normalizedSearch = languageTitle.trim().toLowerCase();
 
-  return ALL_LANGUAGES.find(
-    (language) =>
-      language.title.toLowerCase() === normalizedTitle || language.filterAlias.some((alias) => alias.toLowerCase() === normalizedTitle)
-  );
+  // 1. Prioritize exact title matches
+  const titleMatch = ALL_LANGUAGES.find((lang) => lang.title.trim().toLowerCase() === normalizedSearch);
+
+  if (titleMatch) return titleMatch;
+
+  // 2. Fallback to filterAlias matches
+  return ALL_LANGUAGES.find((lang) => lang.filterAlias.some((alias) => alias.toLowerCase() === normalizedSearch));
 };
 
 /**
@@ -25,15 +29,3 @@ export const searchLanguageByValue = (languageValue: string): LanguageDefinition
 
   return ALL_LANGUAGES.find((language) => language.value.toLowerCase() === normalizedValue);
 };
-
-/**
- * Normalize Prism dependencies to always be an array.
- * If the input is a string, wrap it in an array.
- * If it's already an array, return it as is.
- * If undefined or any other type, return an empty array.
- */
-export function normalizeToArray(value: string | string[] | null | undefined): string[] {
-  if (Array.isArray(value)) return value;
-  if (typeof value === "string") return [value];
-  return [];
-}

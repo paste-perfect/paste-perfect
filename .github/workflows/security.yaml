@@ -3,7 +3,7 @@ name: Security — Vulnerability Scan (Trivy)
 on:
   pull_request:
     branches: [main, dev]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
     branches: [main, dev]
   schedule:
@@ -22,7 +22,6 @@ jobs:
   trivy-fs-scan:
     name: Trivy — Filesystem Vulnerability Scan
     runs-on: ubuntu-latest
-    # Skip draft PRs — scan only ready-for-review code.
     if: >-
       github.event_name != 'pull_request' ||
       github.event.pull_request.draft == false

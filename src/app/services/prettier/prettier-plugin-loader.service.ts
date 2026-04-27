@@ -3,6 +3,16 @@ import { MessageService } from "primeng/api";
 import { LanguageDefinition, PrettierParserNames, PrettierPluginType } from "@types";
 import { Plugin as PrettierPlugin } from "prettier";
 
+const unwrapPlugin = (m: unknown): PrettierPlugin => {
+  // 1. Check if 'm' is an object that actually has a 'default' property
+  if (m && typeof m === "object" && "default" in m) {
+    return (m as { default: PrettierPlugin }).default;
+  }
+
+  // 2. Otherwise, assume the module itself is the plugin (CommonJS fallback)
+  return m as PrettierPlugin;
+};
+
 /**
  * Service for dynamically loading Prettier plugins based on language requirements
  */
@@ -24,11 +34,12 @@ export class PrettierPluginLoaderService {
    * Mapping of plugin names to their import paths
    */
   private readonly pluginRegistry: Partial<Record<PrettierPluginType, () => Promise<PrettierPlugin>>> = {
-    "prettier-plugin-java": () => import("prettier-plugin-java").then((m) => m.default),
-    "prettier-plugin-gherkin": () => import("prettier-plugin-gherkin").then((m) => m.default),
-    "prettier-plugin-nginx": () => import("prettier-plugin-nginx"),
-    "prettier-plugin-sql": () => import("prettier-plugin-sql").then((m) => m.default),
-    "prettier-plugin-toml": () => import("prettier-plugin-toml").then((m) => m.default),
+    "prettier-plugin-java": () => import("prettier-plugin-java").then(unwrapPlugin),
+    "prettier-plugin-gherkin": () => import("prettier-plugin-gherkin").then(unwrapPlugin),
+    "prettier-plugin-nginx": () => import("prettier-plugin-nginx").then(unwrapPlugin),
+    "prettier-plugin-sql": () => import("prettier-plugin-sql").then(unwrapPlugin),
+    "prettier-plugin-toml": () => import("prettier-plugin-toml").then(unwrapPlugin),
+    "prettier-plugin-sort-json": () => import("prettier-plugin-sort-json").then(unwrapPlugin),
   };
 
   /**
@@ -40,6 +51,7 @@ export class PrettierPluginLoaderService {
   public async getParserAndPlugins(language: LanguageDefinition): Promise<{
     parser: PrettierParserNames;
     plugins: PrettierPlugin[];
+    pluginOptions?: Record<string, unknown>;
   } | null> {
     // Get Prettier config from language definition or use default
     const config = language?.prettierConfiguration;
@@ -58,16 +70,30 @@ export class PrettierPluginLoaderService {
       }
     }
 
+    // Inject prettier-plugin-sort-json automatically for JSON parser
+    if (config.parser === "json") {
+      try {
+        const sortJsonPlugin = await this.loadPlugin("prettier-plugin-sort-json");
+        if (!requiredPlugins.includes(sortJsonPlugin)) {
+          requiredPlugins.push(sortJsonPlugin);
+        }
+      } catch (error) {
+        console.warn("Failed to load prettier-plugin-sort-json, JSON will be formatted without key sorting.", error);
+      }
+    }
+
     return {
       parser: config.parser,
       plugins: requiredPlugins,
+      // Pass plugin-specific options for sort-json when applicable
+      pluginOptions: config.parser === "json" ? { jsonRecursiveSort: true } : undefined,
     };
   }
 
   /**
    * Loads a Prettier plugin dynamically
    *
-   * @param pluginName - The name of the plugin to load (e.g., 'babel', 'typescript')
+   * @param pluginName - The name of the plugin to load
    * @returns A Promise that resolves to the loaded plugin
    * @throws Error if plugin loading fails
    */

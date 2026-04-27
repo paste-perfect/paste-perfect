@@ -14,3 +14,8 @@ node_modules/
 .prettierrc.json
 README.md
 tests/
+dist/
+.angular/
+reports/
+coverage/
+*.log
