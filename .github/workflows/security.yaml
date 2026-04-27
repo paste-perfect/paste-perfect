@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
 
       - name: Run Trivy filesystem scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -47,14 +49,15 @@ jobs:
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
-        if: always()
+        if: ${{ !cancelled() && hashFiles('trivy-results-fs.sarif') != '' }}
         with:
           sarif_file: "trivy-results-fs.sarif"
 
       - name: Upload raw results as artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        if: always()
+        if: ${{ !cancelled() && hashFiles('trivy-results-fs.sarif') != '' }}
         with:
           name: trivy-fs-results-${{ github.run_id }}
           path: trivy-results-fs.sarif
           retention-days: 14
+
