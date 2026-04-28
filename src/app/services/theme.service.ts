@@ -2,8 +2,8 @@ import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
 import { DARK_THEME_MAP, LIGHT_THEME_MAP, THEME_STORAGE_KEY } from "@constants";
 import { DarkThemes, LightThemes, SelectableTheme, Theme, ThemeLabel } from "@types";
-import { getEntries } from "@utils/utils";
 import { MessageService } from "primeng/api";
+import { getEntries } from "@utils/utils";
 
 /**
  * Service to manage application themes, including retrieving available themes,

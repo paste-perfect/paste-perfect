@@ -1,4 +1,4 @@
-import { NodeUtils } from "@utils/node-utils";
+import { NodeUtils } from "./node-utils";
 import { SpecialCharacters } from "@constants";
 
 /**

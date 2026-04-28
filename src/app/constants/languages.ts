@@ -1,8 +1,8 @@
 import prismComponents from "prismjs/components.js";
 import { getEntries } from "@utils/utils";
+import { normalizeToArray } from "@utils/normalization";
 import { LanguageDefinition } from "@types";
 import { PRETTIER_LANGUAGE_MAP } from "./prettier-language-map";
-import { normalizeToArray } from "@utils/languages-utils";
 
 /**
  * Set of commonly used programming languages.
@@ -37,10 +37,9 @@ export const ALL_LANGUAGES: LanguageDefinition[] = [
     .filter(([key]): boolean => key !== "meta") // Exclude metadata entry
     .map(([key, value]) => {
       const prettierConfiguration = PRETTIER_LANGUAGE_MAP[key];
-      const hasPrettierConfiguration = !!prettierConfiguration;
       return {
         // Use provided title, or fallback to key
-        title: (value.title || key) + (hasPrettierConfiguration ? "*" : ""),
+        title: value.title || key,
         // Language identifier
         value: key,
         // Extract alias titles

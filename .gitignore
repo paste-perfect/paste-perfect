@@ -1,7 +1,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/Angular,Node
 # Edit at https://www.toptal.com/developers/gitignore?templates=Angular,Node
 
-# Test reports (jest & playwright)
+# Test reports (vitest & playwright)
 reports/
 test-results/
 
