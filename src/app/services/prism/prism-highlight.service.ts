@@ -43,13 +43,15 @@ export class PrismHighlightService {
     // Replace vertical tabs with a newline if needed
     const sanitizedCode = SanitizerWrapper.sanitizeInput(code);
 
-    if (!Prism.languages[language.value]) {
+    const grammarId = language.prismConfiguration.grammar;
+
+    if (!Prism.languages[grammarId]) {
       // Load prism language if it hasn't already been loaded before
       await this.prismLanguageLoaderService.loadPrismLanguage(language);
     }
 
     // Use Prism to highlight
-    return Prism.highlight(sanitizedCode, Prism.languages[language.value], language.value);
+    return Prism.highlight(sanitizedCode, Prism.languages[grammarId], language.value);
   }
 
   /**

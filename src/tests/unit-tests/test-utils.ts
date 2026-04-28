@@ -13,13 +13,28 @@ import { IndentationMode } from "@constants";
 // Language & Settings Factories
 // ---------------------------------------------------------------------------
 
-export const makeLanguage = (value = "typescript", dependencies: string[] = [], customImportPath?: string): LanguageDefinition =>
-  ({
-    title: value,
-    value,
-    filterAlias: [],
-    prismConfiguration: { dependencies, customImportPath },
-  }) as unknown as LanguageDefinition;
+/**
+ * Creates a mock LanguageDefinition.
+ * @param value The specific UI name/value (e.g., 'json-unsorted')
+ * @param dependencies List of dependency values
+ * @param customImportPath Optional custom loading path
+ * @param grammar The Prism grammar ID (defaults to value if not provided)
+ */
+export const makeLanguage = (
+  value = "typescript",
+  dependencies: string[] = [],
+  customImportPath?: string,
+  grammar?: string
+): LanguageDefinition => ({
+  title: value,
+  value,
+  filterAlias: [],
+  prismConfiguration: {
+    dependencies,
+    customImportPath,
+    grammar: grammar ?? value,
+  },
+});
 
 type EditorSettingsOverrides = Partial<{
   showLineNumbers: boolean;

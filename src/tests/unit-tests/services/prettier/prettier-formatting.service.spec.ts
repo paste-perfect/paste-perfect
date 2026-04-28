@@ -136,6 +136,22 @@ describe("PrettierFormattingService", () => {
       expect(prettier.format).toHaveBeenCalledWith('{"z":2,"a":1}', expect.objectContaining({ jsonRecursiveSort: true, parser: "json" }));
       expect(result.formattingSuccessful).toBe(true);
     });
+
+    describe("formatCode — JSON Unsorted key sorting", () => {
+      it("should NOT include jsonRecursiveSort when formatting json-unsorted", async () => {
+        pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("json", undefined));
+        vi.mocked(prettier.format).mockResolvedValue('{"zebra":1,"apple":2}\n');
+
+        const unsortedLanguage = {
+          value: "json-unsorted",
+          prettierConfiguration: { parser: "json", plugins: [] },
+        } as unknown as LanguageDefinition;
+
+        await service.formatCode('{"zebra":1,"apple":2}', unsortedLanguage);
+
+        expect(prettier.format).toHaveBeenCalledWith('{"zebra":1,"apple":2}', expect.not.objectContaining({ jsonRecursiveSort: true }));
+      });
+    });
   });
 
   describe("formatCode — failure handling", () => {

@@ -4,6 +4,7 @@ import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 import { LocationStrategy } from "@angular/common";
 import { searchLanguageByValue } from "@utils/languages-utils";
+import { ALL_LANGUAGES } from "@constants";
 
 @Injectable({
   providedIn: "root",
@@ -26,13 +27,19 @@ export class PrismLanguageLoaderService {
    * @returns A Promise that resolves when the language is successfully loaded or rejects on failure.
    */
   public async loadPrismLanguage(language: LanguageDefinition): Promise<void> {
-    if (!language?.value || Prism.languages[language.value]) {
-      return; // Language already loaded or invalid
+    // TODO: Rework and track based on "grammar" and NOT value (as before)
+    // Also change the logic
+    // Dependencies should also be tracked by grammar...
+    // Because everything is "prism-related"
+    const grammarId = language?.prismConfiguration?.grammar;
+    console.log("ALL_LANGUAGES: ", ALL_LANGUAGES);
+
+    if (!grammarId || Prism.languages[grammarId]) {
+      return;
     }
 
     try {
       await this.loadDependencies(language);
-
       await this.importLanguage(language);
     } catch (error) {
       console.error(`Failed to load PrismJS language: ${language.value}`, error);
@@ -50,9 +57,10 @@ export class PrismLanguageLoaderService {
    * @param lang - The language definition.
    */
   private async loadDependencies(lang: LanguageDefinition): Promise<void> {
-    if (!lang?.prismConfiguration.dependencies?.length) return;
+    const dependencies = lang.prismConfiguration.dependencies;
+    if (!dependencies?.length) return;
 
-    for (const dep of lang.prismConfiguration.dependencies) {
+    for (const dep of dependencies) {
       const dependency = searchLanguageByValue(dep);
 
       if (!dependency) {
@@ -68,12 +76,14 @@ export class PrismLanguageLoaderService {
         continue;
       }
 
-      if (!Prism.languages[dependency.value]) {
-        // First import all required dependencies
-        await this.loadDependencies(dependency);
-        // Then import the actual language
-        await this.importLanguage(dependency);
+      if (Prism.languages[lang.prismConfiguration.grammar]) {
+        continue;
       }
+
+      // First import all required dependencies
+      await this.loadDependencies(dependency);
+      // Then import the actual language
+      await this.importLanguage(dependency);
     }
   }
 
@@ -83,11 +93,16 @@ export class PrismLanguageLoaderService {
    * @param lang - The language definition.
    */
   private async importLanguage(lang: LanguageDefinition): Promise<void> {
+    const grammarId = lang.prismConfiguration.grammar;
+
     try {
       if (lang.prismConfiguration.customImportPath) {
         await import(/* @vite-ignore */ `${this.locationStrategy.getBaseHref()}${lang.prismConfiguration.customImportPath}`);
       } else {
-        await import(/* @vite-ignore */ `../../../../node_modules/prismjs/components/prism-${lang.value}.min.js`);
+        if (!lang.prismConfiguration.grammar) {
+          return;
+        }
+        await import(/* @vite-ignore */ `../../../../node_modules/prismjs/components/prism-${grammarId}.min.js`);
       }
       // Note: The following import method does not work for some reason
       // await import( /* @vite-ignore */  prismjs/components/prism-${lang}.min.js);

@@ -113,6 +113,36 @@ describe("PrettierPluginLoaderService", () => {
         expect(result).not.toBeNull();
         expect(result?.plugins).toHaveLength(0);
       });
+
+      it("should NOT inject prettier-plugin-sort-json for the json-unsorted language", async () => {
+        const sortJsonPlugin = makeMockPlugin("json");
+        const loadPluginSpy = vi.spyOn(service as any, "loadPlugin").mockResolvedValue(sortJsonPlugin);
+
+        const language = {
+          value: "json-unsorted",
+          prettierConfiguration: { parser: "json", plugins: [] },
+        } as unknown as LanguageDefinition;
+
+        const result = await service.getParserAndPlugins(language);
+
+        // sort-json must never be loaded
+        expect(loadPluginSpy).not.toHaveBeenCalledWith("prettier-plugin-sort-json");
+        // and no plugins at all since none were declared
+        expect(result?.plugins).toHaveLength(0);
+      });
+
+      it("should NOT set jsonRecursiveSort in pluginOptions for the json-unsorted language", async () => {
+        vi.spyOn(service as any, "loadPlugin").mockResolvedValue(makeMockPlugin("json"));
+
+        const language = {
+          value: "json-unsorted",
+          prettierConfiguration: { parser: "json", plugins: [] },
+        } as unknown as LanguageDefinition;
+
+        const result = await service.getParserAndPlugins(language);
+
+        expect(result?.pluginOptions).toBeUndefined();
+      });
     });
   });
 

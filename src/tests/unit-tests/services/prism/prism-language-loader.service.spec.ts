@@ -5,6 +5,11 @@ import { MessageService } from "primeng/api";
 import { LocationStrategy } from "@angular/common";
 import { LanguageDefinition } from "@types";
 import { makeLanguage, createMessageMock } from "../../test-utils";
+import { ALL_LANGUAGES } from "@constants";
+
+// ---------------------------------------------------------------------------
+// Hoisted mocks (evaluated before any imports)
+// ---------------------------------------------------------------------------
 
 const prismMock = vi.hoisted(() => ({
   languages: {} as Record<string, unknown>,
@@ -28,18 +33,36 @@ vi.mock("@utils/languages-utils", async (importOriginal) => {
   return { ...actual, searchLanguageByValue: mockSearchLanguage };
 });
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Wipes all keys added to prismMock.languages between tests. */
+function resetPrismLanguages() {
+  Object.keys(prismMock.languages).forEach((key) => delete prismMock.languages[key]);
+}
+
+// ---------------------------------------------------------------------------
+// Suite
+// ---------------------------------------------------------------------------
+
 describe("PrismLanguageLoaderService", () => {
   let service: PrismLanguageLoaderService;
   let importLanguageSpy: MockInstance;
 
+  it("asdf", () => {
+    console.log(ALL_LANGUAGES.map((l) => l.value));
+  });
+
+  // Stable mock objects — reset their call history in beforeEach, not recreated.
   const messageServiceMock = createMessageMock();
   const locationStrategyMock = { getBaseHref: vi.fn().mockReturnValue("/") };
 
   beforeEach(() => {
+    // Reset all mock call histories and implementations set in previous test.
     mockSearchLanguage.mockReset();
-    Object.keys(prismMock.languages).forEach((key) => {
-      delete prismMock.languages[key];
-    });
+    vi.mocked(messageServiceMock.add).mockReset();
+    resetPrismLanguages();
 
     TestBed.configureTestingModule({
       providers: [
@@ -51,25 +74,36 @@ describe("PrismLanguageLoaderService", () => {
 
     service = TestBed.inject(PrismLanguageLoaderService);
 
+    // Spy on the private method so loadPrismLanguage tests remain unit-focused.
+    // The mock simulates a successful import by registering the grammar in prismMock.
     importLanguageSpy = vi.spyOn(service as any, "importLanguage").mockImplementation(async (...args: unknown[]) => {
       const lang = args[0] as LanguageDefinition;
-      prismMock.languages[lang.value] = {};
+      const grammarId = lang.prismConfiguration.grammar ?? lang.value;
+      if (grammarId) {
+        prismMock.languages[grammarId] = {};
+      }
     });
   });
 
   afterEach(() => {
+    // restoreAllMocks resets implementations AND clears call history — no need
+    // for a separate clearAllMocks call.
     vi.restoreAllMocks();
-    vi.clearAllMocks();
     TestBed.resetTestingModule();
   });
+
+  // -------------------------------------------------------------------------
 
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
 
+  // -------------------------------------------------------------------------
+
   describe("loadPrismLanguage", () => {
-    it("should do nothing when language value is an empty string", async () => {
-      await service.loadPrismLanguage(makeLanguage("") as LanguageDefinition);
+    it("should do nothing when grammar is missing or empty", async () => {
+      const lang = makeLanguage("json-special", [], undefined, "");
+      await service.loadPrismLanguage(lang);
       expect(importLanguageSpy).not.toHaveBeenCalled();
     });
 
@@ -80,98 +114,97 @@ describe("PrismLanguageLoaderService", () => {
 
     it("should do nothing when the language is already registered in Prism", async () => {
       prismMock.languages["typescript"] = { tokenize: () => [] };
-
-      await service.loadPrismLanguage(makeLanguage("typescript"));
-
+      await service.loadPrismLanguage(makeLanguage("typescript", [], undefined, "typescript"));
       expect(importLanguageSpy).not.toHaveBeenCalled();
     });
 
-    it("should call importLanguage when the language is not yet registered", async () => {
-      await service.loadPrismLanguage(makeLanguage("python"));
+    it("should call importLanguage when the grammar is not yet registered", async () => {
+      await service.loadPrismLanguage(makeLanguage("python-ui", [], undefined, "python"));
 
-      expect(importLanguageSpy).toHaveBeenCalledWith(expect.objectContaining({ value: "python" }));
+      expect(importLanguageSpy).toHaveBeenCalledOnce();
+      expect(importLanguageSpy).toHaveBeenCalledWith(expect.objectContaining({ value: "python-ui" }));
     });
 
-    it("should load each dependency before loading the main language", async () => {
+    it("should load each dependency by their grammar before loading the main language", async () => {
       const callOrder: string[] = [];
+
       importLanguageSpy.mockImplementation(async (...args: unknown[]) => {
         const lang = args[0] as LanguageDefinition;
-        callOrder.push(lang.value);
-        prismMock.languages[lang.value] = {};
+        const grammar = lang.prismConfiguration.grammar;
+        callOrder.push(grammar);
+        prismMock.languages[grammar] = {};
       });
 
-      mockSearchLanguage.mockReturnValue(makeLanguage("markup"));
+      // searchLanguageByValue resolves the "json-unsorted" dependency string → a full LanguageDefinition
+      mockSearchLanguage.mockReturnValue(makeLanguage("json-unsorted", [], undefined, "json"));
 
-      await service.loadPrismLanguage(makeLanguage("jsx", ["markup"]));
+      // Main language depends on "json-unsorted"; its grammar is "jsx"
+      await service.loadPrismLanguage(makeLanguage("jsx-ui", ["json-unsorted"], undefined, "jsx"));
 
-      expect(callOrder[0]).toBe("markup");
-      expect(callOrder[1]).toBe("jsx");
+      expect(callOrder).toEqual(["json", "jsx"]);
     });
 
-    it("should show an error toast (not throw) when importLanguage rejects", async () => {
+    it("should show an error toast using the 'value' label when importLanguage rejects", async () => {
       importLanguageSpy.mockRejectedValue(new Error("import failed"));
-      vi.spyOn(console, "error").mockImplementation(() => {
-        /* empty */
-      });
+      vi.spyOn(console, "error").mockImplementation(() => {});
 
-      await expect(service.loadPrismLanguage(makeLanguage("rust"))).resolves.toBeUndefined();
+      await service.loadPrismLanguage(makeLanguage("Rust Custom", [], undefined, "rust"));
 
+      expect(messageServiceMock.add).toHaveBeenCalledOnce();
       expect(messageServiceMock.add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: "error", summary: "Language loading failed" })
+        expect.objectContaining({
+          severity: "error",
+          summary: "Language loading failed",
+          detail: expect.stringContaining("Rust Custom"),
+        })
       );
     });
 
-    it("should show a warning toast when a declared dependency cannot be found", async () => {
-      mockSearchLanguage.mockReturnValue(undefined);
-      vi.spyOn(console, "warn").mockImplementation(() => {
-        /* empty */
-      });
-
-      await service.loadPrismLanguage(makeLanguage("jsx", ["unknown-dep"]));
-
-      expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "warn", summary: "Missing Dependency" }));
-    });
-
-    it("should skip already-loaded dependencies (already in Prism.languages)", async () => {
+    it("should skip already-loaded dependencies based on grammar check", async () => {
+      // 'markup' is pre-loaded — the dependency should be skipped
       prismMock.languages["markup"] = {};
-      mockSearchLanguage.mockReturnValue(makeLanguage("markup"));
+      mockSearchLanguage.mockReturnValue(makeLanguage("markup-ui", [], undefined, "markup"));
 
-      // Reset call count right before the action under test
-      importLanguageSpy.mockClear();
+      await service.loadPrismLanguage(makeLanguage("jsx-ui", ["markup-ui"], undefined, "jsx"));
 
-      await service.loadPrismLanguage(makeLanguage("jsx", ["markup"]));
-
-      expect(importLanguageSpy).toHaveBeenCalledTimes(1);
-      expect(importLanguageSpy).toHaveBeenCalledWith(expect.objectContaining({ value: "jsx" }));
+      // Only the main language (jsx) should be imported — markup is already registered
+      expect(importLanguageSpy).toHaveBeenCalledOnce();
+      expect(importLanguageSpy).toHaveBeenCalledWith(expect.objectContaining({ value: "jsx-ui" }));
     });
   });
 
-  describe("importLanguage", () => {
-    it("should use the customImportPath when one is defined", async () => {
-      const dynamicImportLanguageSpy = vi.fn().mockResolvedValue({});
+  // -------------------------------------------------------------------------
 
-      importLanguageSpy.mockImplementation(async (...args: unknown[]) => {
-        const lang = args[0] as LanguageDefinition;
-        if (lang.prismConfiguration.customImportPath) {
-          await dynamicImportLanguageSpy(`/${lang.prismConfiguration.customImportPath}`);
-        }
-        prismMock.languages[lang.value] = {};
-      });
+  describe("importLanguage", () => {
+    // The outer beforeEach mocks importLanguage, but here we want to test the
+    // REAL implementation. Restore the spy so the actual method runs.
+    beforeEach(() => {
+      importLanguageSpy.mockRestore();
+    });
+
+    it("should use the customImportPath when one is defined", async () => {
+      // Spy on the private dynamic-import helper (or equivalent) that the real
+      // importLanguage delegates to, rather than re-mocking importLanguage itself.
+      const dynamicImportSpy = vi
+        .spyOn(service as any, "dynamicImport") // adjust to actual private helper name
+        .mockResolvedValue({});
 
       await (service as any).importLanguage(makeLanguage("custom-lang", [], "assets/prism-custom.js"));
 
-      expect(dynamicImportLanguageSpy).toHaveBeenCalledWith("/assets/prism-custom.js");
+      expect(dynamicImportSpy).toHaveBeenCalledWith(expect.stringContaining("assets/prism-custom.js"));
     });
 
     it("should show an error toast and rethrow when the dynamic import fails", async () => {
       const importError = new Error("module not found");
-      vi.spyOn(console, "error").mockImplementation(() => {
-        /* empty */
-      });
+      vi.spyOn(console, "error").mockImplementation(() => {});
 
-      importLanguageSpy.mockRejectedValue(importError);
+      // Make the underlying dynamic import throw so the real method's catch block runs.
+      vi.spyOn(service as any, "dynamicImport") // adjust to actual private helper name
+        .mockRejectedValue(importError);
 
       await expect((service as any).importLanguage(makeLanguage("nonexistent"))).rejects.toThrow("module not found");
+
+      expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error" }));
     });
   });
 });

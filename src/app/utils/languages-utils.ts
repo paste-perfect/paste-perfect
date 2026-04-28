@@ -26,6 +26,7 @@ export const searchLanguageByTitle = (languageTitle: string): LanguageDefinition
  */
 export const searchLanguageByValue = (languageValue: string): LanguageDefinition | undefined => {
   const normalizedValue = languageValue.toLowerCase().trim();
+  console.log("ALL LANGUAGSE: ", ALL_LANGUAGES);
 
   return ALL_LANGUAGES.find((language) => language.value.toLowerCase() === normalizedValue);
 };
