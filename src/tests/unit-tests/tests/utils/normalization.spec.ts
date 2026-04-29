@@ -1,55 +1,39 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { normalizeToArray } from "@utils/normalization";
+import { useStandardTeardown } from "../../test-utils/utils";
 
-describe("Normalization", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
+describe("normalizeToArray", () => {
+  useStandardTeardown();
+
+  describe("when the input is already an array", () => {
+    it("returns the same array reference unchanged", () => {
+      const input = ["item1", "item2", "item3"];
+      expect(normalizeToArray(input)).toBe(input);
+    });
+
+    it("returns an empty array unchanged", () => {
+      expect(normalizeToArray([])).toEqual([]);
+    });
   });
 
-  describe("normalizeToArray", () => {
-    describe("when the input is already an array", () => {
-      it("should return the same array reference unchanged", () => {
-        const input = ["item1", "item2", "item3"];
-        const result = normalizeToArray(input);
-        expect(result).toBe(input);
-        expect(result).toEqual(["item1", "item2", "item3"]);
-      });
-
-      it("should return an empty array unchanged", () => {
-        expect(normalizeToArray([])).toEqual([]);
-      });
+  describe("when the input is a string", () => {
+    it.each([
+      ["non-empty string", "single-item", ["single-item"]],
+      ["empty string", "", [""]],
+    ] as const)("wraps a %s in an array", (_label, input, expected) => {
+      expect(normalizeToArray(input)).toEqual(expected);
     });
+  });
 
-    describe("when the input is a string", () => {
-      it("should wrap a non-empty string in an array", () => {
-        expect(normalizeToArray("single-item")).toEqual(["single-item"]);
-      });
-
-      it("should wrap an empty string in an array (preserving the value)", () => {
-        expect(normalizeToArray("")).toEqual([""]);
-      });
-    });
-
-    describe("when the input is null, undefined, or an unsupported type", () => {
-      it("should return an empty array for null", () => {
-        expect(normalizeToArray(null)).toEqual([]);
-      });
-
-      it("should return an empty array for undefined", () => {
-        expect(normalizeToArray(undefined)).toEqual([]);
-      });
-
-      it("should return an empty array for a number", () => {
-        expect(normalizeToArray(123 as never)).toEqual([]);
-      });
-
-      it("should return an empty array for a boolean", () => {
-        expect(normalizeToArray(true as never)).toEqual([]);
-      });
-
-      it("should return an empty array for a plain object", () => {
-        expect(normalizeToArray({} as never)).toEqual([]);
-      });
+  describe("when the input is null, undefined, or an unsupported type", () => {
+    it.each([
+      ["null", null],
+      ["undefined", undefined],
+      ["number", 123],
+      ["boolean", true],
+      ["plain object", {}],
+    ])("returns an empty array for %s", (_label, input) => {
+      expect(normalizeToArray(input as never)).toEqual([]);
     });
   });
 });

@@ -4,7 +4,6 @@ import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 import { LocationStrategy } from "@angular/common";
 import { searchLanguageByValue } from "@utils/languages-utils";
-import { ALL_LANGUAGES } from "@constants/languages";
 
 @Injectable({
   providedIn: "root",
@@ -27,11 +26,8 @@ export class PrismLanguageLoaderService {
    * @returns A Promise that resolves when the language is successfully loaded or rejects on failure.
    */
   public async loadPrismLanguage(language: LanguageDefinition): Promise<void> {
-    // TODO: Rework and track based on "grammar" and NOT value (as before)
-    // Also change the logic
-    // Dependencies should also be tracked by grammar...
-    // Because everything is "prism-related"
     const grammarId = language?.prismConfiguration?.grammar;
+    console.log(Prism.languages);
 
     if (!grammarId || Prism.languages[grammarId]) {
       return;
@@ -41,7 +37,7 @@ export class PrismLanguageLoaderService {
       await this.loadDependencies(language);
       await this.importLanguage(language);
     } catch (error) {
-      console.error(`Failed to load PrismJS language: ${language.value}`, error);
+      console.error(`Failed to load ${grammarId} for PrismJS language: ${language.value}`, error);
       this.messageService.add({
         severity: "error",
         summary: "Language loading failed",
@@ -75,7 +71,7 @@ export class PrismLanguageLoaderService {
         continue;
       }
 
-      if (Prism.languages[lang.prismConfiguration.grammar]) {
+      if (Prism.languages[dependency.prismConfiguration.grammar]) {
         continue;
       }
 

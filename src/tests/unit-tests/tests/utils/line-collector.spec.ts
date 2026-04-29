@@ -1,35 +1,37 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LinesCollector } from "@utils/line-collector";
-import { createStyledSpan, createTextNode } from "../../test-utils/utils";
+import {
+  createOriginalClonedPair,
+  createStyledSpan,
+  createTextNode,
+  mockLineNumberGutter,
+  useStandardTeardown,
+} from "../../test-utils/utils";
 import { IndentationMode } from "@constants/const";
 import { SpecialCharacters } from "@constants/special-characters";
+
+const makeCollector = (mode: IndentationMode, tabSize = 2, hasLineNumbers = false) => new LinesCollector(mode, tabSize, hasLineNumbers);
+
+const attachToDom = (original: HTMLElement, cloned: HTMLElement, node: Node) => {
+  original.appendChild(node);
+  cloned.appendChild(node.cloneNode(true));
+};
 
 describe("LinesCollector", () => {
   let original: HTMLElement;
   let cloned: HTMLElement;
 
   beforeEach(() => {
-    original = document.createElement("div");
-    original.id = "original-test-container";
-    cloned = document.createElement("div");
-    cloned.id = "cloned-test-container";
-
-    document.body.appendChild(original);
-    document.body.appendChild(cloned);
+    ({ original, cloned } = createOriginalClonedPair());
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    document.body.innerHTML = "";
-  });
+  useStandardTeardown({ clearBody: true });
 
   describe("when hasLineNumbers is false", () => {
     describe("Spaces indentation mode", () => {
-      it("should split multi-line text into separate <p> elements", () => {
-        const collector = new LinesCollector(IndentationMode.Spaces, 2, false);
-        const span = createStyledSpan("  indented line\nsecond line");
-        original.appendChild(span);
-        cloned.appendChild(span.cloneNode(true));
+      it("splits multi-line text into separate <p> elements", () => {
+        const collector = makeCollector(IndentationMode.Spaces);
+        attachToDom(original, cloned, createStyledSpan("  indented line\nsecond line"));
 
         collector.collectLinesFromNodes(original, cloned);
         const paragraphs = Array.from(cloned.childNodes) as HTMLParagraphElement[];
@@ -40,11 +42,9 @@ describe("LinesCollector", () => {
         expect(paragraphs[1].textContent).toContain("second line");
       });
 
-      it("should replace leading spaces with non-breaking spaces and apply MS Office spacerun style", () => {
-        const collector = new LinesCollector(IndentationMode.Spaces, 2, false);
-        const span = createStyledSpan("  indented line");
-        original.appendChild(span);
-        cloned.appendChild(span.cloneNode(true));
+      it("replaces leading spaces with non-breaking spaces and applies MS Office spacerun style", () => {
+        const collector = makeCollector(IndentationMode.Spaces);
+        attachToDom(original, cloned, createStyledSpan("  indented line"));
 
         collector.collectLinesFromNodes(original, cloned);
         const p = cloned.querySelector("p");
@@ -54,11 +54,9 @@ describe("LinesCollector", () => {
         expect(indentationSpan?.getAttribute("style")).toContain("mso-spacerun:yes");
       });
 
-      it("should produce Non-Breaking-Space-only paragraphs for empty lines with MS Office spacerun style", () => {
-        const collector = new LinesCollector(IndentationMode.Spaces, 2, false);
-        const span = createStyledSpan("\n");
-        original.appendChild(span);
-        cloned.appendChild(span.cloneNode(true));
+      it("produces NBSP-only paragraphs for empty lines with MS Office spacerun style", () => {
+        const collector = makeCollector(IndentationMode.Spaces);
+        attachToDom(original, cloned, createStyledSpan("\n"));
 
         collector.collectLinesFromNodes(original, cloned);
         const paragraphs = Array.from(cloned.querySelectorAll("p"));
@@ -66,25 +64,20 @@ describe("LinesCollector", () => {
         expect(paragraphs).toHaveLength(2);
         paragraphs.forEach((p) => {
           expect(p.textContent).toBe(SpecialCharacters.NON_BREAKING_SPACE);
-          const emptyLineSpan = p.querySelector("span");
-          expect(emptyLineSpan?.getAttribute("style")).toContain("mso-spacerun:yes");
+          expect(p.querySelector("span")?.getAttribute("style")).toContain("mso-spacerun:yes");
         });
       });
     });
 
     describe("Tabs indentation mode", () => {
-      it("should split multi-line text, stamp tab-stop styles on paragraphs, and tab-counts on spans", () => {
-        const tabSize = 2;
-        const collector = new LinesCollector(IndentationMode.Tabs, tabSize, false);
-        const span = createStyledSpan("  Tabbed text\nNext");
-        original.appendChild(span);
-        cloned.appendChild(span.cloneNode(true));
+      it("splits multi-line text, stamps tab-stop styles on paragraphs, and tab-counts on spans", () => {
+        const collector = makeCollector(IndentationMode.Tabs, 2);
+        attachToDom(original, cloned, createStyledSpan("  Tabbed text\nNext"));
 
         collector.collectLinesFromNodes(original, cloned);
         const paragraphs = Array.from(cloned.querySelectorAll("p"));
 
         expect(paragraphs).toHaveLength(2);
-
         paragraphs.forEach((p) => {
           expect(p.style.getPropertyValue("tab-stops") || p.getAttribute("style")).toMatch(/left/);
         });
@@ -95,8 +88,8 @@ describe("LinesCollector", () => {
     });
 
     describe("Unsupported node types", () => {
-      it("should ignore comment nodes and keep exactly one element node in output", () => {
-        const collector = new LinesCollector(IndentationMode.Spaces, 2, false);
+      it("ignores comment nodes and keeps exactly one element node in output", () => {
+        const collector = makeCollector(IndentationMode.Spaces);
         const comment = document.createComment("some comment");
         const span = createStyledSpan("content");
 
@@ -115,36 +108,12 @@ describe("LinesCollector", () => {
 
   describe("when hasLineNumbers is true", () => {
     beforeEach(() => {
-      const mockElement = document.createElement("span");
-      mockElement.className = "line-number-gutter";
-
-      vi.spyOn(mockElement, "getBoundingClientRect").mockReturnValue({
-        width: 50,
-        left: 0,
-        right: 50,
-        top: 0,
-        bottom: 20,
-        height: 20,
-        x: 0,
-        y: 0,
-        toJSON: () => {
-          /* empty */
-        },
-      } as DOMRect);
-
-      vi.spyOn(document, "getElementsByClassName").mockImplementation((className) => {
-        if (className === "line-number-gutter") {
-          return [mockElement] as unknown as HTMLCollectionOf<Element>;
-        }
-        return [] as unknown as HTMLCollectionOf<Element>;
-      });
+      mockLineNumberGutter(50);
     });
 
-    it("should parse line-number prefixes and split them into separate child spans with spacerun", () => {
-      const collector = new LinesCollector(IndentationMode.Spaces, 2, true);
-      const span = createStyledSpan("1. First line\n2. Second line");
-      original.appendChild(span);
-      cloned.appendChild(span.cloneNode(true));
+    it("parses line-number prefixes and splits them into separate child spans with spacerun", () => {
+      const collector = makeCollector(IndentationMode.Spaces, 2, true);
+      attachToDom(original, cloned, createStyledSpan("1. First line\n2. Second line"));
 
       collector.collectLinesFromNodes(original, cloned);
       const paragraphs = Array.from(cloned.querySelectorAll("p"));
@@ -160,17 +129,13 @@ describe("LinesCollector", () => {
       expect(secondLineNumberSpan?.getAttribute("style")).toContain("mso-spacerun:yes");
     });
 
-    it("should emit three child spans — number, indentation, text — for indented lines after a number", () => {
-      const collector = new LinesCollector(IndentationMode.Spaces, 2, true);
-      const span = createStyledSpan("1.   Indented line");
-      original.appendChild(span);
-      cloned.appendChild(span.cloneNode(true));
+    it("emits three child spans — number, indentation, text — for indented lines after a number", () => {
+      const collector = makeCollector(IndentationMode.Spaces, 2, true);
+      attachToDom(original, cloned, createStyledSpan("1.   Indented line"));
 
       collector.collectLinesFromNodes(original, cloned);
-      const p = cloned.querySelector("p");
-      const spans = p?.querySelectorAll("span");
+      const spans = cloned.querySelector("p")?.querySelectorAll("span");
 
-      // 1. line number span  2. indentation span  3. text span
       expect(spans?.length).toBe(3);
       expect(spans?.[0].textContent).toBe("1. ");
       expect(spans?.[0].getAttribute("style")).toContain("mso-spacerun:yes");
@@ -180,22 +145,21 @@ describe("LinesCollector", () => {
   });
 
   describe("Style and Node handling", () => {
-    it("should copy all CSS properties from a parent <span> to the child span", () => {
-      const collector = new LinesCollector(IndentationMode.Spaces, 4, false);
+    it("copies all CSS properties from a parent <span> to the child span", () => {
+      const collector = makeCollector(IndentationMode.Spaces, 4);
       const parent = document.createElement("span");
       parent.style.color = "rgb(255, 0, 0)";
       document.body.appendChild(parent);
 
       const child = document.createElement("span");
-
-      // applyParentSpanStyles is private and only observable through integration.
+      // applyParentSpanStyles is private — only observable through reflection.
       (collector as any).applyParentSpanStyles(parent, child);
 
       expect(child.style.color).toBe("rgb(255, 0, 0)");
     });
 
-    it("should NOT copy styles when the parent element is not a <span>", () => {
-      const collector = new LinesCollector(IndentationMode.Spaces, 4, false);
+    it("does NOT copy styles when the parent element is not a <span>", () => {
+      const collector = makeCollector(IndentationMode.Spaces, 4);
       const parent = document.createElement("div");
       parent.style.fontWeight = "bold";
       document.body.appendChild(parent);
@@ -206,16 +170,15 @@ describe("LinesCollector", () => {
       expect(child.style.fontWeight).not.toBe("bold");
     });
 
-    it("should propagate italic font-style from an inner <span> to both output paragraphs", () => {
-      const collector = new LinesCollector(IndentationMode.Spaces, 2, false);
+    it("propagates italic font-style from an inner <span> to both output paragraphs", () => {
+      const collector = makeCollector(IndentationMode.Spaces);
       const outerSpan = document.createElement("span");
       const innerSpan = document.createElement("span");
       innerSpan.style.fontStyle = "italic";
       innerSpan.appendChild(createTextNode("  Hello\nWorld"));
-
       outerSpan.appendChild(innerSpan);
-      original.appendChild(outerSpan);
-      cloned.appendChild(outerSpan.cloneNode(true));
+
+      attachToDom(original, cloned, outerSpan);
 
       collector.collectLinesFromNodes(original, cloned);
       const paragraphs = Array.from(cloned.querySelectorAll("p"));

@@ -1,9 +1,9 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { HighlightingSettings } from "@types";
 import { SettingsService } from "@services/settings.service";
 import { StorageService } from "@services/storage.service";
-import { createStorageMock } from "../../test-utils/utils";
+import { createStorageMock, useStandardTeardown } from "../../test-utils/utils";
 import { INDENTATION_MODE_MAP, IndentationMode, SETTINGS_STORAGE_KEY } from "@constants/const";
 
 const DEFAULT_SETTINGS: HighlightingSettings = {
@@ -15,35 +15,30 @@ const DEFAULT_SETTINGS: HighlightingSettings = {
 
 const createService = (stored: HighlightingSettings | null = null) => {
   const storageMock = createStorageMock(stored);
-
   TestBed.configureTestingModule({
     providers: [SettingsService, { provide: StorageService, useValue: storageMock }],
   });
-
   return { service: TestBed.inject(SettingsService), storageMock };
 };
 
 describe("SettingsService", () => {
-  afterEach(() => {
-    TestBed.resetTestingModule();
-    vi.restoreAllMocks();
-  });
+  useStandardTeardown();
 
   it("should be created", () => {
-    const { service } = createService();
-    expect(service).toBeTruthy();
+    expect(createService().service).toBeTruthy();
   });
 
   describe("initial settings resolution", () => {
     it("should initialise with hard-coded defaults when storage is empty", () => {
-      const { service } = createService(null);
-      expect(service.editorSettings).toEqual(DEFAULT_SETTINGS);
+      expect(createService(null).service.editorSettings).toEqual(DEFAULT_SETTINGS);
     });
 
     it("should merge stored values over the defaults on initialisation", () => {
       const stored: Partial<HighlightingSettings> = { indentationSize: 4, showLineNumbers: true };
-      const { service } = createService(stored as HighlightingSettings);
-      expect(service.editorSettings).toEqual({ ...DEFAULT_SETTINGS, ...stored });
+      expect(createService(stored as HighlightingSettings).service.editorSettings).toEqual({
+        ...DEFAULT_SETTINGS,
+        ...stored,
+      });
     });
   });
 
@@ -92,10 +87,8 @@ describe("SettingsService", () => {
 
     it("should return a copy — mutating the result must not affect the internal list", () => {
       const { service } = createService();
-      const first = service.getAvailableIndentationModes();
-      first.push({ value: "hack" as IndentationMode, label: "Hack" });
-      const second = service.getAvailableIndentationModes();
-      expect(second).toHaveLength(Object.keys(INDENTATION_MODE_MAP).length);
+      service.getAvailableIndentationModes().push({ value: "hack" as IndentationMode, label: "Hack" });
+      expect(service.getAvailableIndentationModes()).toHaveLength(Object.keys(INDENTATION_MODE_MAP).length);
     });
 
     it("should include entries with both a value and a label", () => {

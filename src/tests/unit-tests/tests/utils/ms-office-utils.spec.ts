@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NodeUtils } from "@utils/node-utils";
 import { SpecialCharacters } from "@constants/special-characters";
 import { MsOfficeUtils } from "@utils/ms-office-utils";
+import { useStandardTeardown } from "../../test-utils/utils";
 
 describe("MsOfficeUtils", () => {
   let mockElement: HTMLElement;
@@ -14,12 +15,10 @@ describe("MsOfficeUtils", () => {
     appendInlineStyleSpy = vi.spyOn(NodeUtils, "appendInlineStyle");
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  useStandardTeardown();
 
   describe("createEmptyLineSpan", () => {
-    it("should create a span containing a non-breaking space and apply the mso-spacerun style", () => {
+    it("creates a span containing a non-breaking space and applies the mso-spacerun style", () => {
       const mockSpan = document.createElement("span");
       createSpanWithTextContentSpy.mockReturnValue(mockSpan);
 
@@ -32,46 +31,40 @@ describe("MsOfficeUtils", () => {
   });
 
   describe("applyNoMarginStyle", () => {
-    it('should apply the "margin:0cm;" inline style to the element', () => {
+    it('applies the "margin:0cm;" inline style to the element', () => {
       MsOfficeUtils.applyNoMarginStyle(mockElement);
       expect(appendInlineStyleSpy).toHaveBeenCalledWith(mockElement, "margin:0cm;");
     });
   });
 
   describe("preserveWhiteSpace", () => {
-    it('should apply the "mso-spacerun:yes" style to preserve whitespace', () => {
+    it('applies the "mso-spacerun:yes" style to preserve whitespace', () => {
       MsOfficeUtils.preserveWhiteSpace(mockElement);
       expect(appendInlineStyleSpy).toHaveBeenCalledWith(mockElement, "mso-spacerun:yes");
     });
   });
 
   describe("applyTabSpacing", () => {
-    it("should apply the correct mso-tab-count style for a positive count", () => {
-      MsOfficeUtils.applyTabSpacing(mockElement, 3);
-      expect(appendInlineStyleSpy).toHaveBeenCalledWith(mockElement, "mso-tab-count:3");
-    });
-
-    it("should handle a tab count of zero correctly", () => {
-      MsOfficeUtils.applyTabSpacing(mockElement, 0);
-      expect(appendInlineStyleSpy).toHaveBeenCalledWith(mockElement, "mso-tab-count:0");
+    it.each([
+      ["a positive count", 3, "mso-tab-count:3"],
+      ["a tab count of zero", 0, "mso-tab-count:0"],
+    ] as const)("applies the correct mso-tab-count for %s", (_label, count, expected) => {
+      MsOfficeUtils.applyTabSpacing(mockElement, count);
+      expect(appendInlineStyleSpy).toHaveBeenCalledWith(mockElement, expected);
     });
   });
 
   describe("getTabStops", () => {
-    it("should return an empty string when count is 0", () => {
+    it("returns an empty string when count is 0", () => {
       expect(MsOfficeUtils.getTabStops(0)).toBe("");
     });
 
-    it("should return the correct CSS tab-stops for multiple stops without an offset", () => {
-      expect(MsOfficeUtils.getTabStops(2)).toBe("tab-stops: left 28.3465pt left 56.6930pt;");
-    });
-
-    it("should apply a positive offset to each tab stop correctly", () => {
-      expect(MsOfficeUtils.getTabStops(2, 10)).toBe("tab-stops: left 38.3465pt left 66.6930pt;");
-    });
-
-    it("should apply a negative offset to each tab stop correctly", () => {
-      expect(MsOfficeUtils.getTabStops(2, -5)).toBe("tab-stops: left 23.3465pt left 51.6930pt;");
+    it.each([
+      ["multiple stops without an offset", 2, undefined, "tab-stops: left 28.3465pt left 56.6930pt;"],
+      ["a positive offset applied to each stop", 2, 10, "tab-stops: left 38.3465pt left 66.6930pt;"],
+      ["a negative offset applied to each stop", 2, -5, "tab-stops: left 23.3465pt left 51.6930pt;"],
+    ] as const)("returns CSS tab-stops for %s", (_label, count, offset, expected) => {
+      expect(offset === undefined ? MsOfficeUtils.getTabStops(count) : MsOfficeUtils.getTabStops(count, offset)).toBe(expected);
     });
   });
 });

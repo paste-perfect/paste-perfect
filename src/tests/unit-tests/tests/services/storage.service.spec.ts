@@ -1,22 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { StorageService } from "@services/storage.service";
+import { useStandardTeardown } from "../../test-utils/utils";
 
 describe("StorageService", () => {
+  useStandardTeardown({ clearLocalStorage: true });
+
   let service: StorageService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [StorageService],
-    });
-
+    TestBed.configureTestingModule({ providers: [StorageService] });
     service = TestBed.inject(StorageService);
-  });
-
-  afterEach(() => {
-    TestBed.resetTestingModule();
-    vi.restoreAllMocks();
-    localStorage.clear();
   });
 
   it("should be created", () => {
@@ -49,8 +43,7 @@ describe("StorageService", () => {
     it("should delegate to localStorage.setItem exactly once per call", () => {
       const spy = vi.spyOn(localStorage, "setItem");
       service.setItem("key", "value");
-      expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith("key", JSON.stringify("value"));
+      expect(spy).toHaveBeenCalledExactlyOnceWith("key", JSON.stringify("value"));
     });
   });
 

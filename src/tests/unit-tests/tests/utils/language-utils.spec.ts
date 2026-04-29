@@ -1,87 +1,80 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { searchLanguageByTitle, searchLanguageByValue } from "@utils/languages-utils";
-
-const DEFAULT_JAVASCRIPT_LANGUAGE = { title: "JavaScript", value: "javascript" };
-const DEFAULT_TYPESCRIPT_LANGUAGE = { title: "TypeScript", value: "typescript" };
+import { useStandardTeardown } from "../../test-utils/utils";
+import { CPP, CUSTOM_LANG, JAVASCRIPT, TYPESCRIPT } from "../../mocks/languages";
 
 describe("Language Utils", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  useStandardTeardown();
 
   describe("searchLanguageByTitle", () => {
     describe("exact and case-insensitive title matching", () => {
-      it("should find a language by its exact title", () => {
-        expect(searchLanguageByTitle("JavaScript")).toMatchObject(DEFAULT_JAVASCRIPT_LANGUAGE);
+      it("finds a language by its exact title", () => {
+        expect(searchLanguageByTitle("JavaScript")).toMatchObject(JAVASCRIPT);
       });
 
-      it("should find a language when the query casing differs from the stored title", () => {
-        expect(searchLanguageByTitle("javascript")).toMatchObject(DEFAULT_JAVASCRIPT_LANGUAGE);
+      it("finds a language when query casing differs from the stored title", () => {
+        expect(searchLanguageByTitle("javascript")).toMatchObject(JAVASCRIPT);
       });
 
-      it("should find a language with special characters in its title (e.g. C++)", () => {
-        expect(searchLanguageByTitle("C++")).toMatchObject({ title: "C++", value: "cpp" });
+      it("finds a language with special characters in its title (e.g. C++)", () => {
+        expect(searchLanguageByTitle("C++")).toMatchObject(CPP);
       });
     });
 
     describe("alias matching", () => {
-      const VISUAL_BASIC_LANGUAGE = { title: "Visual Basic", value: "visual-basic" };
-
-      it("should find a language when queried by a known filter alias", () => {
-        expect(searchLanguageByTitle("VBA")).toMatchObject(VISUAL_BASIC_LANGUAGE);
+      it("finds a language when queried by a known filter alias", () => {
+        expect(searchLanguageByTitle("custom")).toMatchObject(CUSTOM_LANG);
       });
 
-      it("should find a language by alias regardless of input casing", () => {
-        expect(searchLanguageByTitle(" vBa ")).toMatchObject(VISUAL_BASIC_LANGUAGE);
+      it("finds a language by alias regardless of input casing or whitespace", () => {
+        expect(searchLanguageByTitle(" cUStOm ")).toMatchObject(CUSTOM_LANG);
       });
     });
 
     describe("input normalisation", () => {
-      it("should trim surrounding whitespace before matching", () => {
-        expect(searchLanguageByTitle("  TypeScript  ")).toMatchObject(DEFAULT_TYPESCRIPT_LANGUAGE);
+      it("trims surrounding whitespace before matching", () => {
+        expect(searchLanguageByTitle("  TypeScript  ")).toMatchObject(TYPESCRIPT);
       });
     });
 
     describe("non-matching inputs", () => {
-      it("should return undefined for a query that matches no title or alias", () => {
-        expect(searchLanguageByTitle("NonExistentLanguage")).toBeUndefined();
-      });
-
-      it("should return undefined for an empty string", () => {
-        expect(searchLanguageByTitle("")).toBeUndefined();
+      it.each([
+        ["unknown language", "NonExistentLanguage"],
+        ["empty string", ""],
+      ])("returns undefined for %s", (_label, input) => {
+        expect(searchLanguageByTitle(input)).toBeUndefined();
       });
     });
   });
 
   describe("searchLanguageByValue", () => {
     describe("exact and case-insensitive value matching", () => {
-      it("should find a language by its exact value", () => {
-        expect(searchLanguageByValue("javascript")).toMatchObject(DEFAULT_JAVASCRIPT_LANGUAGE);
+      it("finds a language by its exact value", () => {
+        expect(searchLanguageByValue("javascript")).toMatchObject(JAVASCRIPT);
       });
 
-      it("should find a language when value query casing differs", () => {
-        expect(searchLanguageByValue("JAVASCRIPT")).toMatchObject(DEFAULT_JAVASCRIPT_LANGUAGE);
+      it("finds a language when value query casing differs", () => {
+        expect(searchLanguageByValue("JAVASCRIPT")).toMatchObject(JAVASCRIPT);
       });
     });
 
     describe("input normalisation", () => {
-      it("should trim surrounding whitespace before matching", () => {
-        expect(searchLanguageByValue("  typescript  ")).toMatchObject(DEFAULT_TYPESCRIPT_LANGUAGE);
+      it("trims surrounding whitespace before matching", () => {
+        expect(searchLanguageByValue("  typescript  ")).toMatchObject(TYPESCRIPT);
       });
     });
 
     describe("non-matching inputs", () => {
-      it("should return undefined for a value that does not exist", () => {
-        expect(searchLanguageByValue("nonexistent")).toBeUndefined();
+      it.each([
+        ["unknown value", "nonexistent"],
+        ["empty string", ""],
+      ])("returns undefined for %s", (_label, input) => {
+        expect(searchLanguageByValue(input)).toBeUndefined();
       });
 
-      it("should return undefined for an empty string", () => {
-        expect(searchLanguageByValue("")).toBeUndefined();
-      });
-
-      it("should NOT match against filter aliases (value field only)", () => {
-        // 'VBA' is a filterAlias for Visual Basic, not a value — must not match here
-        expect(searchLanguageByValue("VBA")).toBeUndefined();
+      it("does NOT match against filter aliases (value field only)", () => {
+        // 'markdown' is a filterAlias for MARKUP, not a value — must not match here.
+        expect(searchLanguageByValue("markdown")).toBeUndefined();
       });
     });
   });

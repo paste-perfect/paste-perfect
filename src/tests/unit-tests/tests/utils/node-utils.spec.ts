@@ -1,11 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { NodeUtils } from "@utils/node-utils";
 import { SpecialCharacters } from "@constants/special-characters";
+import { useStandardTeardown } from "../../test-utils/utils";
 
 describe("NodeUtils", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  useStandardTeardown();
 
   describe("appendInlineStyle", () => {
     let element: HTMLElement;
@@ -14,26 +13,19 @@ describe("NodeUtils", () => {
       element = document.createElement("div");
     });
 
-    it("should append a style string to an element with no existing style", () => {
-      NodeUtils.appendInlineStyle(element, "color: red;");
-      expect(element.getAttribute(SpecialCharacters.STYLE_TAG)).toBe("color: red;");
-    });
-
-    it("should append a semicolon before the new style when the existing style is missing one", () => {
-      element.setAttribute(SpecialCharacters.STYLE_TAG, "font-size: 14px");
-      NodeUtils.appendInlineStyle(element, "color: red;");
-      expect(element.getAttribute(SpecialCharacters.STYLE_TAG)).toBe("font-size: 14px;color: red;");
-    });
-
-    it("should append the new style directly when the existing style already ends with a semicolon", () => {
-      element.setAttribute(SpecialCharacters.STYLE_TAG, "font-size: 14px;");
-      NodeUtils.appendInlineStyle(element, "color: red;");
-      expect(element.getAttribute(SpecialCharacters.STYLE_TAG)).toBe("font-size: 14px;color: red;");
+    it.each([
+      ["element with no existing style", undefined, "color: red;", "color: red;"],
+      ["existing style is missing a trailing semicolon", "font-size: 14px", "color: red;", "font-size: 14px;color: red;"],
+      ["existing style already ends with a semicolon", "font-size: 14px;", "color: red;", "font-size: 14px;color: red;"],
+    ] as const)("appends correctly when %s", (_label, existing, toAppend, expected) => {
+      if (existing !== undefined) element.setAttribute(SpecialCharacters.STYLE_TAG, existing);
+      NodeUtils.appendInlineStyle(element, toAppend);
+      expect(element.getAttribute(SpecialCharacters.STYLE_TAG)).toBe(expected);
     });
   });
 
   describe("removeAllAttributesExceptStyle", () => {
-    it("should remove all attributes except the style attribute", () => {
+    it("removes all attributes except the style attribute", () => {
       const element = document.createElement("div");
       element.setAttribute("id", "test");
       element.setAttribute("class", "box");
@@ -46,7 +38,7 @@ describe("NodeUtils", () => {
       expect(element.getAttribute(SpecialCharacters.STYLE_TAG)).toBe("color: red;");
     });
 
-    it("should work correctly when no style attribute exists", () => {
+    it("works correctly when no style attribute exists", () => {
       const element = document.createElement("div");
       element.setAttribute("id", "test");
 
@@ -58,7 +50,7 @@ describe("NodeUtils", () => {
   });
 
   describe("removeChildren", () => {
-    it("should remove all child nodes from a parent element", () => {
+    it("removes all child nodes from a parent element", () => {
       const parent = document.createElement("div");
       parent.appendChild(document.createElement("p"));
       parent.appendChild(document.createTextNode("Hello"));
@@ -70,7 +62,7 @@ describe("NodeUtils", () => {
   });
 
   describe("createSpanWithTextContent", () => {
-    it("should create an HTMLSpanElement with the provided text content", () => {
+    it("creates an HTMLSpanElement with the provided text content", () => {
       const span = NodeUtils.createSpanWithTextContent("Hello");
       expect(span).toBeInstanceOf(HTMLSpanElement);
       expect(span.textContent).toBe("Hello");
@@ -78,7 +70,7 @@ describe("NodeUtils", () => {
   });
 
   describe("createSpan", () => {
-    it("should create an empty HTMLSpanElement", () => {
+    it("creates an empty HTMLSpanElement", () => {
       const span = NodeUtils.createSpan();
       expect(span).toBeInstanceOf(HTMLSpanElement);
       expect(span.textContent).toBe("");
@@ -86,7 +78,7 @@ describe("NodeUtils", () => {
   });
 
   describe("createParagraph", () => {
-    it("should create an empty HTMLParagraphElement", () => {
+    it("creates an empty HTMLParagraphElement", () => {
       const p = NodeUtils.createParagraph();
       expect(p).toBeInstanceOf(HTMLParagraphElement);
       expect(p.textContent).toBe("");
@@ -94,44 +86,32 @@ describe("NodeUtils", () => {
   });
 
   describe("isHtmlElement", () => {
-    it("should return true for an HTMLElement", () => {
-      expect(NodeUtils.isHtmlElement(document.createElement("div"))).toBe(true);
-    });
-
-    it("should return false for a Text node", () => {
-      expect(NodeUtils.isHtmlElement(document.createTextNode("test"))).toBe(false);
-    });
-
-    it("should return false for null", () => {
-      expect(NodeUtils.isHtmlElement(null)).toBe(false);
+    it.each([
+      { label: "an HTMLElement", expected: true, factory: () => document.createElement("div") },
+      { label: "a Text node", expected: false, factory: () => document.createTextNode("test") },
+      { label: "null", expected: false, factory: () => null },
+    ])("returns $expected for $label", ({ factory, expected }) => {
+      expect(NodeUtils.isHtmlElement(factory())).toBe(expected);
     });
   });
 
   describe("isTextNode", () => {
-    it("should return true for a Text node", () => {
-      expect(NodeUtils.isTextNode(document.createTextNode("hello"))).toBe(true);
-    });
-
-    it("should return false for an HTMLElement", () => {
-      expect(NodeUtils.isTextNode(document.createElement("div"))).toBe(false);
-    });
-
-    it("should return false for undefined", () => {
-      expect(NodeUtils.isTextNode(undefined)).toBe(false);
+    it.each([
+      { label: "a Text node", expected: true, factory: () => document.createTextNode("hello") },
+      { label: "an HTMLElement", expected: false, factory: () => document.createElement("div") },
+      { label: "undefined", expected: false, factory: () => undefined },
+    ])("returns $expected for $label", ({ factory, expected }) => {
+      expect(NodeUtils.isTextNode(factory())).toBe(expected);
     });
   });
 
   describe("isSpan", () => {
-    it("should return true for a span element", () => {
-      expect(NodeUtils.isSpan(document.createElement("span"))).toBe(true);
-    });
-
-    it("should return false for a non-span element", () => {
-      expect(NodeUtils.isSpan(document.createElement("div"))).toBe(false);
-    });
-
-    it("should return false for null", () => {
-      expect(NodeUtils.isSpan(null)).toBe(false);
+    it.each([
+      { label: "a span element", expected: true, factory: () => document.createElement("span") },
+      { label: "a non-span element", expected: false, factory: () => document.createElement("div") },
+      { label: "null", expected: false, factory: () => null },
+    ])("returns $expected for $label", ({ factory, expected }) => {
+      expect(NodeUtils.isSpan(factory())).toBe(expected);
     });
   });
 });
