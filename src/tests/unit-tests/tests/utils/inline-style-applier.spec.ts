@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
-import { resetInlineStyleApplierState } from "../test-utils";
+import { resetInlineStyleApplierState } from "../../test-utils/utils";
 
 describe("InlineStyleApplier", () => {
   let container: HTMLElement;

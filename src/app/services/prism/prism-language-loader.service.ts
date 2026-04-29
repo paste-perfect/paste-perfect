@@ -4,7 +4,7 @@ import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 import { LocationStrategy } from "@angular/common";
 import { searchLanguageByValue } from "@utils/languages-utils";
-import { ALL_LANGUAGES } from "@constants";
+import { ALL_LANGUAGES } from "@constants/languages";
 
 @Injectable({
   providedIn: "root",
@@ -32,7 +32,6 @@ export class PrismLanguageLoaderService {
     // Dependencies should also be tracked by grammar...
     // Because everything is "prism-related"
     const grammarId = language?.prismConfiguration?.grammar;
-    console.log("ALL_LANGUAGES: ", ALL_LANGUAGES);
 
     if (!grammarId || Prism.languages[grammarId]) {
       return;

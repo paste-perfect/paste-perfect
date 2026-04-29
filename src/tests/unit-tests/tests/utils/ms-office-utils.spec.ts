@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NodeUtils } from "@utils/node-utils";
-import { SpecialCharacters } from "@constants";
+import { SpecialCharacters } from "@constants/special-characters";
 import { MsOfficeUtils } from "@utils/ms-office-utils";
 
 describe("MsOfficeUtils", () => {

@@ -1,10 +1,10 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
-import { INDENTATION_MODE_MAP, IndentationMode, SETTINGS_STORAGE_KEY } from "@constants";
 import { HighlightingSettings } from "@types";
 import { SettingsService } from "@services/settings.service";
 import { StorageService } from "@services/storage.service";
-import { createStorageMock } from "../test-utils";
+import { createStorageMock } from "../../test-utils/utils";
+import { INDENTATION_MODE_MAP, IndentationMode, SETTINGS_STORAGE_KEY } from "@constants/const";
 
 const DEFAULT_SETTINGS: HighlightingSettings = {
   indentationSize: 2,

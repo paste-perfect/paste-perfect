@@ -1,7 +1,7 @@
 // sanitizer.spec.ts
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SanitizerWrapper } from "@utils/sanitizer";
-import { SpecialCharacters } from "@constants";
+import { SpecialCharacters } from "@constants/special-characters";
 
 // ---------------------------------------------------------------------------
 // Quotation mark variant tables — kept at module scope so they can be reused

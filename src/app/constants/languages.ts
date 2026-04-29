@@ -89,6 +89,5 @@ export const ALL_LANGUAGES: LanguageDefinition[] = [
 ].sort((a, b) => a.title.localeCompare(b.title));
 
 export const POPULAR_LANGUAGES = ALL_LANGUAGES.filter((lang) => POPULAR_LANGUAGES_SET.has(lang.value));
-console.log(ALL_LANGUAGES);
 
 export const OTHER_LANGUAGES = ALL_LANGUAGES.filter((lang) => !POPULAR_LANGUAGES_SET.has(lang.value));

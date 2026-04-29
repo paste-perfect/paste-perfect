@@ -6,7 +6,7 @@ import { PrismLanguageLoaderService } from "@services/prism/prism-language-loade
 import { SettingsService } from "@services/settings.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { LinesCollector } from "@utils/line-collector";
-import { makeLanguage, makeEditorSettings, createMockPreElement, createMessageMock } from "../../test-utils";
+import { makeLanguage, makeEditorSettings, createMockPreElement, createMessageMock } from "../../../test-utils/utils";
 
 const prismMock = vi.hoisted(() => ({
   languages: {} as Record<string, unknown>,

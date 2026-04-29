@@ -1,11 +1,12 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { MessageService } from "primeng/api";
-import { DARK_THEME_MAP, LIGHT_THEME_MAP, THEME_STORAGE_KEY } from "@constants";
 import { SelectableTheme, Theme } from "@types";
 import { ThemeService } from "@services/theme.service";
 import { StorageService } from "@services/storage.service";
-import { createStorageMock, createMessageMock } from "../test-utils";
+import { createStorageMock, createMessageMock } from "../../test-utils/utils";
+import { DARK_THEME_MAP, LIGHT_THEME_MAP } from "@constants/themes";
+import { THEME_STORAGE_KEY } from "@constants/const";
 
 const buildAllThemes = (): SelectableTheme[] => {
   const mapThemes = <T extends Theme>(themeMap: Record<T, string>): SelectableTheme[] =>

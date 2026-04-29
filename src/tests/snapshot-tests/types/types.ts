@@ -1,6 +1,6 @@
 import { HighlightingSettings, Theme } from "@types";
 import { Page } from "../fixtures";
-import { IndentationMode } from "@constants";
+import { IndentationMode } from "@constants/const";
 
 // ---------------------------------------------------------------------------
 // Global augmentations

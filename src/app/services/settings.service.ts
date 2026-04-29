@@ -1,8 +1,8 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
 import { HighlightingSettings, SelectableIndentationMode } from "@types";
-import { INDENTATION_MODE_MAP, IndentationMode, SETTINGS_STORAGE_KEY } from "@constants";
 import { getEntries } from "@utils/utils";
+import { INDENTATION_MODE_MAP, IndentationMode, SETTINGS_STORAGE_KEY } from "@constants/const";
 
 /**
  * Service to manage editor settings, including indentation size and mode,

@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
 import { SettingsService } from "@services/settings.service";
-import { IndentationMode } from "@constants";
 import { LanguageDefinition } from "@types";
 import * as prettier from "prettier/standalone";
 import { Plugin as PrettierPlugin } from "prettier";
 import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
-import { makeEditorSettings } from "../../test-utils";
+import { makeEditorSettings } from "../../../test-utils/utils";
+import { IndentationMode } from "@constants/const";
 
 vi.mock("prettier/standalone", () => ({
   format: vi.fn(),

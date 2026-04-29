@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import { test } from "../pages/code-highlighter.page";
 import { HighlightingSettings, Theme } from "@types";
-import { DarkTheme, IndentationMode, LightTheme } from "@constants";
+import { IndentationMode } from "@constants/const";
+import { DarkTheme, LightTheme } from "@constants/themes";
 
 const TEST_DATA_DIR = path.join(__dirname, "../test-data");
 

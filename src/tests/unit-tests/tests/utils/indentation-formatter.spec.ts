@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { IndentationFormatter } from "@utils/indentation-formatter";
-import { SpecialCharacters } from "@constants";
+import { SpecialCharacters } from "@constants/special-characters";
 
 const TAB_SIZE = 2;
 

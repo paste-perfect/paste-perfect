@@ -1,9 +1,10 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
-import { LANGUAGE_STORAGE_KEY, POPULAR_LANGUAGES } from "@constants";
 import { LanguageService } from "@services/language.service";
 import { StorageService } from "@services/storage.service";
-import { createStorageMock } from "../test-utils";
+import { createStorageMock } from "../../test-utils/utils";
+import { POPULAR_LANGUAGES } from "@constants/languages";
+import { LANGUAGE_STORAGE_KEY } from "@constants/const";
 
 const createService = (storedValue: string | null = null) => {
   const storageMock = createStorageMock(storedValue);

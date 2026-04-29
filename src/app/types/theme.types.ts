@@ -1,4 +1,4 @@
-import { DARK_THEME_MAP, DarkTheme, LIGHT_THEME_MAP, LightTheme } from "@constants";
+import { DARK_THEME_MAP, DarkTheme, LIGHT_THEME_MAP, LightTheme } from "@constants/themes";
 
 /**
  * Represents a selectable syntax theme.

@@ -6,35 +6,12 @@
  */
 import { vi } from "vitest";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
-import { LanguageDefinition } from "@types";
-import { IndentationMode } from "@constants";
+import { IndentationMode } from "@constants/const";
 
 // ---------------------------------------------------------------------------
 // Language & Settings Factories
 // ---------------------------------------------------------------------------
 
-/**
- * Creates a mock LanguageDefinition.
- * @param value The specific UI name/value (e.g., 'json-unsorted')
- * @param dependencies List of dependency values
- * @param customImportPath Optional custom loading path
- * @param grammar The Prism grammar ID (defaults to value if not provided)
- */
-export const makeLanguage = (
-  value = "typescript",
-  dependencies: string[] = [],
-  customImportPath?: string,
-  grammar?: string
-): LanguageDefinition => ({
-  title: value,
-  value,
-  filterAlias: [],
-  prismConfiguration: {
-    dependencies,
-    customImportPath,
-    grammar: grammar ?? value,
-  },
-});
 
 type EditorSettingsOverrides = Partial<{
   showLineNumbers: boolean;

@@ -1,13 +1,13 @@
 import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 
-import { HTML_CODE_PRE_SELECTOR } from "@constants";
 import { MessageService } from "primeng/api";
 import { LanguageDefinition } from "@types";
 import { LinesCollector } from "@utils/line-collector";
 import { SettingsService } from "@services/settings.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
+import { HTML_CODE_PRE_SELECTOR } from "@constants/const";
 
 /**
  * A service responsible for syntax highlighting and clipboard copying of code snippets.

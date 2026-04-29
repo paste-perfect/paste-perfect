@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { SettingsService } from "@services/settings.service";
-import { LINE_NUMBER_CLASSES } from "@constants";
+import { LINE_NUMBER_CLASSES } from "@constants/line-numbering";
 import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
-import { makeEditorSettings } from "../../test-utils";
+import { makeEditorSettings } from "../../../test-utils/utils";
 
 describe("LineNumberingService", () => {
   let service: LineNumberingService;

@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "../pages/code-highlighter.page";
-import { IndentationMode, LightTheme } from "@constants";
+import { IndentationMode } from "@constants/const";
+import { LightTheme } from "@constants/themes";
 
 const LANGUAGE = "JavaScript";
 const INVALID_JS_CODE = `function (a: test) {`;

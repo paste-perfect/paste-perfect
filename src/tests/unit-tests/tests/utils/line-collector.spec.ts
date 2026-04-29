@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { IndentationMode, SpecialCharacters } from "@constants";
 import { LinesCollector } from "@utils/line-collector";
-import { createStyledSpan, createTextNode } from "../test-utils";
+import { createStyledSpan, createTextNode } from "../../test-utils/utils";
+import { IndentationMode } from "@constants/const";
+import { SpecialCharacters } from "@constants/special-characters";
 
 describe("LinesCollector", () => {
   let original: HTMLElement;

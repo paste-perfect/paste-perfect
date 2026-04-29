@@ -4,8 +4,9 @@ import { PrismLanguageLoaderService } from "@services/prism/prism-language-loade
 import { MessageService } from "primeng/api";
 import { LocationStrategy } from "@angular/common";
 import { LanguageDefinition } from "@types";
-import { makeLanguage, createMessageMock } from "../../test-utils";
-import { ALL_LANGUAGES } from "@constants";
+import { createMessageMock, makeLanguage } from "../../../test-utils/utils";
+import { ALL_LANGUAGES } from "@constants/languages";
+import { PRETTIER_LANGUAGE_MAP } from "@constants/prettier-language-map";
 
 // ---------------------------------------------------------------------------
 // Hoisted mocks (evaluated before any imports)
@@ -52,6 +53,7 @@ describe("PrismLanguageLoaderService", () => {
 
   it("asdf", () => {
     console.log(ALL_LANGUAGES.map((l) => l.value));
+    console.log(PRETTIER_LANGUAGE_MAP);
   });
 
   // Stable mock objects — reset their call history in beforeEach, not recreated.
@@ -102,7 +104,13 @@ describe("PrismLanguageLoaderService", () => {
 
   describe("loadPrismLanguage", () => {
     it("should do nothing when grammar is missing or empty", async () => {
-      const lang = makeLanguage("json-special", [], undefined, "");
+      const lang : LanguageDefinition= {
+        title: "JSON Special",
+        value: "json-special",
+        filterAlias: [],
+        prismConfiguration: { dependencies: [], customImportPath: undefined, grammar: "json" },
+        prettierConfiguration: PRETTIER_LANGUAGE_MAP["json"],
+      }
       await service.loadPrismLanguage(lang);
       expect(importLanguageSpy).not.toHaveBeenCalled();
     });

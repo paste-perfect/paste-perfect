@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SpecialCharacters } from "@constants";
 import { NodeUtils } from "@utils/node-utils";
+import { SpecialCharacters } from "@constants/special-characters";
 
 describe("NodeUtils", () => {
   afterEach(() => {

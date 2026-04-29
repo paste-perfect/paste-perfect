@@ -1,8 +1,8 @@
 import { RegexPatterns } from "../../regex/regex-patterns";
 import { SettingsService } from "@services/settings.service";
 import { inject, Injectable } from "@angular/core";
-import { SpecialCharacters } from "@constants";
-import { LINE_NUMBER_CLASSES } from "@constants";
+import { SpecialCharacters } from "@constants/special-characters";
+import { LINE_NUMBER_CLASSES } from "@constants/line-numbering";
 
 /**
  * A service responsible for adding line numbers to code blocks.
