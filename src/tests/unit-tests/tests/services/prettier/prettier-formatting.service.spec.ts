@@ -1,20 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
+import * as prettier from "prettier/standalone";
+import type { Plugin as PrettierPlugin } from "prettier";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
 import { SettingsService } from "@services/settings.service";
-import { IndentationMode } from "@constants";
-import { LanguageDefinition } from "@types";
-import * as prettier from "prettier/standalone";
-import { Plugin as PrettierPlugin } from "prettier";
 import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
-import { makeEditorSettings } from "../../test-utils";
+import { LanguageDefinition } from "@types";
+import { IndentationMode } from "@constants/const";
+import { makeEditorSettings, useStandardTeardown } from "../../../test-utils/utils";
 
-vi.mock("prettier/standalone", () => ({
-  format: vi.fn(),
-}));
-
-const makeLanguage = (parser = "babel"): LanguageDefinition =>
-  ({ prettierConfiguration: { parser, plugins: [] } }) as unknown as LanguageDefinition;
+vi.mock("prettier/standalone", () => ({ format: vi.fn() }));
 
 const makePluginResult = (parser: string, pluginOptions?: Record<string, unknown>) => ({
   parser,
@@ -22,7 +17,33 @@ const makePluginResult = (parser: string, pluginOptions?: Record<string, unknown
   pluginOptions,
 });
 
+const typescriptLanguage: LanguageDefinition = {
+  title: "TypeScript",
+  value: "typescript",
+  filterAlias: [],
+  prismConfiguration: { dependencies: [], grammar: "typescript" },
+  prettierConfiguration: { parser: "babel", plugins: [] },
+};
+
+const jsonLanguage: LanguageDefinition = {
+  title: "JSON",
+  value: "json",
+  filterAlias: [],
+  prismConfiguration: { dependencies: [], grammar: "json" },
+  prettierConfiguration: { parser: "json", plugins: [] },
+};
+
+const jsonUnsortedLanguage: LanguageDefinition = {
+  title: "JSON (Unsorted)",
+  value: "json-unsorted",
+  filterAlias: [],
+  prismConfiguration: { dependencies: [], grammar: "json" },
+  prettierConfiguration: { parser: "json", plugins: [] },
+};
+
 describe("PrettierFormattingService", () => {
+  useStandardTeardown();
+
   let service: PrettierFormattingService;
   let pluginLoaderMock: { getParserAndPlugins: ReturnType<typeof vi.fn> };
   let settingsServiceMock: { editorSettings: ReturnType<typeof makeEditorSettings> };
@@ -42,11 +63,6 @@ describe("PrettierFormattingService", () => {
     service = TestBed.inject(PrettierFormattingService);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    TestBed.resetTestingModule();
-  });
-
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
@@ -54,26 +70,32 @@ describe("PrettierFormattingService", () => {
   describe("formatCode — early exits", () => {
     it("should return original code unchanged when formatting is disabled", async () => {
       settingsServiceMock.editorSettings = makeEditorSettings({ enableFormatting: false });
-      const result = await service.formatCode("const x = 1", makeLanguage());
+
+      const result = await service.formatCode("const x = 1", typescriptLanguage);
+
       expect(result).toEqual({ code: "const x = 1", formattingSuccessful: true });
       expect(pluginLoaderMock.getParserAndPlugins).not.toHaveBeenCalled();
     });
 
     it("should return an empty string unchanged without consulting the plugin loader", async () => {
-      const result = await service.formatCode("", makeLanguage());
+      const result = await service.formatCode("", typescriptLanguage);
+
       expect(result).toEqual({ code: "", formattingSuccessful: true });
       expect(pluginLoaderMock.getParserAndPlugins).not.toHaveBeenCalled();
     });
 
     it("should return whitespace-only code unchanged (trim guard)", async () => {
-      const result = await service.formatCode("   ", makeLanguage());
+      const result = await service.formatCode("   ", typescriptLanguage);
+
       expect(result).toEqual({ code: "   ", formattingSuccessful: true });
       expect(pluginLoaderMock.getParserAndPlugins).not.toHaveBeenCalled();
     });
 
     it("should return original code unchanged when the plugin loader returns null", async () => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(null);
-      const result = await service.formatCode("const x = 1;", makeLanguage());
+
+      const result = await service.formatCode("const x = 1;", typescriptLanguage);
+
       expect(result).toEqual({ code: "const x = 1;", formattingSuccessful: true });
     });
   });
@@ -85,7 +107,8 @@ describe("PrettierFormattingService", () => {
     });
 
     it("should return formatted code with formattingSuccessful: true", async () => {
-      const result = await service.formatCode("const x=1", makeLanguage());
+      const result = await service.formatCode("const x=1", typescriptLanguage);
+
       expect(result).toEqual({ code: "const x = 1;\n", formattingSuccessful: true });
     });
 
@@ -93,26 +116,32 @@ describe("PrettierFormattingService", () => {
       const mockPlugin = { parsers: {}, options: {} } as unknown as PrettierPlugin;
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue({ parser: "babel", plugins: [mockPlugin] });
 
-      await service.formatCode("const x=1", makeLanguage());
+      await service.formatCode("const x=1", typescriptLanguage);
 
       expect(prettier.format).toHaveBeenCalledWith("const x=1", expect.objectContaining({ parser: "babel", plugins: [mockPlugin] }));
     });
 
     it("should pass tabWidth from user settings to prettier", async () => {
       settingsServiceMock.editorSettings = makeEditorSettings({ indentationSize: 4 });
-      await service.formatCode("code", makeLanguage());
+
+      await service.formatCode("code", typescriptLanguage);
+
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ tabWidth: 4 }));
     });
 
     it("should pass useTabs: true when indentation mode is Tabs", async () => {
       settingsServiceMock.editorSettings = makeEditorSettings({ indentationMode: IndentationMode.Tabs });
-      await service.formatCode("code", makeLanguage());
+
+      await service.formatCode("code", typescriptLanguage);
+
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ useTabs: true }));
     });
 
     it("should pass useTabs: false when indentation mode is Spaces", async () => {
       settingsServiceMock.editorSettings = makeEditorSettings({ indentationMode: IndentationMode.Spaces });
-      await service.formatCode("code", makeLanguage());
+
+      await service.formatCode("code", typescriptLanguage);
+
       expect(prettier.format).toHaveBeenCalledWith("code", expect.objectContaining({ useTabs: false }));
     });
 
@@ -120,7 +149,7 @@ describe("PrettierFormattingService", () => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("json", { jsonRecursiveSort: true }));
       vi.mocked(prettier.format).mockResolvedValue("{}");
 
-      await service.formatCode("{}", makeLanguage("json"));
+      await service.formatCode("{}", jsonLanguage);
 
       expect(prettier.format).toHaveBeenCalledWith("{}", expect.objectContaining({ jsonRecursiveSort: true }));
     });
@@ -131,10 +160,19 @@ describe("PrettierFormattingService", () => {
       pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("json", { jsonRecursiveSort: true }));
       vi.mocked(prettier.format).mockResolvedValue('{\n  "a": 1,\n  "z": 2\n}\n');
 
-      const result = await service.formatCode('{"z":2,"a":1}', makeLanguage("json"));
+      const result = await service.formatCode('{"z":2,"a":1}', jsonLanguage);
 
       expect(prettier.format).toHaveBeenCalledWith('{"z":2,"a":1}', expect.objectContaining({ jsonRecursiveSort: true, parser: "json" }));
       expect(result.formattingSuccessful).toBe(true);
+    });
+
+    it("should NOT include jsonRecursiveSort when formatting json-unsorted", async () => {
+      pluginLoaderMock.getParserAndPlugins.mockResolvedValue(makePluginResult("json", undefined));
+      vi.mocked(prettier.format).mockResolvedValue('{"zebra":1,"apple":2}\n');
+
+      await service.formatCode('{"zebra":1,"apple":2}', jsonUnsortedLanguage);
+
+      expect(prettier.format).toHaveBeenCalledWith('{"zebra":1,"apple":2}', expect.not.objectContaining({ jsonRecursiveSort: true }));
     });
   });
 
@@ -147,12 +185,13 @@ describe("PrettierFormattingService", () => {
     });
 
     it("should return the original code with formattingSuccessful: false when prettier throws", async () => {
-      const result = await service.formatCode("const x =", makeLanguage());
+      const result = await service.formatCode("const x =", typescriptLanguage);
+
       expect(result).toEqual({ code: "const x =", formattingSuccessful: false });
     });
 
     it("should not propagate the thrown error to the caller", async () => {
-      await expect(service.formatCode("broken code", makeLanguage())).resolves.not.toThrow();
+      await expect(service.formatCode("broken code", typescriptLanguage)).resolves.not.toThrow();
     });
   });
 });

@@ -1,17 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from "vitest";
+import { describe, it, expect, beforeEach, vi, type MockedFunction } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { MessageService } from "primeng/api";
 import { LanguageDefinition } from "@types";
-import { Plugin as PrettierPlugin } from "prettier";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
+import { makeMockPlugin, useStandardTeardown } from "../../../test-utils/utils";
 
-const makeLanguage = (parser: string, plugins: string[] = []): LanguageDefinition =>
+const makeLang = (parser: string, plugins: string[] = []): LanguageDefinition =>
   ({ prettierConfiguration: { parser, plugins } }) as unknown as LanguageDefinition;
 
-const makeMockPlugin = (parserName: string): PrettierPlugin =>
-  ({ parsers: { [parserName]: {} }, options: {} }) as unknown as PrettierPlugin;
-
 describe("PrettierPluginLoaderService", () => {
+  useStandardTeardown();
+
   let service: PrettierPluginLoaderService;
   let messageServiceMock: { add: MockedFunction<MessageService["add"]> };
 
@@ -24,11 +23,6 @@ describe("PrettierPluginLoaderService", () => {
 
     service = TestBed.inject(PrettierPluginLoaderService);
     (service as any).pluginCache.clear();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    TestBed.resetTestingModule();
   });
 
   it("should be created", () => {
@@ -47,36 +41,35 @@ describe("PrettierPluginLoaderService", () => {
     });
 
     describe("resolved parser and plugins", () => {
-      it("should return the correct parser name from the language config", async () => {
+      beforeEach(() => {
         vi.spyOn(service as any, "loadPlugin").mockResolvedValue(makeMockPlugin("babel"));
-        const result = await service.getParserAndPlugins(makeLanguage("babel", ["prettier-plugin-babel"]));
+      });
+
+      it("should return the parser name from the language config", async () => {
+        const result = await service.getParserAndPlugins(makeLang("babel", ["prettier-plugin-babel"]));
         expect(result?.parser).toBe("babel");
       });
 
       it("should include the loaded plugin in the plugins array", async () => {
         const mockPlugin = makeMockPlugin("babel");
-        vi.spyOn(service as any, "loadPlugin").mockResolvedValue(mockPlugin);
-        const result = await service.getParserAndPlugins(makeLanguage("babel", ["prettier-plugin-babel"]));
+        (service as any).loadPlugin.mockResolvedValue(mockPlugin);
+        const result = await service.getParserAndPlugins(makeLang("babel", ["prettier-plugin-babel"]));
         expect(result?.plugins).toContain(mockPlugin);
       });
 
       it("should not set pluginOptions for non-JSON parsers", async () => {
-        vi.spyOn(service as any, "loadPlugin").mockResolvedValue(makeMockPlugin("babel"));
-        const result = await service.getParserAndPlugins(makeLanguage("babel", ["prettier-plugin-babel"]));
+        const result = await service.getParserAndPlugins(makeLang("babel", ["prettier-plugin-babel"]));
         expect(result?.pluginOptions).toBeUndefined();
       });
 
       it("should skip a failing plugin and continue loading the remaining ones", async () => {
         const goodPlugin = makeMockPlugin("babel");
         vi.spyOn(console, "warn").mockImplementation(() => undefined);
-        vi.spyOn(service as any, "loadPlugin")
-          .mockRejectedValueOnce(new Error("failed"))
-          .mockResolvedValueOnce(goodPlugin);
+        (service as any).loadPlugin.mockReset().mockRejectedValueOnce(new Error("failed")).mockResolvedValueOnce(goodPlugin);
 
-        const result = await service.getParserAndPlugins(makeLanguage("babel", ["prettier-plugin-fail", "prettier-plugin-babel"]));
+        const result = await service.getParserAndPlugins(makeLang("babel", ["prettier-plugin-fail", "prettier-plugin-babel"]));
 
-        expect(result?.plugins).toContain(goodPlugin);
-        expect(result?.plugins).toHaveLength(1);
+        expect(result?.plugins).toEqual([goodPlugin]);
       });
     });
 
@@ -84,52 +77,68 @@ describe("PrettierPluginLoaderService", () => {
       it("should auto-inject prettier-plugin-sort-json for the json parser", async () => {
         const sortJsonPlugin = makeMockPlugin("json");
         vi.spyOn(service as any, "loadPlugin").mockResolvedValue(sortJsonPlugin);
-        const result = await service.getParserAndPlugins(makeLanguage("json", []));
+
+        const result = await service.getParserAndPlugins(makeLang("json", []));
+
         expect(result?.plugins).toContain(sortJsonPlugin);
       });
 
       it("should set pluginOptions.jsonRecursiveSort to true for the json parser", async () => {
         vi.spyOn(service as any, "loadPlugin").mockResolvedValue(makeMockPlugin("json"));
-        const result = await service.getParserAndPlugins(makeLanguage("json", []));
+        const result = await service.getParserAndPlugins(makeLang("json", []));
         expect(result?.pluginOptions).toEqual({ jsonRecursiveSort: true });
       });
 
-      it("should not duplicate the sort-json plugin when already listed in configured plugins", async () => {
+      it("should not duplicate the sort-json plugin when already listed", async () => {
         const sortJsonPlugin = makeMockPlugin("json");
         vi.spyOn(service as any, "loadPlugin").mockResolvedValue(sortJsonPlugin);
 
-        const result = await service.getParserAndPlugins(makeLanguage("json", ["prettier-plugin-sort-json"]));
+        const result = await service.getParserAndPlugins(makeLang("json", ["prettier-plugin-sort-json"]));
 
-        const occurrences = result!.plugins.filter((p) => p === sortJsonPlugin).length;
-        expect(occurrences).toBe(1);
+        expect(result!.plugins.filter((p) => p === sortJsonPlugin)).toHaveLength(1);
       });
 
       it("should return an empty plugins array when sort-json fails to load", async () => {
         vi.spyOn(console, "warn").mockImplementation(() => undefined);
         vi.spyOn(service as any, "loadPlugin").mockRejectedValue(new Error("no sort-json"));
 
-        const result = await service.getParserAndPlugins(makeLanguage("json", []));
+        const result = await service.getParserAndPlugins(makeLang("json", []));
 
-        expect(result).not.toBeNull();
         expect(result?.plugins).toHaveLength(0);
+      });
+
+      it("should NOT inject sort-json or set jsonRecursiveSort for json-unsorted", async () => {
+        const sortJsonPlugin = makeMockPlugin("json");
+        const loadPluginSpy = vi.spyOn(service as any, "loadPlugin").mockResolvedValue(sortJsonPlugin);
+
+        const language = {
+          value: "json-unsorted",
+          prettierConfiguration: { parser: "json", plugins: [] },
+        } as unknown as LanguageDefinition;
+
+        const result = await service.getParserAndPlugins(language);
+
+        expect(loadPluginSpy).not.toHaveBeenCalledWith("prettier-plugin-sort-json");
+        expect(result?.plugins).toHaveLength(0);
+        expect(result?.pluginOptions).toBeUndefined();
       });
     });
   });
 
   describe("loadPlugin", () => {
-    it("should invoke the registry factory only once across two identical loads (cache hit)", async () => {
+    it("should invoke the registry factory only once for repeated loads (cache hit)", async () => {
       const mockPlugin = makeMockPlugin("sql");
       const registryFn = vi.fn().mockResolvedValue(mockPlugin);
       (service as any).pluginRegistry["prettier-plugin-sql"] = registryFn;
 
-      const lang = makeLanguage("sql", ["prettier-plugin-sql"]);
+      const lang = makeLang("sql", ["prettier-plugin-sql"]);
       await service.getParserAndPlugins(lang);
       await service.getParserAndPlugins(lang);
 
       expect(registryFn).toHaveBeenCalledTimes(1);
     });
 
-    it("should store the loaded plugin in the internal cache after a successful load", async () => {
+    it("should store the loaded plugin in the cache after a successful load", async () => {
       const mockPlugin = makeMockPlugin("toml");
       (service as any).pluginRegistry["prettier-plugin-toml"] = vi.fn().mockResolvedValue(mockPlugin);
 
@@ -151,8 +160,7 @@ describe("PrettierPluginLoaderService", () => {
     });
 
     it("should display an error toast and rethrow with context when a plugin fails to load", async () => {
-      const loadError = new Error("import failed");
-      (service as any).pluginRegistry["prettier-plugin-java"] = vi.fn().mockRejectedValue(loadError);
+      (service as any).pluginRegistry["prettier-plugin-java"] = vi.fn().mockRejectedValue(new Error("import failed"));
       vi.spyOn(console, "error").mockImplementation(() => undefined);
 
       await expect((service as any).loadPlugin("prettier-plugin-java")).rejects.toThrow(

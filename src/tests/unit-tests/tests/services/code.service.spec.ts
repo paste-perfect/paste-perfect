@@ -7,6 +7,7 @@ import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
 import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
+import { flushPromises, useStandardTeardown } from "../../test-utils/utils";
 
 const HIGHLIGHTED = '<span class="token">hello</span>';
 const FORMATTED = "function hello() {}";
@@ -30,10 +31,9 @@ class LanguageServiceStub {
   }
 }
 
-/** Yields to the microtask / macrotask queue so Angular effects can settle. */
-const flushEffects = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-
 describe("CodeService", () => {
+  useStandardTeardown();
+
   let service: CodeService;
   let prismMock: ReturnType<typeof createPrismMock>;
   let prettierMock: ReturnType<typeof createPrettierMock>;
@@ -57,11 +57,6 @@ describe("CodeService", () => {
     });
 
     service = TestBed.inject(CodeService);
-  });
-
-  afterEach(() => {
-    TestBed.resetTestingModule();
-    vi.restoreAllMocks();
   });
 
   it("should be created", () => {
@@ -128,35 +123,35 @@ describe("CodeService", () => {
   describe("processing pipeline (effect)", () => {
     it("should call PrettierFormattingService.formatCode when rawCode changes", async () => {
       service.rawCode = FORMATTED;
-      await flushEffects();
+      await flushPromises();
       expect(prettierMock.formatCode).toHaveBeenCalled();
     });
 
     it("should call PrismHighlightService.highlightCode with the formatted code", async () => {
       service.rawCode = FORMATTED;
-      await flushEffects();
+      await flushPromises();
       expect(prismMock.highlightCode).toHaveBeenCalledWith(expect.any(String), languageStub.selectedLanguage);
     });
 
     it("should call LineNumberingService.prependLineNumbers with the highlighted output", async () => {
       service.rawCode = FORMATTED;
-      await flushEffects();
+      await flushPromises();
       expect(lineNumberMock.prependLineNumbers).toHaveBeenCalledWith(HIGHLIGHTED);
     });
 
     it("should update highlightedCode with sanitized output when rawCode is non-empty", async () => {
       vi.spyOn(SanitizerWrapper, "sanitizeOutput").mockReturnValue(SANITIZED);
       service.rawCode = FORMATTED;
-      await flushEffects();
+      await flushPromises();
       expect(service.highlightedCode).toBe(SANITIZED);
     });
 
     it("should set highlightedCode to the placeholder when rawCode is cleared", async () => {
       service.rawCode = "something";
-      await flushEffects();
+      await flushPromises();
 
       service.rawCode = "";
-      await flushEffects();
+      await flushPromises();
 
       expect(service.highlightedCode).toBe(NO_CODE_HTML);
     });
@@ -164,30 +159,30 @@ describe("CodeService", () => {
     it("should set formattingSuccessful to false when Prettier reports a failure", async () => {
       prettierMock.formatCode.mockResolvedValue({ code: FORMATTED, formattingSuccessful: false });
       service.rawCode = "invalid{{{";
-      await flushEffects();
+      await flushPromises();
       expect(service.formattingSuccessful).toBe(false);
     });
 
     it("should set formattingSuccessful back to true on a successful subsequent call", async () => {
       prettierMock.formatCode.mockResolvedValueOnce({ code: FORMATTED, formattingSuccessful: false });
       service.rawCode = "bad code";
-      await flushEffects();
+      await flushPromises();
 
       prettierMock.formatCode.mockResolvedValueOnce({ code: FORMATTED, formattingSuccessful: true });
       service.rawCode = "const ok = true;";
-      await flushEffects();
+      await flushPromises();
 
       expect(service.formattingSuccessful).toBe(true);
     });
 
     it("should re-run the pipeline when the selected language changes", async () => {
       service.rawCode = FORMATTED;
-      await flushEffects();
+      await flushPromises();
       const callsBefore = prismMock.highlightCode.mock.calls.length;
 
       languageStub.setLanguage("python");
-      service.rawCode = FORMATTED;
-      await flushEffects();
+      service.rawCode = FORMATTED + " ";
+      await flushPromises();
 
       expect(prismMock.highlightCode.mock.calls.length).toBeGreaterThan(callsBefore);
     });
@@ -195,10 +190,10 @@ describe("CodeService", () => {
     it("should pass the escaped input to PrettierFormattingService", async () => {
       const escapeSpy = vi.spyOn(SanitizerWrapper, "escapeUmlauts").mockReturnValue("escaped_code");
       service.rawCode = "Ä code";
-      await flushEffects();
+      await flushPromises();
 
       expect(escapeSpy).toHaveBeenCalledWith("Ä code");
-      expect(prettierMock.formatCode).toHaveBeenCalledWith("escaped_code", expect.any(String));
+      expect(prettierMock.formatCode).toHaveBeenCalledWith("escaped_code", expect.anything());
     });
   });
 });

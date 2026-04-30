@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
-import { resetInlineStyleApplierState } from "../test-utils";
+import { resetInlineStyleApplierState, useStandardTeardown } from "../../test-utils/utils";
 
 describe("InlineStyleApplier", () => {
   let container: HTMLElement;
@@ -11,13 +11,10 @@ describe("InlineStyleApplier", () => {
     resetInlineStyleApplierState();
   });
 
-  afterEach(() => {
-    document.body.innerHTML = "";
-    vi.restoreAllMocks();
-  });
+  useStandardTeardown({ clearBody: true });
 
   describe("captureRootStyles", () => {
-    it("should store non-default CSS properties found on the root element", () => {
+    it("stores non-default CSS properties found on the root element", () => {
       const root = document.createElement("div");
       root.style.color = "rgb(0, 0, 255)";
       root.style.fontStyle = "italic";
@@ -31,7 +28,7 @@ describe("InlineStyleApplier", () => {
       });
     });
 
-    it("should NOT store CSS properties whose value matches the browser default", () => {
+    it("does NOT store CSS properties whose value matches the browser default", () => {
       const root = document.createElement("div");
       root.style.fontWeight = "400";
       container.appendChild(root);
@@ -43,7 +40,7 @@ describe("InlineStyleApplier", () => {
   });
 
   describe("applyElementStyles", () => {
-    it("should copy relevant computed styles from the original element to its clone", () => {
+    it("copies relevant computed styles from the original element to its clone", () => {
       const original = document.createElement("span");
       original.style.fontFamily = "Courier New";
       original.style.color = "rgb(0, 128, 0)";
@@ -56,7 +53,7 @@ describe("InlineStyleApplier", () => {
       expect(cloned.style.getPropertyValue("color")).toBe("rgb(0, 128, 0)");
     });
 
-    it("should NOT apply a CSS property that has the browser's default value", () => {
+    it("does NOT apply a CSS property that has the browser's default value", () => {
       const original = document.createElement("span");
       original.style.fontStyle = "normal";
       container.appendChild(original);
@@ -69,7 +66,7 @@ describe("InlineStyleApplier", () => {
   });
 
   describe("applyStoredRootStyles", () => {
-    it("should apply all previously captured non-default root styles to a new element", () => {
+    it("applies all previously captured non-default root styles to a new element", () => {
       InlineStyleApplier["rootStyleProperties"] = {
         color: "red",
         "font-style": "italic",
@@ -82,7 +79,7 @@ describe("InlineStyleApplier", () => {
       expect(target.style.getPropertyValue("font-style")).toBe("italic");
     });
 
-    it("should NOT apply a stored property whose value is the browser default", () => {
+    it("does NOT apply a stored property whose value is the browser default", () => {
       InlineStyleApplier["rootStyleProperties"] = { "font-weight": "400" };
 
       const target = document.createElement("span");
@@ -91,7 +88,7 @@ describe("InlineStyleApplier", () => {
       expect(target.style.getPropertyValue("font-weight")).toBe("");
     });
 
-    it("should leave the element untouched when no root styles have been captured", () => {
+    it("leaves the element untouched when no root styles have been captured", () => {
       const target = document.createElement("span");
       InlineStyleApplier.applyStoredRootStyles(target);
 

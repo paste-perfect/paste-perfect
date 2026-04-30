@@ -128,7 +128,7 @@
           "options": {
             "tsConfig": "tsconfig.spec.json",
             "runnerConfig": "config/tests/vitest.config.ts",
-            "include": ["src/tests/unit-tests/**/*.spec.ts", "src/tests/unit-tests/**/*.test.ts"]
+            "include": ["src/tests/unit-tests/tests/**/*.spec.ts", "src/tests/unit-tests/tests/**/*.test.ts"]
           }
         }
       }

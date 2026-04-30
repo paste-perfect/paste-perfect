@@ -1,5 +1,6 @@
-import { DARK_THEME_MAP, DarkTheme, INDENTATION_MODE_MAP, IndentationMode, LIGHT_THEME_MAP, LightTheme } from "@constants";
 import { IndentationModeLabel, Theme, ThemeLabel } from "@types";
+import { INDENTATION_MODE_MAP, IndentationMode } from "@constants/const";
+import { DARK_THEME_MAP, DarkTheme, LIGHT_THEME_MAP, LightTheme } from "@constants/themes";
 
 /** Looks up the indentation label for a given indentation mode */
 export const getIndentationValueFromMode = (mode: IndentationMode): IndentationModeLabel => {

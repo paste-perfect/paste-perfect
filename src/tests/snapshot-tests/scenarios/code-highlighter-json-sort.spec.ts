@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "../pages/code-highlighter.page";
-import { IndentationMode, LightTheme } from "@constants";
+import { IndentationMode } from "@constants/const";
+import { LightTheme } from "@constants/themes";
 
 const LANGUAGE = "JSON";
 
@@ -68,6 +69,41 @@ test.describe("Code Highlighter – JSON Key Sorting", () => {
     const appleIndex = outputText!.indexOf('"apple"');
 
     // "zebra" was first in the input, so it must still appear before "apple"
+    expect(zebraIndex).toBeGreaterThanOrEqual(0);
+    expect(appleIndex).toBeGreaterThanOrEqual(0);
+    expect(zebraIndex).toBeLessThan(appleIndex);
+  });
+
+  test("does not sort JSON keys when using JSON Unsorted language", async ({ page }) => {
+    await page.assertions.expectHasDesktopSettings();
+
+    const settings = {
+      ...BASE_SETTINGS,
+      language: "JSON Unsorted",
+      enableFormatting: true, // formatting ON, but sort must still be skipped
+    };
+
+    // Arrange
+    await page.utils.applyEditorWithCode({ ...settings, code: UNSORTED_JSON });
+
+    // Assert – settings applied correctly
+    await page.utils.assertEditorSettings(settings);
+
+    // Wait for formatting to complete
+    const codeLocator = page.locator("#highlighted-code-wrapper code");
+
+    await expect(async () => {
+      const text = await codeLocator.textContent();
+      expect(text).toContain('"zebra"');
+      expect(text).toContain('"apple"');
+    }).toPass({ timeout: 15000 });
+
+    const outputText = await codeLocator.textContent();
+
+    const zebraIndex = outputText!.indexOf('"zebra"');
+    const appleIndex = outputText!.indexOf('"apple"');
+
+    // "zebra" was first in input — must still appear before "apple" even with formatting enabled
     expect(zebraIndex).toBeGreaterThanOrEqual(0);
     expect(appleIndex).toBeGreaterThanOrEqual(0);
     expect(zebraIndex).toBeLessThan(appleIndex);

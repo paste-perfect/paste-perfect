@@ -1,3 +1,4 @@
+import path from "path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -7,28 +8,10 @@ export default defineConfig({
     environment: "happy-dom",
     environmentOptions: {
       happyDOM: {
-        settings: {
-          disableCSSFileLoading: true, // Prevents Happy DOM from fetching <link> stylesheets
-        },
+        settings: { disableCSSFileLoading: true },
       },
     },
-    // Reset all mocks/spies and module registry between tests.
-    clearMocks: true,
-    mockReset: true, // resets implementations too — prevents cross-test leakage
-    restoreMocks: true, // restores original (un-spied) implementations
-    unstubEnvs: true,
-    unstubGlobals: true,
     isolate: true,
     pool: "forks",
-  },
-  resolve: {
-    alias: {
-      "@components": "/src/app/components",
-      "@constants": "/src/app/constants/index",
-      "@package.json": "/package.json",
-      "@services": "/src/app/services",
-      "@types": "/src/app/types/index",
-      "@utils": "/src/app/utils",
-    },
   },
 });
