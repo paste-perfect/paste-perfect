@@ -1,9 +1,9 @@
 import fs from "fs";
 import { Page } from "@playwright/test";
 import { CodeHighlighterActions } from "../types/types";
-import { IndentationMode } from "@constants";
 import { Theme } from "@types";
 import { getThemeValueFromTheme, getIndentationValueFromMode } from "./enum-mappers";
+import { IndentationMode } from "@constants/const";
 
 const SELECTORS = {
   copyButton: "#copy-to-clipboard-button",

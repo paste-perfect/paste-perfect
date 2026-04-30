@@ -2,7 +2,19 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist/out-tsc/spec",
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals"],
+    "paths": {
+      "@constants/languages": ["./src/tests/unit-tests/mocks/languages-mock"],
+      "@constants/prettier-language-map": ["./src/tests/unit-tests/mocks/prettier-language-map-mock"],
+      // Other paths
+      "@components/*": ["./src/app/components/*"],
+      "@constants/*": ["./src/app/constants/*"],
+      "@package.json": ["./package.json"],
+      "@environments/*": ["./src/environments/*"],
+      "@services/*": ["./src/app/services/*"],
+      "@types": ["./src/app/types/index"],
+      "@utils/*": ["./src/app/utils/*"]
+    }
   },
-  "include": ["src/tests/unit-tests/**/*.spec.ts", "src/**/*.d.ts"]
+  "include": ["src/tests/unit-tests/tests/**/*.spec.ts", "src/tests/unit-tests/tests/**/*.ts", "src/**/*.d.ts"]
 }

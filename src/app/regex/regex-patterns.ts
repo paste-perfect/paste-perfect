@@ -1,5 +1,5 @@
-import { SpecialCharacters } from "@constants";
 import { RegexFlags } from "./regex-flags";
+import { SpecialCharacters } from "@constants/special-characters";
 
 export class RegexPatterns {
   /**

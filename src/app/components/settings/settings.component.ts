@@ -10,8 +10,9 @@ import { SelectableIndentationMode } from "@types";
 import { SelectItemGroup, TooltipOptions } from "primeng/api";
 import { ToggleSwitch } from "primeng/toggleswitch";
 import { Tooltip } from "primeng/tooltip";
-import { DEFAULT_TOOLTIP_OPTIONS, IndentationMode, OTHER_LANGUAGES, POPULAR_LANGUAGES } from "@constants";
 import { NgTemplateOutlet } from "@angular/common";
+import { DEFAULT_TOOLTIP_OPTIONS, IndentationMode } from "@constants/const";
+import { OTHER_LANGUAGES, POPULAR_LANGUAGES } from "@constants/languages";
 
 @Component({
   selector: "app-settings",

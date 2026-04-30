@@ -1,10 +1,10 @@
-import { IndentationMode } from "@constants";
 import { RegexPatterns } from "../regex/regex-patterns";
-import { LINE_NUMBER_CLASSES } from "../constants/line-numbering";
 import { MsOfficeUtils } from "./ms-office-utils";
 import { IndentationFormatter } from "./indentation-formatter";
 import { NodeUtils } from "./node-utils";
 import { InlineStyleApplier } from "./inline-style-applier";
+import { IndentationMode } from "@constants/const";
+import { LINE_NUMBER_CLASSES } from "@constants/line-numbering";
 
 /**
  * A utility class that recursively processes an original node and its cloned counterpart,

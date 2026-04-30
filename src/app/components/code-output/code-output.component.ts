@@ -2,10 +2,10 @@ import { Component, inject } from "@angular/core";
 import { Button } from "primeng/button";
 import { Tooltip } from "primeng/tooltip";
 import { TooltipOptions } from "primeng/api";
-import { DEFAULT_TOOLTIP_OPTIONS } from "@constants";
 import { CodeService } from "@services/code.service";
 import { LanguageService } from "@services/language.service";
 import { PrismHighlightService } from "@services/prism/prism-highlight.service";
+import { DEFAULT_TOOLTIP_OPTIONS } from "@constants/const";
 
 /**
  * Component responsible for displaying and managing highlighted code output.
