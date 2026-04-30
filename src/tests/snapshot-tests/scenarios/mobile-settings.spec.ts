@@ -1,5 +1,5 @@
 import { test } from "../pages/code-highlighter.page";
-import { DarkTheme } from "@constants";
+import { DarkTheme } from "@constants/themes";
 
 const MOBILE_VIEWPORT = { width: 600, height: 800 };
 const THEME = DarkTheme.A11yDark;

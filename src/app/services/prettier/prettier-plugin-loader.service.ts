@@ -71,7 +71,8 @@ export class PrettierPluginLoaderService {
     }
 
     // Inject prettier-plugin-sort-json automatically for JSON parser
-    if (config.parser === "json") {
+    const useJsonSort = config.parser === "json" && language.value !== "json-unsorted";
+    if (useJsonSort) {
       try {
         const sortJsonPlugin = await this.loadPlugin("prettier-plugin-sort-json");
         if (!requiredPlugins.includes(sortJsonPlugin)) {
@@ -86,7 +87,7 @@ export class PrettierPluginLoaderService {
       parser: config.parser,
       plugins: requiredPlugins,
       // Pass plugin-specific options for sort-json when applicable
-      pluginOptions: config.parser === "json" ? { jsonRecursiveSort: true } : undefined,
+      pluginOptions: useJsonSort ? { jsonRecursiveSort: true } : undefined,
     };
   }
 

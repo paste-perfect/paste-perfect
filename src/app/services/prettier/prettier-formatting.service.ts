@@ -3,7 +3,7 @@ import { LanguageDefinition } from "@types";
 import * as prettier from "prettier/standalone";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
 import { SettingsService } from "@services/settings.service";
-import { IndentationMode } from "@constants";
+import { IndentationMode } from "@constants/const";
 
 /**
  * Service responsible for code formatting using Prettier

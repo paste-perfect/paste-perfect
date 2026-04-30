@@ -1,6 +1,6 @@
 import { RegexPatterns } from "../regex/regex-patterns";
-import { SpecialCharacters } from "@constants";
 import { RegexFlags } from "../regex/regex-flags";
+import { SpecialCharacters } from "@constants/special-characters";
 
 /**
  * Utility for masking and formatting code indentation.

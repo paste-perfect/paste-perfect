@@ -1,4 +1,4 @@
-import { SpecialCharacters } from "@constants";
+import { SpecialCharacters } from "@constants/special-characters";
 
 export class NodeUtils {
   /**

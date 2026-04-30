@@ -16,7 +16,7 @@
     "module": "ES2022",
     "paths": {
       "@components/*": ["./src/app/components/*"],
-      "@constants": ["./src/app/constants/index"],
+      "@constants/*": ["./src/app/constants/*"],
       "@package.json": ["./package.json"],
       "@environments/*": ["./src/environments/*"],
       "@services/*": ["./src/app/services/*"],

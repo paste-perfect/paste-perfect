@@ -1,5 +1,5 @@
 import { LanguageDefinition } from "@types";
-import { ALL_LANGUAGES } from "@constants";
+import { ALL_LANGUAGES } from "@constants/languages";
 
 /**
  * Search for a language by its title (case-insensitive).

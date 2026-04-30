@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { SettingsService } from "@services/settings.service";
-import { LINE_NUMBER_CLASSES } from "@constants";
+import { LINE_NUMBER_CLASSES } from "@constants/line-numbering";
 import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
-import { makeEditorSettings } from "../../test-utils";
+import { makeEditorSettings, useStandardTeardown } from "../../../test-utils/utils";
 
 describe("LineNumberingService", () => {
+  useStandardTeardown();
+
   let service: LineNumberingService;
   let settingsServiceMock: { editorSettings: ReturnType<typeof makeEditorSettings> };
 
@@ -19,18 +21,13 @@ describe("LineNumberingService", () => {
     service = TestBed.inject(LineNumberingService);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    TestBed.resetTestingModule();
-  });
-
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
 
   describe("prependLineNumbers", () => {
     describe("guard clauses", () => {
-      it("should return the original code unchanged when showLineNumbers is false", () => {
+      it("should return original code unchanged when showLineNumbers is false", () => {
         settingsServiceMock.editorSettings = makeEditorSettings({ showLineNumbers: false });
         const code = "const x = 1;\nconst y = 2;";
         expect(service.prependLineNumbers(code)).toBe(code);
@@ -57,15 +54,13 @@ describe("LineNumberingService", () => {
       });
 
       it("should produce exactly one line when input has no newlines", () => {
-        const result = service.prependLineNumbers("hello");
-        expect(result.split("\n")).toHaveLength(1);
+        expect(service.prependLineNumbers("hello").split("\n")).toHaveLength(1);
       });
     });
 
     describe("multi-line input", () => {
       it("should prepend a line-number span on every line", () => {
-        const code = "line one\nline two\nline three";
-        const lines = service.prependLineNumbers(code).split("\n");
+        const lines = service.prependLineNumbers("line one\nline two\nline three").split("\n");
         expect(lines).toHaveLength(3);
         lines.forEach((line) => expect(line).toContain(`class="${LINE_NUMBER_CLASSES}"`));
       });

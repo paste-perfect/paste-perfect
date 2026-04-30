@@ -1,8 +1,8 @@
 import { expect, Page } from "@playwright/test";
 import { CodeHighlighterAssertions } from "../types/types";
-import { IndentationMode } from "@constants";
 import { Theme } from "@types";
 import { getIndentationValueFromMode, getThemeValueFromTheme } from "./enum-mappers";
+import { IndentationMode } from "@constants/const";
 
 export function createAssertions(page: Page): CodeHighlighterAssertions {
   /**

@@ -42,15 +42,17 @@ export const ALL_LANGUAGES: LanguageDefinition[] = [
         title: value.title || key,
         // Language identifier
         value: key,
+        // Language identifier
         // Extract alias titles
         filterAlias: Object.values((value.aliasTitles as Record<string, string>) || {}),
         prismConfiguration: {
           // Collect dependencies, ensuring they are arrays
           dependencies: [...normalizeToArray(value.require), ...normalizeToArray(value.modify), ...normalizeToArray(value.optional)],
+          grammar: key,
         },
         // Add Prettier configuration if available
         prettierConfiguration: prettierConfiguration,
-      };
+      } satisfies LanguageDefinition;
     }),
   {
     title: "Angular",
@@ -58,6 +60,7 @@ export const ALL_LANGUAGES: LanguageDefinition[] = [
     filterAlias: ["Angular", "Typescript"],
     prismConfiguration: {
       dependencies: ["typescript", "scss", "json", "markup"],
+      grammar: "angular",
       customImportPath: "custom-languages/angular-grammar.js",
     },
     prettierConfiguration: PRETTIER_LANGUAGE_MAP["typescript"],
@@ -68,9 +71,20 @@ export const ALL_LANGUAGES: LanguageDefinition[] = [
     filterAlias: ["Vue", "Typescript"],
     prismConfiguration: {
       dependencies: ["typescript", "scss", "json", "markup"],
+      grammar: "vue",
       customImportPath: "custom-languages/vue-grammar.js",
     },
     prettierConfiguration: PRETTIER_LANGUAGE_MAP["html"],
+  },
+  {
+    title: "JSON Unsorted",
+    value: "json-unsorted",
+    filterAlias: [],
+    prismConfiguration: {
+      dependencies: [],
+      grammar: "json",
+    },
+    prettierConfiguration: PRETTIER_LANGUAGE_MAP["json"],
   },
 ].sort((a, b) => a.title.localeCompare(b.title));
 

@@ -6,7 +6,8 @@ import { PrismLanguageLoaderService } from "@services/prism/prism-language-loade
 import { SettingsService } from "@services/settings.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { LinesCollector } from "@utils/line-collector";
-import { makeLanguage, makeEditorSettings, createMockPreElement, createMessageMock } from "../../test-utils";
+import { LanguageDefinition } from "@types";
+import { makeEditorSettings, createMockPreElement, createMessageMock, flushPromises, useStandardTeardown } from "../../../test-utils/utils";
 
 const prismMock = vi.hoisted(() => ({
   languages: {} as Record<string, unknown>,
@@ -27,14 +28,25 @@ vi.mock("@services/prism/prism-language-loader.service", () => ({
   PrismLanguageLoaderService: class {},
 }));
 
-vi.mock("@constants", () => ({
-  HTML_CODE_PRE_SELECTOR: "pre",
-}));
+vi.mock("@constants", () => ({ HTML_CODE_PRE_SELECTOR: "pre" }));
 
-/** Drains the microtask / macrotask queue so async fire-and-forget work settles. */
-const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+const typescriptLanguage: LanguageDefinition = {
+  title: "TypeScript",
+  value: "typescript",
+  filterAlias: [],
+  prismConfiguration: { dependencies: [], grammar: "typescript" },
+};
+
+const pythonLanguage: LanguageDefinition = {
+  title: "Python",
+  value: "python",
+  filterAlias: [],
+  prismConfiguration: { dependencies: [], grammar: "python" },
+};
 
 describe("PrismHighlightService", () => {
+  useStandardTeardown();
+
   let service: PrismHighlightService;
   let clipboardWriteMock: ReturnType<typeof vi.fn>;
   let prismLanguageLoaderMock: { loadPrismLanguage: ReturnType<typeof vi.fn> };
@@ -47,14 +59,17 @@ describe("PrismHighlightService", () => {
   };
 
   beforeEach(() => {
+    vi.mocked(messageServiceMock.add).mockReset();
+
     Object.keys(prismMock.languages).forEach((key) => delete prismMock.languages[key]);
     prismMock.languages["typescript"] = {};
-    prismMock.highlight.mockReturnValue("");
+    prismMock.highlight.mockReset().mockReturnValue("");
 
-    prismLanguageLoaderMock = { loadPrismLanguage: vi.fn() };
-    prismLanguageLoaderMock.loadPrismLanguage.mockImplementation(async (lang) => {
-      prismMock.languages[lang.value] = {};
-    });
+    prismLanguageLoaderMock = {
+      loadPrismLanguage: vi.fn().mockImplementation(async (lang) => {
+        prismMock.languages[lang.value] = {};
+      }),
+    };
 
     clipboardWriteMock = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
@@ -86,11 +101,6 @@ describe("PrismHighlightService", () => {
     service = TestBed.inject(PrismHighlightService);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    TestBed.resetTestingModule();
-  });
-
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
@@ -99,7 +109,7 @@ describe("PrismHighlightService", () => {
     it("should sanitize the input before highlighting", async () => {
       prismMock.highlight.mockReturnValue("<span>highlighted</span>");
 
-      await service.highlightCode("const x = 1;", makeLanguage());
+      await service.highlightCode("const x = 1;", typescriptLanguage);
 
       expect(SanitizerWrapper.sanitizeInput).toHaveBeenCalledWith("const x = 1;");
     });
@@ -108,7 +118,7 @@ describe("PrismHighlightService", () => {
       delete prismMock.languages["python"];
       prismMock.highlight.mockReturnValue("<span>code</span>");
 
-      await service.highlightCode('print("hello")', makeLanguage("python"));
+      await service.highlightCode('print("hello")', pythonLanguage);
 
       expect(prismLanguageLoaderMock.loadPrismLanguage).toHaveBeenCalledWith(expect.objectContaining({ value: "python" }));
     });
@@ -116,7 +126,7 @@ describe("PrismHighlightService", () => {
     it("should NOT call loadPrismLanguage when the language is already registered", async () => {
       prismMock.highlight.mockReturnValue("<span>highlighted</span>");
 
-      await service.highlightCode("const x = 1;", makeLanguage());
+      await service.highlightCode("const x = 1;", typescriptLanguage);
 
       expect(prismLanguageLoaderMock.loadPrismLanguage).not.toHaveBeenCalled();
     });
@@ -125,7 +135,7 @@ describe("PrismHighlightService", () => {
       const expectedHtml = '<span class="token keyword">const</span>';
       prismMock.highlight.mockReturnValue(expectedHtml);
 
-      const result = await service.highlightCode("const x = 1;", makeLanguage());
+      const result = await service.highlightCode("const x = 1;", typescriptLanguage);
 
       expect(result).toBe(expectedHtml);
     });
@@ -138,9 +148,7 @@ describe("PrismHighlightService", () => {
     beforeEach(() => {
       mockPreElement = createMockPreElement();
       vi.spyOn(document, "querySelector").mockReturnValue(mockPreElement);
-      collectLinesSpy = vi.spyOn(LinesCollector.prototype, "collectLinesFromNodes").mockImplementation(() => {
-        /* empty */
-      });
+      collectLinesSpy = vi.spyOn(LinesCollector.prototype, "collectLinesFromNodes").mockImplementation(() => undefined);
     });
 
     it("should display a warning toast when no <pre> element is found in the DOM", () => {
@@ -151,7 +159,7 @@ describe("PrismHighlightService", () => {
       expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "warn", summary: "No code available" }));
     });
 
-    it("should write both text/html and text/plain blobs to the clipboard on success", async () => {
+    it("should write to the clipboard on success", async () => {
       service.copyToClipboard();
       await flushPromises();
 

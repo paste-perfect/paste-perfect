@@ -1,5 +1,5 @@
 import { NodeUtils } from "./node-utils";
-import { SpecialCharacters } from "@constants";
+import { SpecialCharacters } from "@constants/special-characters";
 
 /**
  * Utility class for applying inline styles required for proper formatting
