@@ -3,10 +3,11 @@ name: Sync main → dev (Staging Merge)
 on:
   push:
     branches: [ main ]
-    # Only trigger when source files changed — skip pure tag pushes.
-    paths-ignore:
-      - "**.md"
-      - ".github/CODEOWNERS"
+    # No paths-ignore on purpose: the sync must run for ANY change to main,
+    # including docs-only commits — otherwise dev silently diverges from main on
+    # those files. The internal AHEAD count and tree-diff guards already no-op
+    # cleanly when there is nothing effective to sync, and the validate-merge job
+    # skips the expensive build/test steps for docs/config-only changes.
   workflow_dispatch:
 
 # One sync at a time; never cancel to avoid corrupting the staging branch.
@@ -44,7 +45,7 @@ jobs:
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
       - name: Checkout (full history for merge base resolution)
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
@@ -77,9 +78,13 @@ jobs:
 
           git checkout -B "$SYNC_BRANCH" origin/dev
 
+          # No [skip ci] in this commit subject: it becomes the HEAD of the sync
+          # PR branch and must let the PR's own CI run. Loop prevention for the
+          # eventual merge-to-dev is handled by release.yml/promote's actor guard
+          # (the bot auto-merges) plus the "[skip ci]" in the PR title.
           set +e
           git merge --no-ff --no-edit origin/main \
-            -m "chore(sync): merge main into dev [skip ci]"
+            -m "chore(sync): merge main into dev"
           MERGE_EXIT=$?
           set -e
 
@@ -126,7 +131,7 @@ jobs:
             fi
 
             git commit \
-              -m "chore(sync): resolve version false-conflict — preserve dev RC version [skip ci]"
+              -m "chore(sync): resolve version false-conflict — preserve dev RC version"
             echo "False-conflict resolved. Dev's pre-release version retained."
           fi
 
@@ -165,29 +170,57 @@ jobs:
 
     steps:
       - name: Checkout staging branch (merged state)
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.staging-merge.outputs.sync_branch }}
           fetch-depth: 0
 
+      # Detect whether the merged state only touches docs/config relative to dev.
+      # If so, the heavy unit-test and build steps add no signal and are skipped.
+      - name: Detect change scope (code vs docs-only)
+        id: scope
+        run: |
+          set -euo pipefail
+          git fetch origin dev
+          CHANGED=$(git diff --name-only origin/dev HEAD)
+          echo "Changed files vs dev:"
+          echo "$CHANGED"
+
+          NON_DOC=$(echo "$CHANGED" \
+            | grep -vE '(\.md$|^LICENSE$|^\.github/CODEOWNERS$|^\.editorconfig$|^docs/)' \
+            | grep -v '^$' || true)
+
+          if [ -z "$NON_DOC" ]; then
+            echo "Only docs/config changed — skipping build & unit tests."
+            echo "code_changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Code changes detected — running full validation."
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        if: steps.scope.outputs.code_changed == 'true'
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: "lts/*"
           cache: "npm"
 
       - name: Install dependencies (strict)
+        if: steps.scope.outputs.code_changed == 'true'
         run: npm ci --no-audit --fund=false
 
       - name: Verify lockfile is in sync after merge
+        if: steps.scope.outputs.code_changed == 'true'
         run: |
           git diff --exit-code package-lock.json \
             || (echo "::error::package-lock.json drifted after sync merge"; exit 1)
 
       - name: Run unit tests on merged state
+        if: steps.scope.outputs.code_changed == 'true'
         run: npm run test:unit:ci
 
       - name: Build Angular app on merged state
+        if: steps.scope.outputs.code_changed == 'true'
         run: npm run build-prod
 
   # ── STAGE 3: Open sync PR and enable auto-merge if validation passed ─────────
@@ -211,7 +244,7 @@ jobs:
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
       - name: Checkout (full history for tree-diff re-verification)
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
@@ -306,9 +339,15 @@ jobs:
             --jq '.[0].number')
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            TITLE="chore(sync): merge main into dev"
+            # "[skip ci]" suffix: when the repo uses "PR title" as the merge-commit
+            # message, the post-merge push to dev carries it and is skipped natively.
+            # (The actor guard in release.yml/promote already covers the default
+            # "Merge pull request …" message, so this is belt-and-suspenders.)
+            TITLE="chore(sync): merge main into dev [skip ci]"
             if [ "$HAS_CONFLICTS" = "true" ]; then
-              TITLE="⚠️ chore(sync): merge main into dev — conflicts require manual resolution"
+              # Conflict PRs need manual work and their CI to run, so no [skip ci].
+              # Conventional, emoji-free subject so PR Title Lint stays green.
+              TITLE="chore(sync): merge main into dev — manual conflict resolution required"
             fi
 
             gh pr create \

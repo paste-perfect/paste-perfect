@@ -8,16 +8,51 @@ on:
     branches: [main, dev]
   workflow_dispatch:
 
-# Cancel stale runs when a PR receives a new push.
+# Cancel stale runs on new PR pushes; use run_id as fallback so
+# merge-group and dispatch runs don't cancel each other.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.workflow }}
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 # No workflow-wide permissions; each job declares its own (least privilege).
 permissions: {}
 
 jobs:
-  # ── JOB 1: Lint & Format ────────────────────────────────────────────────────
+
+  # ── JOB 1: PR Title Lint (PR events only) ───────────────────────────────────
+  # Enforces Conventional Commit format so titles are parseable by semantic-release
+  # and the lifecycle guards. Skipped on merge_group and workflow_dispatch —
+  # GitHub treats a skipped required check as passing, and title validation is only
+  # meaningful for open PRs.
+  pr-title:
+    name: Lint PR Title (Conventional Commits)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: read
+
+    steps:
+      - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017 # v5.5.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+          subjectPattern: ^.{1,100}$
+          subjectPatternError: "PR title subject must be between 1 and 100 characters"
+
+  # ── JOB 2: Lint & Format ────────────────────────────────────────────────────
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
@@ -26,12 +61,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: "lts/*"
           cache: "npm"
@@ -45,7 +80,7 @@ jobs:
       - name: Run Prettier format check
         run: npm run format:check
 
-  # ── JOB 2: Lockfile Integrity ───────────────────────────────────────────────
+  # ── JOB 3: Lockfile Integrity ───────────────────────────────────────────────
   lockfile-integrity:
     name: Lockfile Integrity
     runs-on: ubuntu-latest
@@ -55,12 +90,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: "lts/*"
           cache: "npm"
@@ -82,7 +117,7 @@ jobs:
       - name: Fail on critical vulnerabilities only
         run: npm audit --audit-level=critical
 
-  # ── JOB 3: Production Build ─────────────────────────────────────────────────
+  # ── JOB 4: Production Build ─────────────────────────────────────────────────
   build:
     name: Build (production)
     runs-on: ubuntu-latest
@@ -92,12 +127,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: "lts/*"
           cache: "npm"
@@ -108,7 +143,7 @@ jobs:
       - name: Build Angular app (production configuration)
         run: npm run build-prod
 
-  # ── JOB 4: Unit Tests (Vitest) ──────────────────────────────────────────────
+  # ── JOB 5: Unit Tests (Vitest) ──────────────────────────────────────────────
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -118,12 +153,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: "lts/*"
           cache: "npm"
@@ -138,14 +173,14 @@ jobs:
         run: npm run test:unit:ci
 
       - name: Upload Vitest report artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ !cancelled() }}
         with:
           name: test-reports-${{ github.run_id }}
           path: reports/
           retention-days: 7
 
-  # ── JOB 5: Snapshot Tests (Playwright in Docker) ────────────────────────────
+  # ── JOB 6: Snapshot Tests (Playwright in Docker) ────────────────────────────
   snapshots:
     name: Snapshot Tests (Playwright)
     runs-on: ubuntu-latest
@@ -155,7 +190,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
@@ -163,14 +198,16 @@ jobs:
         run: npm run test:snapshots:ci
 
       - name: Upload Playwright report artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ !cancelled() }}
         with:
           name: snapshot-reports-${{ github.run_id }}
           path: reports/
           retention-days: 7
 
-  # ── JOB 6: Publish Test Reports ─────────────────────────────────────────────
+  # ── JOB 7: Publish Test Reports ─────────────────────────────────────────────
+  # Runs after both test jobs regardless of their outcome so failures are always
+  # surfaced in the PR checks UI.
   report:
     name: Publish Test Reports
     runs-on: ubuntu-latest
@@ -184,12 +221,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Publish Vitest unit test report
-        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2.5.0
         with:
           artifact: test-reports-${{ github.run_id }}
           name: Vitest Unit Tests
@@ -198,7 +235,7 @@ jobs:
           fail-on-error: false
 
       - name: Publish Playwright snapshot test report
-        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
+        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2.5.0
         with:
           artifact: snapshot-reports-${{ github.run_id }}
           name: Playwright Snapshot Tests

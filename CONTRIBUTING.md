@@ -50,7 +50,6 @@ Here are the relevant `npm` scripts available for development and contribution:
 - `npm run serve:prod` – Runs the app locally with production configuration and no HMR.
 - `npm run build-prod` – Builds the Angular project for production with `/paste-perfect/` base href.
 - `npm run build-preview` – Builds the Angular project for preview with `/paste-perfect-test/` base href.
-- `npm run build-docker` – Builds the app with root base href for Docker deployment.
 - `npm run test` – Runs both unit and snapshot tests.
 - `npm run test:unit:ci` – Runs unit tests in CI mode.
 - `npm run test:unit` – Runs unit tests with verbose output.
