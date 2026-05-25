@@ -52,6 +52,8 @@ services:
 
   playwright-ui:
     <<: *pw-base
+    # bash is required for pipefail support (used to rewrite 0.0.0.0 → localhost in output)
+    entrypoint: /bin/bash
     profiles: ["ui"]
     ports:
       - "${UI_PORT:-43008}:${UI_PORT:-43008}"
@@ -68,11 +70,14 @@ services:
       - -c
       - |
         npm install
+        # Service workers require localhost — rewrite 0.0.0.0 in Playwright's printed URL.
+        # pipefail ensures the playwright exit code propagates through the sed pipe.
+        set -o pipefail
         npx playwright test \
           --config=config/tests/playwright.config.ts \
           --ui-port=${UI_PORT:-43008} \
           --ui-host=0.0.0.0 \
-          $${PLAYWRIGHT_TEST_OPTIONS:-} # Added $$ here 👇
+          $${PLAYWRIGHT_TEST_OPTIONS:-} 2>&1 | sed 's|http://0\.0\.0\.0|http://localhost|g'
 
 volumes:
   npm-cache:
