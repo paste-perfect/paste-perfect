@@ -43,7 +43,7 @@
     "ngx-clipboard": "^16.0.0",
     "prettier": "^3.8.3",
     "prettier-plugin-gherkin": "^4.0.0",
-    "prettier-plugin-java": "^2.9.4",
+    "prettier-plugin-java": "2.8.1",
     "prettier-plugin-kotlin": "^2.1.0",
     "prettier-plugin-nginx": "^1.0.3",
     "prettier-plugin-sort-json": "^4.2.0",
