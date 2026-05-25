@@ -27,6 +27,10 @@
   "ignoreUnstable": true,
   "postUpdateOptions": ["npmDedupe"],
   "rangeStrategy": "pin",
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "commitMessageTopic": "{{depName}}",
+  "rebaseWhen": "conflicted",
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on monday"],

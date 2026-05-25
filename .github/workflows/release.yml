@@ -1,10 +1,11 @@
-name: Release (Semantic Release)
+name: Release — Semantic Release & Promote
 
 on:
   push:
     branches: [main, dev]
+  workflow_dispatch:
 
-# Never cancel an in-flight release.
+# Never cancel an in-flight release — let it finish or fail cleanly.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -13,22 +14,36 @@ permissions: {} # declared per-job
 
 jobs:
 
+  # ── JOB 1: Semantic Release ──────────────────────────────────────────────────
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    # Guard against infinite loop: semantic-release pushes a version-bump commit
-    # back to the branch after creating a GitHub Release. This filter also covers
-    # sync/promote automation commits for the same reason.
+    # ── Loop / re-entrancy guard (branch-aware) ─────────────────────────────────
+    # The bot pushes a "chore(release): X.Y.Z" version-bump commit after every
+    # release. That push must NOT trigger another release. Merge commits made by
+    # GitHub ("Merge pull request #N from …") do not carry our chore() prefixes,
+    # so a pure message guard is unreliable — we combine actor + message + branch:
+    #
+    #   • On dev   → block ALL bot pushes (version bumps AND the auto-merged
+    #                main→dev sync PR). Feature & Renovate merges (human/renovate
+    #                actors) still release.
+    #   • On main  → block only the "chore(release):" bump. Promote merges from
+    #                dev land with the default "Merge pull request …" subject, so
+    #                they pass this guard and produce the stable release. This is
+    #                why git-settings.md mandates the DEFAULT merge-commit message.
     if: >
+      !contains(github.event.head_commit.message, '[skip ci]') &&
       !startsWith(github.event.head_commit.message, 'chore(release):') &&
       !startsWith(github.event.head_commit.message, 'chore(sync):') &&
-      !startsWith(github.event.head_commit.message, 'chore(promote):')
+      !(
+        github.ref == 'refs/heads/dev' &&
+        (github.actor == 'releasebot[bot]' || github.actor == 'semantic-release-bot')
+      )
     permissions:
       contents: write
       issues: write
       pull-requests: write
       id-token: write
-      packages: write
 
     steps:
       - name: Generate GitHub App token
@@ -39,7 +54,7 @@ jobs:
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           # App token is required so the version-bump push triggers downstream
@@ -48,7 +63,7 @@ jobs:
           persist-credentials: true
 
       - name: Set up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: "lts/*"
           cache: "npm"
@@ -56,6 +71,9 @@ jobs:
       - name: Install dependencies (strict)
         run: npm ci --no-audit --fund=false
 
+      # Belt-and-suspenders audit on the release path: the CI lockfile-integrity
+      # job already runs these checks, but repeating them here catches any drift
+      # between the CI run and the actual release invocation.
       - name: Verify dependency provenance signatures
         run: npm audit signatures
 
@@ -66,3 +84,40 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: npx semantic-release
+
+  # ── JOB 2: Promote dev → main ───────────────────────────────────────────────
+  # Runs only after a successful semantic-release on dev. Ensures the dev→main
+  # release PR exists and that the automerge-lifecycle label reflects the current
+  # commit mix. Running as a dependent job (needs: release) serialises the promote
+  # after the release and eliminates the old race between two concurrent workflow
+  # runs on the same push.
+  #
+  # If the release job was SKIPPED (bot-push guard fired), this job is also
+  # automatically skipped — no re-entrancy issue possible.
+  promote:
+    name: Ensure dev → main Release PR
+    runs-on: ubuntu-latest
+    needs: release
+    if: github.ref == 'refs/heads/dev'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
+        with:
+          app-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+
+      - name: Checkout (full history for divergence check)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Ensure release PR exists and labels are current
+        uses: ./.github/actions/release-pr
+        with:
+          token: ${{ steps.app-token.outputs.token }}

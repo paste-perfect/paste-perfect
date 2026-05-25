@@ -1,4 +1,4 @@
-name: Scheduled Release — Semantic Verification (dev → main)
+name: Scheduled Release — Weekly Auto-merge (dev → main)
 
 on:
   schedule:
@@ -30,133 +30,62 @@ jobs:
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
       - name: Checkout (full history for commit inspection)
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      # ── STEP 1: Check if dev has commits that main doesn't ────────────────
-      - name: Check if dev is ahead of main
-        id: ahead
-        run: |
-          set -euo pipefail
-          git fetch origin main dev
+      # ── Ensure PR exists + evaluate lifecycle eligibility ─────────────────
+      # The composite action:
+      #   1. Finds or creates the "chore: promote dev to main" PR.
+      #   2. Verifies every commit since the last stable release against the
+      #      lifecycle regex (chore/build/ci/docs/style/refactor, fix(deps),
+      #      sync/release/promote bot commits, branch/tracking merges).
+      #   3. Applies the "automerge-lifecycle" label if ALL commits pass,
+      #      or removes it if any feat:/fix:/perf: commit is present.
+      #   4. Outputs has_changes, pr_number, and is_lifecycle_only.
+      - name: Ensure release PR exists and evaluate lifecycle eligibility
+        id: release-pr
+        uses: ./.github/actions/release-pr
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
-          AHEAD=$(git rev-list --right-only --count origin/main...origin/dev)
-          if [ "$AHEAD" -eq 0 ]; then
-            echo "dev is not ahead of main. Nothing to release."
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "dev is $AHEAD commit(s) ahead of main."
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      # ── STEP 2: Verify all commits are lifecycle-only ─────────────────────
-      # feat: or fix: commits abort auto-merge and require a manual release.
-      - name: Semantic Verification — inspect all commits
-        if: steps.ahead.outputs.has_changes == 'true'
-        id: semantic
-        run: |
-          set -euo pipefail
-
-          MERGE_BASE=$(git merge-base origin/dev origin/main)
-          echo "Merge base: $MERGE_BASE"
-
-          mapfile -t COMMIT_SUBJECTS < <(
-            git log "$MERGE_BASE"..origin/dev --pretty=tformat:"%s"
-          )
-
-          echo "Commits to verify (${#COMMIT_SUBJECTS[@]} total):"
-          printf '  • %s\n' "${COMMIT_SUBJECTS[@]}"
-
-          # Allowed: chore, build, ci, docs, style, refactor, fix(deps), sync, merge commits
-          LIFECYCLE_REGEX='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?:|^fix\(deps|^chore\(sync\)|^chore\(release\)|^(Merge|merge) '
-
-          ABORT=false
-          NON_LIFECYCLE_LIST=""
-
-          for subject in "${COMMIT_SUBJECTS[@]}"; do
-            if ! echo "$subject" | grep -qE "$LIFECYCLE_REGEX"; then
-              echo "  ❌ NON-LIFECYCLE: $subject"
-              NON_LIFECYCLE_LIST+="  • $subject\n"
-              ABORT=true
-            else
-              echo "  ✅ lifecycle: $subject"
-            fi
-          done
-
-          if [ "$ABORT" = "true" ]; then
-            echo ""
-            echo "Semantic Verification FAILED — non-lifecycle commits detected:"
-            printf "$NON_LIFECYCLE_LIST"
-            echo "Auto-merge aborted. Manual release decision required."
-            echo "should_merge=false" >> "$GITHUB_OUTPUT"
-            exit 0  # Expected safety abort — do not fail the workflow
-          fi
-
-          echo "Semantic Verification PASSED — all commits are lifecycle-type."
-          echo "should_merge=true" >> "$GITHUB_OUTPUT"
-
-      # ── STEP 3: Find or create the release PR ────────────────────────────
-      - name: Find or create dev → main release PR
-        if: steps.semantic.outputs.should_merge == 'true'
-        id: pr
+      # ── Enable auto-merge (merge commit — NOT squash) ─────────────────────
+      # CRITICAL: must be --merge, not --squash.
+      #   A squash collapses every commit into one whose subject is the PR title;
+      #   semantic-release on main would then see a single non-releasable commit
+      #   and skip the stable release.
+      #   A merge commit preserves individual feat:/fix: subjects so the version
+      #   bump is computed correctly.
+      #
+      # The merge commit subject must NOT start with "chore(release):".
+      #   The PR title is "chore: promote dev to main" (not "chore(release): …"),
+      #   which is safe under both "Default message" and "PR title" merge-message
+      #   settings. If the repo uses "Default message", GitHub produces
+      #   "Merge pull request #N …" — also not a chore(release): subject.
+      - name: Enable auto-merge
+        if: >
+          steps.release-pr.outputs.has_changes == 'true' &&
+          steps.release-pr.outputs.is_lifecycle_only == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          set -euo pipefail
-
-          PR_NUMBER=$(gh pr list \
-            --base main \
-            --head dev \
-            --state open \
-            --json number \
-            --jq '.[0].number')
-
-          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No open PR found — creating one."
-
-            gh label create "lifecycle-release" \
-              --color "5319e7" \
-              --description "Automated weekly lifecycle release PR" \
-              2>/dev/null || true
-
-            gh pr create \
-              --base main \
-              --head dev \
-              --title "chore(release): promote dev to main (scheduled)" \
-              --label "lifecycle-release,automerge-lifecycle" \
-              --body "$(cat <<'EOF'
-          ## Weekly Scheduled Lifecycle Release
-
-          Triggered by the Sunday cron. All commits passed **Semantic Verification**:
-          every commit is a lifecycle/maintenance type (chore, build, ci, docs, style, refactor, fix(deps)).
-
-          Auto-merge is enabled — GitHub will squash-merge once all required checks are green.
-          EOF
-          )"
-
-            PR_NUMBER=$(gh pr list \
-              --base main \
-              --head dev \
-              --state open \
-              --json number \
-              --jq '.[0].number')
-          fi
-
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "Operating on PR #$PR_NUMBER"
-
-      # ── STEP 4: Enable auto squash-merge ─────────────────────────────────
-      - name: Enable auto squash-merge
-        if: steps.semantic.outputs.should_merge == 'true'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          PR_NUMBER="${{ steps.pr.outputs.pr_number }}"
+          PR_NUMBER="${{ steps.release-pr.outputs.pr_number }}"
           gh pr merge "$PR_NUMBER" \
             --auto \
-            --squash \
+            --merge \
             --delete-branch=false \
             || echo "Auto-merge already enabled or PR already merged."
-          echo "Auto squash-merge enabled on PR #$PR_NUMBER."
+          echo "Auto-merge (merge commit) enabled on PR #$PR_NUMBER."
+
+      - name: Report — no auto-merge (non-lifecycle commits present)
+        if: >
+          steps.release-pr.outputs.has_changes == 'true' &&
+          steps.release-pr.outputs.is_lifecycle_only != 'true'
+        run: |
+          echo "Semantic Verification FAILED — non-lifecycle commits detected."
+          echo "Auto-merge aborted. Manual release decision required."
+
+      - name: Report — dev == main
+        if: steps.release-pr.outputs.has_changes != 'true'
+        run: echo "dev is not ahead of main — nothing to release."
