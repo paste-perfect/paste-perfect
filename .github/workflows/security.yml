@@ -1,5 +1,8 @@
 name: Security — Vulnerability Scan (Trivy)
 
+# Runs on every non-draft PR, the merge queue, a weekly cron for repo-wide
+# visibility, and manually. Advisory only — not a required check so a finding
+# never blocks a merge; the team decides whether to act on each result.
 on:
   pull_request:
     branches: [main, dev]
@@ -10,9 +13,10 @@ on:
     - cron: "0 4 * * 0" # Every Sunday at 04:00 UTC
   workflow_dispatch:
 
-# Cancel stale runs per PR; use run_id as fallback for scheduled/dispatch runs.
+# Cancel stale runs per PR; use run_id as fallback for scheduled/dispatch so
+# those never cancel each other.
 concurrency:
-  group: security-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  group: security-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 permissions: {} # declared per-job
@@ -22,18 +26,15 @@ jobs:
   trivy-fs-scan:
     name: Trivy — Filesystem Vulnerability Scan
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false
+    # Skip draft PRs — only scan when the PR is ready for review.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
-      actions: read
-      checks: write
-      security-events: write
+      security-events: write # upload SARIF to the Security tab
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
@@ -47,16 +48,15 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2
+        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 # v4.32.2
         if: ${{ !cancelled() && hashFiles('trivy-results-fs.sarif') != '' }}
         with:
           sarif_file: "trivy-results-fs.sarif"
 
       - name: Upload raw results as artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ !cancelled() && hashFiles('trivy-results-fs.sarif') != '' }}
         with:
           name: trivy-fs-results-${{ github.run_id }}
           path: trivy-results-fs.sarif
           retention-days: 14
-
