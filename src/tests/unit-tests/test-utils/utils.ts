@@ -2,6 +2,7 @@ import type { Plugin as PrettierPlugin } from "prettier";
 import { afterEach, vi } from "vitest";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
 import { IndentationMode } from "@constants/const";
+import { CopyMode, CopySettings, DEFAULT_COPY_SETTINGS } from "@types";
 import { TestBed } from "@angular/core/testing";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +23,16 @@ export const makeEditorSettings = (overrides: EditorSettingsOverrides = {}) => (
   enableFormatting: true,
   ...overrides,
 });
+
+type CopySettingsOverrides = Partial<CopySettings>;
+
+export const makeCopySettings = (overrides: CopySettingsOverrides = {}): CopySettings => ({
+  ...DEFAULT_COPY_SETTINGS,
+  ...overrides,
+});
+
+/** Re-exports CopyMode for convenience in test files. */
+export { CopyMode };
 
 export const makeMockPlugin = (parserName: string): PrettierPlugin =>
   ({ parsers: { [parserName]: {} }, options: {} }) as unknown as PrettierPlugin;

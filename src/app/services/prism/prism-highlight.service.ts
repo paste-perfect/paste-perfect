@@ -4,10 +4,13 @@ import * as Prism from "prismjs";
 import { MessageService } from "primeng/api";
 import { LanguageDefinition } from "@types";
 import { LinesCollector } from "@utils/line-collector";
+import { InlineStyleApplier } from "@utils/inline-style-applier";
 import { SettingsService } from "@services/settings.service";
+import { CopySettingsService } from "@services/copy-settings.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { HTML_CODE_PRE_SELECTOR } from "@constants/const";
+import { CopyMode, DEFAULT_COPY_FONT_SIZE } from "@types";
 
 /**
  * A service responsible for syntax highlighting and clipboard copying of code snippets.
@@ -21,6 +24,11 @@ export class PrismHighlightService {
    * Service for managing the highlighting settings.
    */
   private settingsService: SettingsService = inject(SettingsService);
+
+  /**
+   * Service for managing copy-to-clipboard behaviour settings.
+   */
+  private copySettingsService: CopySettingsService = inject(CopySettingsService);
 
   /**
    * Service for loading the required prism languages dynamically.
@@ -55,8 +63,11 @@ export class PrismHighlightService {
   }
 
   /**
-   * Copies the currently highlighted code from the DOM into the clipboard,
-   * including minimal inline styling (such as color and font settings).
+   * Copies the currently highlighted code from the DOM into the clipboard.
+   *
+   * When the copy mode is "HTML (Formatted)", the full preprocessing pipeline is used,
+   * producing rich HTML with inline styles. When set to "Native Text (Plain)", only the
+   * raw plain-text content is written to the clipboard.
    *
    * Notes:
    * - Looks for the `<pre><code>` snippet in the DOM.
@@ -73,15 +84,38 @@ export class PrismHighlightService {
       return;
     }
 
-    // 1) Preprocess in a single pass
+    const copySettings = this.copySettingsService.copySettings;
+
+    // Plain-text mode: skip HTML processing entirely.
+    if (copySettings.copyMode === CopyMode.PlainText) {
+      const textSnippet: string = preElement.outerText;
+      navigator.clipboard
+        .write([
+          new ClipboardItem({
+            "text/plain": new Blob([textSnippet], { type: "text/plain" }),
+          }),
+        ])
+        .then(() => this.showSuccessToast())
+        .catch((err) => this.showErrorToast(err));
+      return;
+    }
+
+    // 1) Set the font-size override (clear it first if default to avoid stale values)
+    const isDefaultFontSize = copySettings.fontSize === DEFAULT_COPY_FONT_SIZE;
+    InlineStyleApplier.setFontSizeOverride(isDefaultFontSize ? null : copySettings.fontSize);
+
+    // 2) Preprocess in a single pass
     const processedClone: HTMLPreElement = this.preprocessForClipboard(preElement);
 
-    // 2) Extract final HTML and plain text
+    // 3) Clear the font-size override to not pollute subsequent runs
+    InlineStyleApplier.setFontSizeOverride(null);
+
+    // 4) Extract final HTML and plain text
     const htmlSnippet: string = SanitizerWrapper.sanitizeOutput(processedClone.outerHTML);
     // Use the original element for the text-only snippet (non-formatted)
     const textSnippet: string = preElement.outerText;
 
-    // 3) Copy to clipboard in both text/html and text/plain forms
+    // 5) Copy to clipboard in both text/html and text/plain forms
     navigator.clipboard
       .write([
         new ClipboardItem({
@@ -89,21 +123,8 @@ export class PrismHighlightService {
           "text/plain": new Blob([textSnippet], { type: "text/plain" }),
         }),
       ])
-      .then(() => {
-        this.messageService.add({
-          severity: "success",
-          summary: "Copied successfully",
-          detail: "The code has been copied to your clipboard.",
-        });
-      })
-      .catch((err) => {
-        this.messageService.add({
-          severity: "error",
-          summary: "Copy failed",
-          detail: "An error occurred while copying the code. Please try again.",
-        });
-        console.error("Failed to copy:", err);
-      });
+      .then(() => this.showSuccessToast())
+      .catch((err) => this.showErrorToast(err));
   }
 
   /**
@@ -129,18 +150,41 @@ export class PrismHighlightService {
    * @returns A fully processed and styled clone of the original `<pre>` element.
    */
   private preprocessForClipboard(originalPre: HTMLPreElement): HTMLPreElement {
-    const settings = this.settingsService.editorSettings;
-    const mode = settings.indentationMode;
-    const tabSize = settings.indentationSize;
-    const showLineNumbers = settings.showLineNumbers;
+    const editorSettings = this.settingsService.editorSettings;
+    const copySettings = this.copySettingsService.copySettings;
+
+    const mode = editorSettings.indentationMode;
+    // Copy settings tab size overrides the editor's indentation size for the output.
+    const tabSize = copySettings.tabSize;
+    const showLineNumbers = editorSettings.showLineNumbers;
 
     // Clone the original element to avoid modifying the source
     const clonedPre: HTMLPreElement = originalPre.cloneNode(true) as HTMLPreElement;
 
     // Transform the cloned structure for clipboard compatibility
-    const linesCollector = new LinesCollector(mode, tabSize, showLineNumbers);
+    const linesCollector = new LinesCollector(mode, tabSize, showLineNumbers, {
+      inlineStylesForOffice: copySettings.inlineStylesForOffice,
+      adjustIndentationForOffice: copySettings.adjustIndentationForOffice,
+    });
     linesCollector.collectLinesFromNodes(originalPre, clonedPre);
 
     return clonedPre;
+  }
+
+  private showSuccessToast(): void {
+    this.messageService.add({
+      severity: "success",
+      summary: "Copied successfully",
+      detail: "The code has been copied to your clipboard.",
+    });
+  }
+
+  private showErrorToast(err: unknown): void {
+    this.messageService.add({
+      severity: "error",
+      summary: "Copy failed",
+      detail: "An error occurred while copying the code. Please try again.",
+    });
+    console.error("Failed to copy:", err);
   }
 }

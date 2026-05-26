@@ -1,22 +1,54 @@
 .highlighted-code-container {
-  position: relative;
-  overflow: hidden; /* Hide overflow */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
   flex: 1; // Fill all available space
 
+  // ── Toolbar ────────────────────────────────────────────────────────────────
+  .result-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }
+
+  .copy-settings-chips {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs, 0.35rem);
+    min-height: 2rem; // Reserve space even when empty so layout doesn't shift
+    align-items: center;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: var(--spacing-xs, 0.35rem);
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  // ── Code Display ──────────────────────────────────────────────────────────
   pre#highlighted-code-wrapper {
     margin: 0;
     padding: var(--spacing-md);
     max-height: 100%;
-    overflow: auto; /* Make overflow scrollable */
+    overflow: auto;
     border-radius: var(--p-border-radius-md);
     border: 1px solid var(--p-select-border-color);
   }
+}
 
-  /* Position the copy-button on the top-right of the parent */
-  #copy-to-clipboard-button {
-    position: absolute;
-    right: var(--spacing-sm);
-    top: var(--spacing-sm);
-    z-index: 99;
+// ── Chip styling ──────────────────────────────────────────────────────────────
+:host ::ng-deep .copy-setting-chip {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--p-primary-50, #eff6ff);
+  color: var(--p-primary-color);
+  border: 1px solid var(--p-primary-200, #bfdbfe);
+
+  .p-chip-label {
+    line-height: 1.4;
   }
 }

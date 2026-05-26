@@ -1,17 +1,64 @@
 @let hasCode = codeService.hasCode();
 
+<!-- Copy Settings Dialog -->
+<p-dialog
+  header="⚙️ Copy Settings"
+  id="copy-settings-dialog"
+  [modal]="true"
+  [(visible)]="copySettingsDialogVisible"
+  closeAriaLabel="Close Copy Settings"
+>
+  <app-copy-settings (saved)="onCopySettingsSaved()" (cancelled)="onCopySettingsCancelled()"></app-copy-settings>
+</p-dialog>
+
 <div class="highlighted-code-container">
-  <!-- Copy Button -->
-  <p-button
-    id="copy-to-clipboard-button"
-    icon="pi pi-copy"
-    [pTooltip]="hasCode ? 'Please enter code before copying' : 'Click to copy highlighted code'"
-    [tooltipOptions]="tooltipOptions"
-    [disabled]="!hasCode"
-    (click)="copyToClipboard()"
-  ></p-button>
+  <!-- Result Toolbar: chips on the left, action buttons on the right -->
+  <div class="result-toolbar">
+    <!-- Active copy-settings chips -->
+    <div class="copy-settings-chips" role="list" aria-label="Active copy settings">
+      @for (chip of copySettingChips; track chip.key) {
+        <p-chip
+          [label]="chip.label"
+          styleClass="copy-setting-chip"
+          role="listitem"
+          [pTooltip]="'Copy setting: ' + chip.label"
+          [tooltipOptions]="tooltipOptions"
+        ></p-chip>
+      }
+    </div>
+
+    <!-- Action buttons -->
+    <div class="result-actions">
+      <!-- Copy Settings Button -->
+      <p-button
+        id="copy-settings-button"
+        icon="pi pi-sliders-h"
+        severity="secondary"
+        pTooltip="Copy Settings"
+        [tooltipOptions]="tooltipOptions"
+        [outlined]="copySettingsService.hasNonDefaultSettings()"
+        (click)="openCopySettings()"
+        aria-label="Open Copy Settings"
+      ></p-button>
+
+      <!-- Copy to Clipboard Button -->
+      <p-button
+        id="copy-to-clipboard-button"
+        icon="pi pi-copy"
+        [pTooltip]="!hasCode ? 'Please enter code before copying' : 'Click to copy highlighted code'"
+        [tooltipOptions]="tooltipOptions"
+        [disabled]="!hasCode"
+        (click)="copyToClipboard()"
+      ></p-button>
+    </div>
+  </div>
+
   <!-- Preformatted text where the highlighted code gets inserted -->
-  <pre id="highlighted-code-wrapper"><code
+  <pre
+    id="highlighted-code-wrapper"
+    [style.font-size.px]="displayFontSize"
+    [style.tab-size]="copySettingsService.copySettings.tabSize"
+  ><code
     [innerHTML]="codeService.highlightedCode"
     class="highlighted-code language-{{ languageService.selectedLanguage.value }}">
   </code></pre>

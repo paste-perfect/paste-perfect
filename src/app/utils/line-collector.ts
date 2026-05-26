@@ -7,6 +7,16 @@ import { IndentationMode } from "@constants/const";
 import { LINE_NUMBER_CLASSES } from "@constants/line-numbering";
 
 /**
+ * Office-specific behaviour flags forwarded from the copy settings.
+ */
+export interface OfficeCopyBehavior {
+  /** When false, all mso-* inline styles are omitted from the output. */
+  readonly inlineStylesForOffice: boolean;
+  /** When false, leading indentation is kept as plain spaces/tabs instead of NBSP/mso-tab spans. */
+  readonly adjustIndentationForOffice: boolean;
+}
+
+/**
  * A utility class that recursively processes an original node and its cloned counterpart,
  * collecting content line-by-line and rebuilding the clone with paragraph elements.
  *
@@ -20,6 +30,7 @@ export class LinesCollector {
   private readonly indentationMode: IndentationMode;
   private readonly hasLineNumbers: boolean;
   private readonly lineNumberWidth: number = 0;
+  private readonly officeBehavior: OfficeCopyBehavior;
 
   private isLineStart: boolean; // Tracks if we are at the absolute start of a new line.
   private isContentStart: boolean; // Tracks if we are at the start of content, after any line number.
@@ -29,14 +40,21 @@ export class LinesCollector {
    * @param indentationMode The desired indentation mode (Tabs vs. Spaces).
    * @param tabSize The number of spaces that represent a single tab.
    * @param hasLineNumbers A flag indicating whether to parse leading line numbers.
+   * @param officeBehavior Optional Office-specific behaviour overrides.
    */
-  constructor(indentationMode: IndentationMode, tabSize: number, hasLineNumbers: boolean) {
+  constructor(
+    indentationMode: IndentationMode,
+    tabSize: number,
+    hasLineNumbers: boolean,
+    officeBehavior: OfficeCopyBehavior = { inlineStylesForOffice: true, adjustIndentationForOffice: true }
+  ) {
     this.lines = [[]];
     this.isLineStart = true;
     this.isContentStart = true;
     this.hasLineNumbers = hasLineNumbers;
     this.tabSize = tabSize;
     this.indentationMode = indentationMode;
+    this.officeBehavior = officeBehavior;
     // This width is used to offset tab stops when line numbers are present.
     this.lineNumberWidth = MsOfficeUtils.pxToOfficePt(this.getRenderedLineNumberWidth());
   }
@@ -72,7 +90,8 @@ export class LinesCollector {
 
   /**
    * Appends each collected line as a `<p>` element to the parent node.
-   * For tab-based indentation, it configures MS Office-specific `tab-stops` CSS.
+   * For tab-based indentation, it configures MS Office-specific `tab-stops` CSS
+   * (unless `officeBehavior.inlineStylesForOffice` is disabled).
    *
    * @param parent The parent node to receive the new paragraph elements.
    */
@@ -80,7 +99,10 @@ export class LinesCollector {
     for (const line of this.lines) {
       const p = NodeUtils.createParagraph();
       InlineStyleApplier.applyStoredRootStyles(p);
-      MsOfficeUtils.applyNoMarginStyle(p); // Ensure clean line spacing.
+
+      if (this.officeBehavior.inlineStylesForOffice) {
+        MsOfficeUtils.applyNoMarginStyle(p); // Ensure clean line spacing in Office.
+      }
 
       if (line.length === 0) {
         // For empty lines, append a non-breaking space to ensure the line is rendered.
@@ -93,7 +115,7 @@ export class LinesCollector {
 
       // For tab mode, set up tab stops for proper alignment in MS Office,
       // accounting for the line number width if present.
-      if (this.indentationMode === IndentationMode.Tabs) {
+      if (this.officeBehavior.inlineStylesForOffice && this.indentationMode === IndentationMode.Tabs) {
         const requiredStops = Math.ceil(this.maxIndentationMarkers / this.tabSize);
         if (requiredStops > 0) {
           const tabStyle = MsOfficeUtils.getTabStops(requiredStops, this.lineNumberWidth);
@@ -217,8 +239,12 @@ export class LinesCollector {
 
   /**
    * Creates a `<span>` for indentation markers, applying mode-specific styles.
-   * In "Tabs" mode, it uses tab characters and MS Office styles.
-   * In "Spaces" mode, it uses non-breaking spaces.
+   *
+   * When `officeBehavior.adjustIndentationForOffice` is enabled (default):
+   *  - Tabs mode: uses actual tab characters with `mso-tab-count` styling.
+   *  - Spaces mode: uses non-breaking spaces (NBSP) with `mso-spacerun` styling.
+   *
+   * When disabled, plain spaces/tabs are used without any MS Office styling.
    */
   private createIndentationSpan(markerText: string): HTMLElement {
     const markerCount = markerText.length;
@@ -228,13 +254,22 @@ export class LinesCollector {
 
     if (this.indentationMode === IndentationMode.Tabs) {
       markerSpan.textContent = IndentationFormatter.unmaskIndentationWithTabs(markerText, this.tabSize);
-      const tabCount = Math.floor(markerCount / this.tabSize);
-      // Apply MS Office-specific style to render tab characters correctly.
-      MsOfficeUtils.applyTabSpacing(markerSpan, tabCount);
+      if (this.officeBehavior.adjustIndentationForOffice && this.officeBehavior.inlineStylesForOffice) {
+        const tabCount = Math.floor(markerCount / this.tabSize);
+        // Apply MS Office-specific style to render tab characters correctly.
+        MsOfficeUtils.applyTabSpacing(markerSpan, tabCount);
+      }
     } else {
-      markerSpan.textContent = IndentationFormatter.unmaskIndentationWithNbsp(markerText);
-      // Apply MS Office-specific style to preserve consecutive spaces.
-      MsOfficeUtils.preserveWhiteSpace(markerSpan);
+      if (this.officeBehavior.adjustIndentationForOffice) {
+        markerSpan.textContent = IndentationFormatter.unmaskIndentationWithNbsp(markerText);
+        if (this.officeBehavior.inlineStylesForOffice) {
+          // Apply MS Office-specific style to preserve consecutive spaces.
+          MsOfficeUtils.preserveWhiteSpace(markerSpan);
+        }
+      } else {
+        // Plain spaces — no NBSP, no MSO styles.
+        markerSpan.textContent = markerText.replace(/./g, " ");
+      }
     }
 
     return markerSpan;

@@ -1,3 +1,4 @@
+export * from "./copy-settings.types";
 export * from "./language-definition.types";
 export * from "./prettier-language-configuration.types";
 export * from "./prettier-parsers.types";

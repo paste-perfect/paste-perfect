@@ -19,6 +19,12 @@ export class InlineStyleApplier {
   private static rootStyleProperties: StyleProperties = {};
 
   /**
+   * Optional font-size override (e.g. from copy settings).
+   * When set, this value replaces the computed font-size for all elements.
+   */
+  private static fontSizeOverride: string | null = null;
+
+  /**
    * Defines the subset of styles that are copied inline when creating the final snippet.
    * We can also provide default values for which inline styles do not get applied for (i.e., the default font style is "normal" and we don't have to repeat that for every single element)
    *
@@ -36,6 +42,16 @@ export class InlineStyleApplier {
   };
 
   /**
+   * Sets a custom font-size override that replaces the computed font-size during
+   * the clipboard preprocessing pass.  Pass `null` to clear any previous override.
+   *
+   * @param sizeInPx The desired font size in pixels (e.g. 16), or `null` to reset.
+   */
+  public static setFontSizeOverride(sizeInPx: number | null): void {
+    this.fontSizeOverride = sizeInPx !== null ? `${sizeInPx}px` : null;
+  }
+
+  /**
    * Extracts and stores root-level styles to apply to converted text elements.
    */
   public static captureRootStyles(element: HTMLElement): void {
@@ -51,6 +67,11 @@ export class InlineStyleApplier {
         this.rootStyleProperties[propKey] = value;
       }
     });
+
+    // Honour the font-size override from copy settings, if one is set.
+    if (this.fontSizeOverride !== null) {
+      this.rootStyleProperties["font-size"] = this.fontSizeOverride;
+    }
   }
 
   /**
@@ -65,7 +86,12 @@ export class InlineStyleApplier {
 
     // Apply only relevant styles
     getEntries(this.RELEVANT_STYLE_PROPERTIES).forEach(([propKey, defaultValue]) => {
-      const value: string = computedStyle.getPropertyValue(propKey);
+      let value: string = computedStyle.getPropertyValue(propKey);
+
+      // Honour the font-size override if one is active.
+      if (propKey === "font-size" && this.fontSizeOverride !== null) {
+        value = this.fontSizeOverride;
+      }
 
       // Apply style only if it's different from the default
       if (value && value !== defaultValue) {
