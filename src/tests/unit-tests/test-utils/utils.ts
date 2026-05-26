@@ -121,10 +121,12 @@ const DEFAULT_TEARDOWN_OPTIONS = {
   clearLocalStorage: false,
 } satisfies TeardownOptions;
 
-/** Clears internal rootStyleProperties cache on InlineStyleApplier between tests. */
+/** Clears internal state (rootStyleProperties, fontSizeOverride) on InlineStyleApplier between tests. */
 export const resetInlineStyleApplierState = (): void => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (InlineStyleApplier as any)["rootStyleProperties"] = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (InlineStyleApplier as any)["fontSizeOverride"] = null;
 };
 
 /**

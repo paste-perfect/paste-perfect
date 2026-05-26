@@ -55,16 +55,17 @@ describe("MsOfficeUtils", () => {
   });
 
   describe("getTabStops", () => {
-    it("returns an empty string when count is 0", () => {
-      expect(MsOfficeUtils.getTabStops(0)).toBe("");
+    it("returns an empty string when maxIndentationMarkers is 0", () => {
+      expect(MsOfficeUtils.getTabStops(0, 28.3465)).toBe("");
     });
 
     it.each([
-      ["multiple stops without an offset", 2, undefined, "tab-stops: left 28.3465pt left 56.6930pt;"],
-      ["a positive offset applied to each stop", 2, 10, "tab-stops: left 38.3465pt left 66.6930pt;"],
-      ["a negative offset applied to each stop", 2, -5, "tab-stops: left 23.3465pt left 51.6930pt;"],
-    ] as const)("returns CSS tab-stops for %s", (_label, count, offset, expected) => {
-      expect(offset === undefined ? MsOfficeUtils.getTabStops(count) : MsOfficeUtils.getTabStops(count, offset)).toBe(expected);
+      ["multiple stops with default 1cm tab size (28.3465pt)", 2, 28.3465, 0, "tab-stops: left 28.3465pt left 56.6930pt;"],
+      ["a positive offset applied to each stop", 2, 28.3465, 10, "tab-stops: left 38.3465pt left 66.6930pt;"],
+      ["a negative offset applied to each stop", 2, 28.3465, -5, "tab-stops: left 23.3465pt left 51.6930pt;"],
+      ["custom tab size (0.5cm = 14.17325pt)", 3, 14.17325, 0, "tab-stops: left 14.1732pt left 28.3465pt left 42.5198pt;"],
+    ] as const)("returns CSS tab-stops for %s", (_label, markers, tabSizePt, offset, expected) => {
+      expect(MsOfficeUtils.getTabStops(markers, tabSizePt, offset)).toBe(expected);
     });
   });
 });

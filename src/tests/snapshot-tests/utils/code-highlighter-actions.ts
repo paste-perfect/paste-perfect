@@ -5,8 +5,8 @@ import { Theme } from "@types";
 import { getThemeValueFromTheme, getIndentationValueFromMode } from "./enum-mappers";
 import { IndentationMode } from "@constants/const";
 
-const SELECTORS = {
-  copyButton: "#copy-to-clipboard-button",
+export const SELECTORS = {
+  copyButton: "#copy-to-clipboard-button button",
   closeSettingsButton: "#highlighting-settings-dialog button[aria-label='Close Settings Dialog']",
   sourceCodeEditor: "textarea#source-code",
   openMobileSettingsButton: "#open-settings",
@@ -17,6 +17,13 @@ const SELECTORS = {
   showLineNumbersCheckbox: "#show-line-numbers:visible",
   themeSelector: "#theme-selector:visible",
   highlightedCodeWrapper: "#highlighted-code-wrapper code",
+  openCopySettingsButton: "#copy-settings-button",
+  copySettingsDialog: "#copy-settings-dialog > div",
+  copyModeSelect: "#copy-mode-select",
+  fontSizeSelect: "#font-size-select",
+  tabSizeSelect: "#office-tab-size-select",
+  inlineStylesCheckbox: "#inline-styles-checkbox",
+  adjustIndentationCheckbox: "#adjust-indentation-checkbox",
 } as const;
 
 export function createActions(page: Page): CodeHighlighterActions {
@@ -25,12 +32,18 @@ export function createActions(page: Page): CodeHighlighterActions {
    * disabled or already in the desired state.
    */
   const setCheckboxState = async (selector: string, targetState: boolean): Promise<void> => {
-    const checkbox = page.locator(selector);
-    if (await checkbox.isDisabled()) return;
+    const locator = page.locator(selector);
+    if (await locator.isDisabled()) return;
 
-    const isCurrentlyChecked = (await checkbox.getAttribute("aria-checked")) === "true";
+    // Get the input element: if the locator points to an input, use it directly;
+    // otherwise, try to find an input inside the locator
+    const inputElement = (await locator.evaluate((el) => el.tagName === "INPUT")) ? locator : locator.locator("input");
+
+    const isCurrentlyChecked = await inputElement.isChecked();
     if (isCurrentlyChecked !== targetState) {
-      await checkbox.click();
+      await locator.click();
+      // Wait for the state to settle after click
+      await page.waitForTimeout(100);
     }
   };
 
@@ -106,6 +119,42 @@ export function createActions(page: Page): CodeHighlighterActions {
 
     async setTheme(theme: Theme) {
       await selectDropdownOption(SELECTORS.themeSelector, getThemeValueFromTheme(theme));
+    },
+
+    async openCopySettingsDialog() {
+      await page.locator(SELECTORS.openCopySettingsButton).click();
+      await page.locator(SELECTORS.copySettingsDialog).waitFor({ state: "visible" });
+    },
+
+    async setCopyMode(mode: "HTML" | "PLAIN_TEXT") {
+      const modeLabel = mode === "HTML" ? "HTML (Formatted)" : "Native Text (Plain)";
+      await page.getByRole("button", { name: modeLabel }).click();
+    },
+
+    async setFontSize(size: number) {
+      await selectDropdownOption(SELECTORS.fontSizeSelect, `${size}px`);
+    },
+
+    async setTabSize(size: number) {
+      await selectDropdownOption(SELECTORS.tabSizeSelect, `${size}cm`);
+    },
+
+    async setInlineStylesForOffice(enabled: boolean) {
+      await setCheckboxState(SELECTORS.inlineStylesCheckbox, enabled);
+    },
+
+    async setAdjustIndentationForOffice(enabled: boolean) {
+      await setCheckboxState(SELECTORS.adjustIndentationCheckbox, enabled);
+    },
+
+    async saveCopySettings() {
+      await page.locator(SELECTORS.copySettingsDialog).getByRole("button", { name: "Save" }).click();
+      await page.locator(SELECTORS.copySettingsDialog).waitFor({ state: "hidden" });
+    },
+
+    async cancelCopySettings() {
+      await page.locator(SELECTORS.copySettingsDialog).getByRole("button", { name: "Cancel" }).click();
+      await page.locator(SELECTORS.copySettingsDialog).waitFor({ state: "hidden" });
     },
   };
 }

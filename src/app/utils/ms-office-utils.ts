@@ -16,7 +16,7 @@ export class MsOfficeUtils {
    * @returns The equivalent value in points.
    */
   public static pxToOfficePt(px: number): number {
-    return px * (96 / 72);
+    return px * (72 / 96);
   }
 
   /**
@@ -70,17 +70,18 @@ export class MsOfficeUtils {
   /**
    * Generates a CSS string with tab stop positions for tab-indented content.
    *
-   * @param count Number of tab stops to create.
+   * @param maxIndentationMarkers Maximum indentation depth (in markers) found in the content.
+   * @param tabSizeInPt Tab size in points (converted from cm). Determines spacing between tab stops.
    * @param offsetInPt Offset in points that gets added to each tab stop position. Defaults to 0.
    * @returns A CSS string defining left tab stops.
    */
-  public static getTabStops(count: number, offsetInPt = 0): string {
-    if (count === 0) {
+  public static getTabStops(maxIndentationMarkers: number, tabSizeInPt: number, offsetInPt = 0): string {
+    if (maxIndentationMarkers === 0) {
       return "";
     }
 
-    const stops = Array.from({ length: count }, (_, i) => {
-      const position = (MsOfficeUtils.cmToOfficePt(i + 1) + offsetInPt).toFixed(4);
+    const stops = Array.from({ length: maxIndentationMarkers }, (_, i) => {
+      const position = ((i + 1) * tabSizeInPt + offsetInPt).toFixed(4);
       return `left ${position}pt`;
     }).join(" ");
 

@@ -1,35 +1,31 @@
 @let hasCode = codeService.hasCode();
 
-<!-- Copy Settings Dialog -->
-<p-dialog
-  header="⚙️ Copy Settings"
-  id="copy-settings-dialog"
-  [modal]="true"
-  [(visible)]="copySettingsDialogVisible"
-  closeAriaLabel="Close Copy Settings"
->
-  <app-copy-settings (saved)="onCopySettingsSaved()" (cancelled)="onCopySettingsCancelled()"></app-copy-settings>
-</p-dialog>
+<!-- Copy Settings — owns its own dialog internally -->
+<app-copy-settings></app-copy-settings>
 
-<div class="highlighted-code-container">
-  <!-- Result Toolbar: chips on the left, action buttons on the right -->
-  <div class="result-toolbar">
-    <!-- Active copy-settings chips -->
+<div class="code-output-wrapper">
+  <!-- Result header row: title | chips (right-aligned) | action buttons -->
+  <div class="result-header-row">
+    <span class="result-title">Result</span>
+
+    <!-- Active copy-settings chips, pushed to the right of the title -->
     <div class="copy-settings-chips" role="list" aria-label="Active copy settings">
       @for (chip of copySettingChips; track chip.key) {
         <p-chip
           [label]="chip.label"
-          styleClass="copy-setting-chip"
+          class="copy-setting-chip"
           role="listitem"
           [pTooltip]="'Copy setting: ' + chip.label"
           [tooltipOptions]="tooltipOptions"
+          [pt]="copySettingChipStyles"
+          [removable]="true"
+          (onRemove)="resetCopySetting(chip.key)"
         ></p-chip>
       }
     </div>
 
     <!-- Action buttons -->
     <div class="result-actions">
-      <!-- Copy Settings Button -->
       <p-button
         id="copy-settings-button"
         icon="pi pi-sliders-h"
@@ -41,7 +37,6 @@
         aria-label="Open Copy Settings"
       ></p-button>
 
-      <!-- Copy to Clipboard Button -->
       <p-button
         id="copy-to-clipboard-button"
         icon="pi pi-copy"
@@ -54,12 +49,10 @@
   </div>
 
   <!-- Preformatted text where the highlighted code gets inserted -->
-  <pre
-    id="highlighted-code-wrapper"
-    [style.font-size.px]="displayFontSize"
-    [style.tab-size]="copySettingsService.copySettings.tabSize"
-  ><code
+  <div class="highlighted-code-container">
+    <pre id="highlighted-code-wrapper"><code
     [innerHTML]="codeService.highlightedCode"
     class="highlighted-code language-{{ languageService.selectedLanguage.value }}">
   </code></pre>
+  </div>
 </div>

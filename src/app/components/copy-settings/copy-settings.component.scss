@@ -1,30 +1,43 @@
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: var(--p-dialog-title-font-weight);
+  font-size: var(--p-dialog-title-font-size);
+
+  i {
+    color: var(--p-primary-color);
+  }
+}
+
 .copy-settings-form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg, 1.5rem);
-  min-width: min(90vw, 36rem);
+  gap: var(--spacing-lg);
 }
-
-// ── Section ──────────────────────────────────────────────────────────────────
 
 .settings-section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
   transition: opacity 0.2s ease;
+  font-size: var(--font-size-sm);
 
   &.section-disabled {
     opacity: 0.55;
   }
 }
 
+// The title acts as the section divider via its bottom border.
+// Tight margin-bottom lets the border sit close to the content below.
 .section-title {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--p-select-border-color);
+  font-weight: bold;
   color: var(--p-text-color);
 
   i {
@@ -36,56 +49,34 @@
   margin-left: auto;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  background: var(--p-primary-50, #eff6ff);
-  color: var(--p-primary-color);
-  border: 1px solid var(--p-primary-200, #bfdbfe);
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+  background: var(--p-highlight-focus-background);
+  color: var(--p-highlight-color);
+  border: 1px solid var(--p-form-field-focus-border-color);
 }
 
 .section-description {
   margin: 0;
-  font-size: 0.8rem;
   color: var(--p-text-muted-color);
 }
 
-// ── Copy Mode Select Button ───────────────────────────────────────────────────
-
-:host ::ng-deep .copy-mode-select-button {
-  width: 100%;
-
-  .p-togglebutton {
-    flex: 1;
-  }
-}
-
-// ── Settings Grid (Font / Tab size) ──────────────────────────────────────────
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-}
+// Inline settings item (label + compact control side-by-side)
 
 .settings-item {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs, 0.35rem);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
 
   label {
-    font-size: 0.85rem;
     font-weight: 500;
     color: var(--p-text-color);
-  }
-
-  p-select,
-  p-inputnumber {
-    width: 100%;
+    white-space: nowrap;
   }
 }
 
-// ── Checkboxes ────────────────────────────────────────────────────────────────
-
+// Checkboxes
 .checkbox-group {
   display: flex;
   flex-direction: column;
@@ -104,7 +95,6 @@
   gap: 0.2rem;
 
   label {
-    font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
     color: var(--p-text-color);
@@ -116,13 +106,11 @@
 }
 
 .checkbox-description {
-  font-size: 0.75rem;
   color: var(--p-text-muted-color);
 
   code {
     font-family: monospace;
-    font-size: 0.75rem;
-    background: var(--p-surface-100, #f3f4f6);
+    background: var(--p-surface-100);
     padding: 0.05rem 0.25rem;
     border-radius: 3px;
   }
@@ -130,7 +118,6 @@
 
 .disabled-hint {
   margin: 0;
-  font-size: 0.8rem;
   color: var(--p-text-muted-color);
   font-style: italic;
 
@@ -139,12 +126,12 @@
   }
 }
 
-// ── Dialog Actions ─────────────────────────────────────────────────────────────
+// Dialog Actions
 
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm);
   padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--p-surface-border, var(--p-select-border-color));
+  border-top: 1px solid var(--p-select-border-color);
 }

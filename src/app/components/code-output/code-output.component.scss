@@ -1,34 +1,42 @@
-.highlighted-code-container {
+.code-output-wrapper {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  flex: 1; // Fill all available space
+  width: 100%;
+}
 
-  // ── Toolbar ────────────────────────────────────────────────────────────────
-  .result-toolbar {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
-  }
+.result-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
 
-  .copy-settings-chips {
-    display: flex;
-    flex: 1;
-    flex-wrap: wrap;
-    gap: var(--spacing-xs, 0.35rem);
-    min-height: 2rem; // Reserve space even when empty so layout doesn't shift
-    align-items: center;
-  }
+.result-title {
+  font-size: var(--p-card-title-font-size);
+  font-weight: var(--p-card-title-font-weight);
+  flex-shrink: 0;
+  line-height: 1;
+}
 
-  .result-actions {
-    display: flex;
-    gap: var(--spacing-xs, 0.35rem);
-    margin-left: auto;
-    flex-shrink: 0;
-  }
+.copy-settings-chips {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  min-width: 0;
+}
 
-  // ── Code Display ──────────────────────────────────────────────────────────
+.result-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.highlighted-code-container {
+  overflow: hidden;
+
   pre#highlighted-code-wrapper {
     margin: 0;
     padding: var(--spacing-md);
@@ -36,19 +44,5 @@
     overflow: auto;
     border-radius: var(--p-border-radius-md);
     border: 1px solid var(--p-select-border-color);
-  }
-}
-
-// ── Chip styling ──────────────────────────────────────────────────────────────
-:host ::ng-deep .copy-setting-chip {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: var(--p-primary-50, #eff6ff);
-  color: var(--p-primary-color);
-  border: 1px solid var(--p-primary-200, #bfdbfe);
-
-  .p-chip-label {
-    line-height: 1.4;
   }
 }

@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { CopySettingsService } from "@services/copy-settings.service";
-import { CopyMode, DEFAULT_COPY_SETTINGS, DEFAULT_COPY_FONT_SIZE, DEFAULT_COPY_TAB_SIZE } from "@types";
+import { CopyMode, CopySettings, DEFAULT_COPY_SETTINGS, DEFAULT_COPY_FONT_SIZE, DEFAULT_OFFICE_TAB_SIZE_CM } from "@types";
+import { COPY_SETTINGS_STORAGE_KEY } from "@constants/const";
 import { useStandardTeardown } from "../../test-utils/utils";
 
 const createService = () => {
@@ -11,6 +12,7 @@ const createService = () => {
 
 describe("CopySettingsService", () => {
   useStandardTeardown();
+  afterEach(() => sessionStorage.clear());
 
   it("should be created", () => {
     expect(createService()).toBeTruthy();
@@ -27,8 +29,8 @@ describe("CopySettingsService", () => {
       expect(createService().copySettings.fontSize).toBe(DEFAULT_COPY_FONT_SIZE);
     });
 
-    it("should start with default tab size", () => {
-      expect(createService().copySettings.tabSize).toBe(DEFAULT_COPY_TAB_SIZE);
+    it("should start with default office tab size", () => {
+      expect(createService().copySettings.officeTabSizeCm).toBe(DEFAULT_OFFICE_TAB_SIZE_CM);
     });
 
     it("should start with MS Office optimizations enabled", () => {
@@ -54,9 +56,9 @@ describe("CopySettingsService", () => {
     it("should reflect the latest value after multiple updates", () => {
       const service = createService();
       service.updateSettings({ fontSize: 16 });
-      service.updateSettings({ tabSize: 2 });
+      service.updateSettings({ officeTabSizeCm: 1.5 });
       expect(service.copySettings.fontSize).toBe(16);
-      expect(service.copySettings.tabSize).toBe(2);
+      expect(service.copySettings.officeTabSizeCm).toBe(1.5);
     });
 
     it("should not mutate the previous settings reference (immutability)", () => {
@@ -66,12 +68,24 @@ describe("CopySettingsService", () => {
       expect(service.copySettings).not.toBe(before);
     });
 
-    it("should not persist settings to localStorage", () => {
+    it("should persist settings to sessionStorage (not localStorage)", () => {
       const service = createService();
       service.updateSettings({ fontSize: 20 });
-      expect(localStorage.getItem("editor_settings")).toBeNull();
-      // Confirm no copy-settings key was written either
-      expect(Object.keys(localStorage)).not.toContain("copy_settings");
+
+      const stored = JSON.parse(sessionStorage.getItem(COPY_SETTINGS_STORAGE_KEY)!) as CopySettings;
+      expect(stored).toEqual({ ...DEFAULT_COPY_SETTINGS, fontSize: 20 });
+      expect(localStorage.getItem(COPY_SETTINGS_STORAGE_KEY)).toBeNull();
+    });
+
+    it("should restore persisted settings from sessionStorage on init", () => {
+      sessionStorage.setItem(
+        COPY_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ ...DEFAULT_COPY_SETTINGS, fontSize: 18, copyMode: CopyMode.PlainText })
+      );
+
+      const service = createService();
+      expect(service.copySettings.fontSize).toBe(18);
+      expect(service.copySettings.copyMode).toBe(CopyMode.PlainText);
     });
   });
 
@@ -80,9 +94,18 @@ describe("CopySettingsService", () => {
   describe("resetToDefaults", () => {
     it("should restore all fields to factory defaults", () => {
       const service = createService();
-      service.updateSettings({ copyMode: CopyMode.PlainText, fontSize: 20, tabSize: 8 });
+      service.updateSettings({ copyMode: CopyMode.PlainText, fontSize: 20, officeTabSizeCm: 2 });
       service.resetToDefaults();
       expect(service.copySettings).toEqual(DEFAULT_COPY_SETTINGS);
+    });
+
+    it("should persist the defaults to sessionStorage", () => {
+      const service = createService();
+      service.updateSettings({ fontSize: 20 });
+      service.resetToDefaults();
+
+      const stored = JSON.parse(sessionStorage.getItem(COPY_SETTINGS_STORAGE_KEY)!) as CopySettings;
+      expect(stored).toEqual(DEFAULT_COPY_SETTINGS);
     });
   });
 
@@ -119,9 +142,9 @@ describe("CopySettingsService", () => {
       expect(service.hasNonDefaultSettings()).toBe(true);
     });
 
-    it("should return true when tabSize differs from default", () => {
+    it("should return true when officeTabSizeCm differs from default", () => {
       const service = createService();
-      service.updateSettings({ tabSize: 2 });
+      service.updateSettings({ officeTabSizeCm: 1.5 });
       expect(service.hasNonDefaultSettings()).toBe(true);
     });
 
@@ -166,11 +189,11 @@ describe("CopySettingsService", () => {
       expect(chips).toContainEqual(expect.objectContaining({ label: "Font: 18px", key: "fontSize" }));
     });
 
-    it("should add a tab size chip when tabSize differs from default", () => {
+    it("should add a tab size chip when officeTabSizeCm differs from default", () => {
       const service = createService();
-      service.updateSettings({ tabSize: 2 });
+      service.updateSettings({ officeTabSizeCm: 1.5 });
       const chips = service.getActiveChips();
-      expect(chips).toContainEqual(expect.objectContaining({ label: "Tab: 2", key: "tabSize" }));
+      expect(chips).toContainEqual(expect.objectContaining({ label: "Office Tab: 1.5cm", key: "officeTabSizeCm" }));
     });
 
     it("should add a 'No Office Styles' chip when inlineStylesForOffice is false", () => {
@@ -189,7 +212,7 @@ describe("CopySettingsService", () => {
 
     it("should accumulate multiple chips for multiple non-default settings", () => {
       const service = createService();
-      service.updateSettings({ copyMode: CopyMode.PlainText, fontSize: 16, tabSize: 2 });
+      service.updateSettings({ copyMode: CopyMode.PlainText, fontSize: 16, officeTabSizeCm: 1.5 });
       expect(service.getActiveChips()).toHaveLength(3);
     });
 

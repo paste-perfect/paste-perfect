@@ -1,11 +1,10 @@
-import { Component, inject, output } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { Button } from "primeng/button";
+import { Dialog } from "primeng/dialog";
 import { SelectButton } from "primeng/selectbutton";
-import { InputNumber } from "primeng/inputnumber";
 import { Select } from "primeng/select";
 import { Checkbox } from "primeng/checkbox";
-import { Divider } from "primeng/divider";
 import { CopyMode, CopySettings, DEFAULT_COPY_SETTINGS } from "@types";
 import { CopySettingsService } from "@services/copy-settings.service";
 
@@ -17,24 +16,22 @@ interface SelectOption<T> {
 /**
  * Component for configuring copy-to-clipboard behaviour.
  *
- * Shows a settings form with a "pending" local copy of the settings.
- * Changes are only committed to {@link CopySettingsService} when the user
- * clicks "Save"; clicking "Cancel" discards all edits.
+ * The component owns its own `p-dialog` so it can be placed directly in any
+ * parent template without going through a portal boundary.  Call the public
+ * {@link openDialog} method (e.g. via `@ViewChild`) to open it; the pending
+ * state is reset to the currently committed settings at that point.
  */
 @Component({
   selector: "app-copy-settings",
-  imports: [FormsModule, Button, SelectButton, InputNumber, Select, Checkbox, Divider],
+  imports: [FormsModule, Button, Dialog, SelectButton, Select, Checkbox],
   templateUrl: "./copy-settings.component.html",
   styleUrl: "./copy-settings.component.scss",
 })
 export class CopySettingsComponent {
-  /** Emitted after a successful save so the parent can close the dialog. */
-  readonly saved = output<void>();
-
-  /** Emitted when the user cancels so the parent can close the dialog. */
-  readonly cancelled = output<void>();
-
   protected readonly copySettingsService: CopySettingsService = inject(CopySettingsService);
+
+  /** Controls the PrimeNG dialog visibility. */
+  protected dialogVisible = false;
 
   // ── Copy Mode ────────────────────────────────────────────────────────────
   protected readonly copyModeOptions: SelectOption<CopyMode>[] = [
@@ -48,13 +45,10 @@ export class CopySettingsComponent {
     value: px,
   }));
 
-  protected readonly MIN_FONT_SIZE = 8;
-  protected readonly MAX_FONT_SIZE = 48;
-
-  // ── Tab Size ─────────────────────────────────────────────────────────────
-  protected readonly tabSizeOptions: SelectOption<number>[] = [2, 4, 8].map((n) => ({
-    label: String(n),
-    value: n,
+  // ── Office Tab Size ──────────────────────────────────────────────────────
+  protected readonly officeTabSizeOptions: SelectOption<number>[] = [0.5, 1, 1.5, 2].map((cm) => ({
+    label: `${cm}cm`,
+    value: cm,
   }));
 
   // ── Pending (uncommitted) settings ───────────────────────────────────────
@@ -66,24 +60,25 @@ export class CopySettingsComponent {
     return this.pendingSettings.copyMode === CopyMode.HTML;
   }
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  // ── Public API ────────────────────────────────────────────────────────────
 
   /**
-   * Called by the parent (via `@ViewChild`) just before the dialog becomes visible.
-   * Resets the form to the current committed settings.
+   * Opens the settings dialog and resets the form to the currently committed settings.
+   * Call this from the parent via `@ViewChild`.
    */
-  onDialogOpened(): void {
+  openDialog(): void {
     this.pendingSettings = { ...this.copySettingsService.copySettings };
+    this.dialogVisible = true;
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
   protected save(): void {
     this.copySettingsService.updateSettings(this.pendingSettings);
-    this.saved.emit();
+    this.dialogVisible = false;
   }
 
   protected cancel(): void {
-    this.cancelled.emit();
+    this.dialogVisible = false;
   }
 }

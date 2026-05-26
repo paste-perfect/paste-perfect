@@ -14,6 +14,8 @@ export interface OfficeCopyBehavior {
   readonly inlineStylesForOffice: boolean;
   /** When false, leading indentation is kept as plain spaces/tabs instead of NBSP/mso-tab spans. */
   readonly adjustIndentationForOffice: boolean;
+  /** Tab width (in cm) used for Word/Office tab stops. Only used for getTabStops. */
+  readonly officeTabSizeCm: number;
 }
 
 /**
@@ -26,7 +28,7 @@ export interface OfficeCopyBehavior {
  */
 export class LinesCollector {
   private readonly lines: Node[][]; // Stores arrays of Node objects, each representing a single line.
-  private readonly tabSize: number;
+  private readonly indentationSize: number; // Size for indentation processing from settings.
   private readonly indentationMode: IndentationMode;
   private readonly hasLineNumbers: boolean;
   private readonly lineNumberWidth: number = 0;
@@ -38,21 +40,25 @@ export class LinesCollector {
 
   /**
    * @param indentationMode The desired indentation mode (Tabs vs. Spaces).
-   * @param tabSize The number of spaces that represent a single tab.
+   * @param indentationSize The number of spaces that represent a single tab (from settings).
    * @param hasLineNumbers A flag indicating whether to parse leading line numbers.
-   * @param officeBehavior Optional Office-specific behaviour overrides.
+   * @param officeBehavior Office-specific behaviour including officeTabSize for Word/Office tab stops.
    */
   constructor(
     indentationMode: IndentationMode,
-    tabSize: number,
+    indentationSize: number,
     hasLineNumbers: boolean,
-    officeBehavior: OfficeCopyBehavior = { inlineStylesForOffice: true, adjustIndentationForOffice: true }
+    officeBehavior: OfficeCopyBehavior = {
+      inlineStylesForOffice: true,
+      adjustIndentationForOffice: true,
+      officeTabSizeCm: 1,
+    }
   ) {
     this.lines = [[]];
     this.isLineStart = true;
     this.isContentStart = true;
     this.hasLineNumbers = hasLineNumbers;
-    this.tabSize = tabSize;
+    this.indentationSize = indentationSize;
     this.indentationMode = indentationMode;
     this.officeBehavior = officeBehavior;
     // This width is used to offset tab stops when line numbers are present.
@@ -116,10 +122,13 @@ export class LinesCollector {
       // For tab mode, set up tab stops for proper alignment in MS Office,
       // accounting for the line number width if present.
       if (this.officeBehavior.inlineStylesForOffice && this.indentationMode === IndentationMode.Tabs) {
-        const requiredStops = Math.ceil(this.maxIndentationMarkers / this.tabSize);
+        const requiredStops = Math.ceil(this.maxIndentationMarkers / this.indentationSize);
         if (requiredStops > 0) {
-          const tabStyle = MsOfficeUtils.getTabStops(requiredStops, this.lineNumberWidth);
-          NodeUtils.appendInlineStyle(p, tabStyle);
+          const officeTabSizeInPt = MsOfficeUtils.cmToOfficePt(this.officeBehavior.officeTabSizeCm);
+          const tabStyle = MsOfficeUtils.getTabStops(requiredStops, officeTabSizeInPt, this.lineNumberWidth);
+          if (tabStyle) {
+            NodeUtils.appendInlineStyle(p, tabStyle);
+          }
         }
       }
 
@@ -203,7 +212,7 @@ export class LinesCollector {
         let chunk = textToProcess;
         if (this.isContentStart) {
           // Mask leading spaces/tabs to treat them as special indentation markers.
-          chunk = IndentationFormatter.maskIndentation(textToProcess, this.tabSize);
+          chunk = IndentationFormatter.maskIndentation(textToProcess, this.indentationSize);
           this.isContentStart = false;
         }
         this.createSpansFromChunk(chunk, originalNode.parentElement);
@@ -253,9 +262,9 @@ export class LinesCollector {
     const markerSpan = NodeUtils.createSpan();
 
     if (this.indentationMode === IndentationMode.Tabs) {
-      markerSpan.textContent = IndentationFormatter.unmaskIndentationWithTabs(markerText, this.tabSize);
+      markerSpan.textContent = IndentationFormatter.unmaskIndentationWithTabs(markerText, this.indentationSize);
       if (this.officeBehavior.adjustIndentationForOffice && this.officeBehavior.inlineStylesForOffice) {
-        const tabCount = Math.floor(markerCount / this.tabSize);
+        const tabCount = Math.floor(markerCount / this.indentationSize);
         // Apply MS Office-specific style to render tab characters correctly.
         MsOfficeUtils.applyTabSpacing(markerSpan, tabCount);
       }

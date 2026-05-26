@@ -2,7 +2,7 @@ import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 
 import { MessageService } from "primeng/api";
-import { LanguageDefinition } from "@types";
+import { CopyMode, DEFAULT_COPY_FONT_SIZE, LanguageDefinition } from "@types";
 import { LinesCollector } from "@utils/line-collector";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
 import { SettingsService } from "@services/settings.service";
@@ -10,7 +10,6 @@ import { CopySettingsService } from "@services/copy-settings.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { HTML_CODE_PRE_SELECTOR } from "@constants/const";
-import { CopyMode, DEFAULT_COPY_FONT_SIZE } from "@types";
 
 /**
  * A service responsible for syntax highlighting and clipboard copying of code snippets.
@@ -154,17 +153,17 @@ export class PrismHighlightService {
     const copySettings = this.copySettingsService.copySettings;
 
     const mode = editorSettings.indentationMode;
-    // Copy settings tab size overrides the editor's indentation size for the output.
-    const tabSize = copySettings.tabSize;
+    const indentationSize = editorSettings.indentationSize;
     const showLineNumbers = editorSettings.showLineNumbers;
 
     // Clone the original element to avoid modifying the source
     const clonedPre: HTMLPreElement = originalPre.cloneNode(true) as HTMLPreElement;
 
     // Transform the cloned structure for clipboard compatibility
-    const linesCollector = new LinesCollector(mode, tabSize, showLineNumbers, {
+    const linesCollector = new LinesCollector(mode, indentationSize, showLineNumbers, {
       inlineStylesForOffice: copySettings.inlineStylesForOffice,
       adjustIndentationForOffice: copySettings.adjustIndentationForOffice,
+      officeTabSizeCm: copySettings.officeTabSizeCm,
     });
     linesCollector.collectLinesFromNodes(originalPre, clonedPre);
 

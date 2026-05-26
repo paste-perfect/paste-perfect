@@ -11,16 +11,16 @@ export enum CopyMode {
 /**
  * Settings that control copy-to-clipboard behaviour.
  *
- * These settings are intentionally NOT persisted to localStorage and always
- * reset to their defaults on each page load.
+ * These settings are persisted to sessionStorage — they survive within a
+ * single browser tab session but reset when the tab/window is closed.
  */
 export interface CopySettings {
   /** Whether to copy as rich HTML or plain text. */
   readonly copyMode: CopyMode;
-  /** Font size in pixels applied to both the display and the HTML copy output. */
+  /** Font size in pixels applied to the HTML copy output (not the display). */
   readonly fontSize: number;
-  /** Visual width of tab characters in the HTML copy output. */
-  readonly tabSize: number;
+  /** Tab width in centimeters (cm) for MS Office tab stops. Only used when copying to clipboard. */
+  readonly officeTabSizeCm: number;
   /** Whether MS Office–specific inline styles (mso-*) are included in the HTML output. */
   readonly inlineStylesForOffice: boolean;
   /** Whether leading indentation is converted to NBSP / tab spans optimised for Office pasting. */
@@ -38,14 +38,14 @@ export interface CopySettingChip {
 /** Default font size in pixels. */
 export const DEFAULT_COPY_FONT_SIZE = 14;
 
-/** Default visual tab size (number of spaces per tab). */
-export const DEFAULT_COPY_TAB_SIZE = 4;
+/** Default office tab width in centimeters (cm). */
+export const DEFAULT_OFFICE_TAB_SIZE_CM = 1;
 
 /** Factory defaults — used for comparison and reset. */
 export const DEFAULT_COPY_SETTINGS: CopySettings = {
   copyMode: CopyMode.HTML,
   fontSize: DEFAULT_COPY_FONT_SIZE,
-  tabSize: DEFAULT_COPY_TAB_SIZE,
+  officeTabSizeCm: DEFAULT_OFFICE_TAB_SIZE_CM,
   inlineStylesForOffice: true,
   adjustIndentationForOffice: true,
 } as const;

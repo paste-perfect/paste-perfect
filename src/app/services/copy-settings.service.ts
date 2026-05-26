@@ -1,32 +1,53 @@
-import { Injectable, signal, WritableSignal } from "@angular/core";
+import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { CopyMode, CopySettingChip, CopySettings, DEFAULT_COPY_SETTINGS } from "@types";
+import { StorageService } from "./storage.service";
+import { COPY_SETTINGS_STORAGE_KEY } from "@constants/const";
 
 /**
  * Service managing copy-to-clipboard settings.
  *
- * Unlike editor settings, copy settings are intentionally NOT persisted to localStorage.
- * They always start from their defaults on each page load.
+ * Settings are persisted to sessionStorage so they survive within a single
+ * browser tab session but reset between sessions (closing the tab/window).
  */
 @Injectable({
   providedIn: "root",
 })
 export class CopySettingsService {
-  /** In-memory signal for copy settings — never written to storage. */
-  private readonly _settings: WritableSignal<CopySettings> = signal({ ...DEFAULT_COPY_SETTINGS });
+  /** Service for persisting the copy settings in sessionStorage. */
+  private readonly storageService: StorageService = inject(StorageService);
+
+  /** Signal for the copy settings, kept in sync with sessionStorage. */
+  private readonly _settings: WritableSignal<CopySettings> = signal(this.loadInitialSettings());
 
   /** Returns the current copy settings snapshot. */
   get copySettings(): CopySettings {
     return this._settings();
   }
 
-  /** Applies a partial update to the copy settings. */
+  /** Applies a partial update to the copy settings and persists the result. */
   updateSettings(partial: Partial<CopySettings>): void {
-    this._settings.set({ ...this._settings(), ...partial });
+    const updated = { ...this._settings(), ...partial };
+    this.storageService.setSessionItem(COPY_SETTINGS_STORAGE_KEY, updated);
+    this._settings.set(updated);
   }
 
-  /** Resets all copy settings back to their factory defaults. */
+  /** Resets all copy settings back to their factory defaults and persists the result. */
   resetToDefaults(): void {
+    this.storageService.setSessionItem(COPY_SETTINGS_STORAGE_KEY, DEFAULT_COPY_SETTINGS);
     this._settings.set({ ...DEFAULT_COPY_SETTINGS });
+  }
+
+  /** Resets a single copy setting back to its factory default and persists the result. */
+  resetSetting<K extends keyof CopySettings>(key: K): void {
+    this.updateSettings({ [key]: DEFAULT_COPY_SETTINGS[key] } as Partial<CopySettings>);
+  }
+
+  /** Loads the initial settings from sessionStorage or falls back to defaults. */
+  private loadInitialSettings(): CopySettings {
+    return {
+      ...DEFAULT_COPY_SETTINGS,
+      ...(this.storageService.getSessionItem<CopySettings>(COPY_SETTINGS_STORAGE_KEY) || {}),
+    };
   }
 
   /** Returns true when the current copy mode is HTML (formatted). */
@@ -41,7 +62,7 @@ export class CopySettingsService {
     return (
       s.copyMode !== d.copyMode ||
       s.fontSize !== d.fontSize ||
-      s.tabSize !== d.tabSize ||
+      s.officeTabSizeCm !== d.officeTabSizeCm ||
       s.inlineStylesForOffice !== d.inlineStylesForOffice ||
       s.adjustIndentationForOffice !== d.adjustIndentationForOffice
     );
@@ -61,8 +82,8 @@ export class CopySettingsService {
     if (s.fontSize !== DEFAULT_COPY_SETTINGS.fontSize) {
       chips.push({ label: `Font: ${s.fontSize}px`, key: "fontSize" });
     }
-    if (s.tabSize !== DEFAULT_COPY_SETTINGS.tabSize) {
-      chips.push({ label: `Tab: ${s.tabSize}`, key: "tabSize" });
+    if (s.officeTabSizeCm !== DEFAULT_COPY_SETTINGS.officeTabSizeCm) {
+      chips.push({ label: `Office Tab: ${s.officeTabSizeCm}cm`, key: "officeTabSizeCm" });
     }
     if (!s.inlineStylesForOffice) {
       chips.push({ label: "No Office Styles", key: "inlineStylesForOffice" });
