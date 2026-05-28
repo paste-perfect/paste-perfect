@@ -1,13 +1,22 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { MessageService } from "primeng/api";
 import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
 import { SettingsService } from "@services/settings.service";
+import { CopySettingsService } from "@services/copy-settings.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { LinesCollector } from "@utils/line-collector";
 import { LanguageDefinition } from "@types";
-import { makeEditorSettings, createMockPreElement, createMessageMock, flushPromises, useStandardTeardown } from "../../../test-utils/utils";
+import { CopyMode } from "@types";
+import {
+  makeEditorSettings,
+  makeCopySettings,
+  createMockPreElement,
+  createMessageMock,
+  flushPromises,
+  useStandardTeardown,
+} from "../../../test-utils/utils";
 
 const prismMock = vi.hoisted(() => ({
   languages: {} as Record<string, unknown>,
@@ -52,14 +61,24 @@ describe("PrismHighlightService", () => {
   let prismLanguageLoaderMock: { loadPrismLanguage: ReturnType<typeof vi.fn> };
 
   const messageServiceMock = createMessageMock();
+
   const settingsServiceMock = {
     get editorSettings() {
       return makeEditorSettings({ showLineNumbers: false });
     },
   };
 
+  // Default: HTML mode, factory defaults
+  let copySettingsServiceMock = {
+    get copySettings() {
+      return makeCopySettings();
+    },
+    isHtmlMode: vi.fn().mockReturnValue(true),
+  };
+
   beforeEach(() => {
     vi.mocked(messageServiceMock.add).mockReset();
+    copySettingsServiceMock.isHtmlMode.mockReset().mockReturnValue(true);
 
     Object.keys(prismMock.languages).forEach((key) => delete prismMock.languages[key]);
     prismMock.languages["typescript"] = {};
@@ -94,6 +113,7 @@ describe("PrismHighlightService", () => {
         PrismHighlightService,
         { provide: MessageService, useValue: messageServiceMock },
         { provide: SettingsService, useValue: settingsServiceMock },
+        { provide: CopySettingsService, useValue: copySettingsServiceMock },
         { provide: PrismLanguageLoaderService, useValue: prismLanguageLoaderMock },
       ],
     });
@@ -159,35 +179,90 @@ describe("PrismHighlightService", () => {
       expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "warn", summary: "No code available" }));
     });
 
-    it("should write to the clipboard on success", async () => {
-      service.copyToClipboard();
-      await flushPromises();
+    // ── HTML mode ────────────────────────────────────────────────────────────
 
-      expect(clipboardWriteMock).toHaveBeenCalledOnce();
-      expect(clipboardWriteMock.mock.calls[0][0][0]).toBeDefined();
+    describe("HTML (Formatted) mode", () => {
+      it("should write to the clipboard on success", async () => {
+        service.copyToClipboard();
+        await flushPromises();
+
+        expect(clipboardWriteMock).toHaveBeenCalledOnce();
+        expect(clipboardWriteMock.mock.calls[0][0][0]).toBeDefined();
+      });
+
+      it("should display a success toast after the clipboard write resolves", async () => {
+        service.copyToClipboard();
+        await flushPromises();
+
+        expect(messageServiceMock.add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: "success", summary: "Copied successfully" })
+        );
+      });
+
+      it("should display an error toast when the clipboard write rejects", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => undefined);
+        clipboardWriteMock.mockRejectedValueOnce(new Error("Permission denied"));
+
+        service.copyToClipboard();
+        await flushPromises();
+
+        expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error", summary: "Copy failed" }));
+      });
+
+      it("should delegate DOM transformation to LinesCollector", () => {
+        service.copyToClipboard();
+
+        expect(collectLinesSpy).toHaveBeenCalledWith(mockPreElement, expect.any(HTMLPreElement));
+      });
     });
 
-    it("should display a success toast after the clipboard write resolves", async () => {
-      service.copyToClipboard();
-      await flushPromises();
+    // ── Plain Text mode ──────────────────────────────────────────────────────
 
-      expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "success", summary: "Copied successfully" }));
-    });
+    describe("Native Text (Plain) mode", () => {
+      beforeEach(() => {
+        copySettingsServiceMock = {
+          get copySettings() {
+            return makeCopySettings({ copyMode: CopyMode.PlainText });
+          },
+          isHtmlMode: vi.fn().mockReturnValue(false),
+        };
 
-    it("should display an error toast when the clipboard write rejects", async () => {
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      clipboardWriteMock.mockRejectedValueOnce(new Error("Permission denied"));
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          providers: [
+            PrismHighlightService,
+            { provide: MessageService, useValue: messageServiceMock },
+            { provide: SettingsService, useValue: settingsServiceMock },
+            { provide: CopySettingsService, useValue: copySettingsServiceMock },
+            { provide: PrismLanguageLoaderService, useValue: prismLanguageLoaderMock },
+          ],
+        });
+        service = TestBed.inject(PrismHighlightService);
+      });
 
-      service.copyToClipboard();
-      await flushPromises();
+      it("should write to the clipboard without calling LinesCollector", async () => {
+        service.copyToClipboard();
+        await flushPromises();
 
-      expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error", summary: "Copy failed" }));
-    });
+        expect(collectLinesSpy).not.toHaveBeenCalled();
+        expect(clipboardWriteMock).toHaveBeenCalledOnce();
+      });
 
-    it("should delegate DOM transformation to LinesCollector", () => {
-      service.copyToClipboard();
+      it("should display a success toast after the plain-text write resolves", async () => {
+        service.copyToClipboard();
+        await flushPromises();
 
-      expect(collectLinesSpy).toHaveBeenCalledWith(mockPreElement, expect.any(HTMLPreElement));
+        expect(messageServiceMock.add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: "success", summary: "Copied successfully" })
+        );
+      });
+
+      it("should NOT call sanitizeOutput in plain-text mode", async () => {
+        service.copyToClipboard();
+        await flushPromises();
+
+        expect(SanitizerWrapper.sanitizeOutput).not.toHaveBeenCalled();
+      });
     });
   });
 });

@@ -1,0 +1,137 @@
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: var(--p-dialog-title-font-weight);
+  font-size: var(--p-dialog-title-font-size);
+
+  i {
+    color: var(--p-primary-color);
+  }
+}
+
+.copy-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  transition: opacity 0.2s ease;
+  font-size: var(--font-size-sm);
+
+  &.section-disabled {
+    opacity: 0.55;
+  }
+}
+
+// The title acts as the section divider via its bottom border.
+// Tight margin-bottom lets the border sit close to the content below.
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--p-select-border-color);
+  font-weight: bold;
+  color: var(--p-text-color);
+
+  i {
+    color: var(--p-primary-color);
+  }
+}
+
+.section-badge {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+  background: var(--p-highlight-focus-background);
+  color: var(--p-highlight-color);
+  border: 1px solid var(--p-form-field-focus-border-color);
+}
+
+.section-description {
+  margin: 0;
+  color: var(--p-text-muted-color);
+}
+
+// Inline settings item (label + compact control side-by-side)
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+
+  label {
+    font-weight: 500;
+    color: var(--p-text-color);
+    white-space: nowrap;
+  }
+}
+
+// Checkboxes
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.checkbox-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  label {
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--p-text-color);
+
+    &.label-disabled {
+      cursor: default;
+    }
+  }
+}
+
+.checkbox-description {
+  color: var(--p-text-muted-color);
+
+  code {
+    font-family: monospace;
+    background: var(--p-surface-100);
+    padding: 0.05rem 0.25rem;
+    border-radius: 3px;
+  }
+}
+
+.disabled-hint {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-style: italic;
+
+  i {
+    margin-right: 0.25rem;
+  }
+}
+
+// Dialog Actions
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--p-select-border-color);
+}

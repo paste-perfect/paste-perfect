@@ -1,38 +1,29 @@
+# .github/actions/release-pr/action.yml
 name: Ensure dev → main Release PR
 description: >
-  Ensures lifecycle labels exist, checks whether dev is ahead of main, finds or
-  creates the "chore: promote dev to main" PR, evaluates whether all commits since
-  the last stable release are lifecycle-only, and applies or removes the
-  "automerge-lifecycle" label accordingly.
-
-  Callers that want to enable auto-merge should inspect the `is_lifecycle_only`
-  output and invoke `gh pr merge --auto --merge` themselves.
+  Builds a conflict-free staging branch (automation/dev-to-main-promote) from main
+  with dev merged in. Preserves dev's RC version for package[-lock].json. Opens or
+  reuses the promote PR, gating automerge-lifecycle labels based on commit types.
 
 inputs:
   token:
-    description: >
-      GitHub App token with contents:read and pull-requests:write scope.
-      Used for all GitHub API calls (label management, PR create/edit).
+    description: GitHub App token with contents:write and pull-requests:write.
     required: true
 
 outputs:
   pr_number:
-    description: Number of the open dev→main release PR. Empty if dev == main.
+    description: Number of the open release PR. Empty if dev == main.
     value: ${{ steps.main.outputs.pr_number }}
   has_changes:
-    description: "'true' if dev is ahead of main (i.e. there is something to release)."
+    description: "'true' if dev is ahead of main."
     value: ${{ steps.main.outputs.has_changes }}
   is_lifecycle_only:
-    description: >
-      'true' if every commit since the last stable release is a lifecycle/maintenance
-      type (chore, build, ci, docs, style, refactor, fix(deps), sync, promote).
-      'false' if any feat:, fix:, perf:, or feature-merge commit is present.
+    description: "'true' if every commit since the last stable release is lifecycle-only."
     value: ${{ steps.main.outputs.is_lifecycle_only }}
 
 runs:
   using: composite
   steps:
-    # ── All logic in one shell script to avoid conditional-step complexity ──────
     - name: Ensure PR exists and evaluate lifecycle eligibility
       id: main
       shell: bash
@@ -41,12 +32,13 @@ runs:
       run: |
         set -euo pipefail
 
+        PROMOTE_BRANCH="automation/dev-to-main-promote"
+
         # ── Step 1: Ensure labels exist ───────────────────────────────────────
         gh label create "automerge-lifecycle" \
           --color "5319e7" \
           --description "All commits are lifecycle/maintenance only — safe to auto-merge" \
           2>/dev/null || true
-
         gh label create "lifecycle-release" \
           --color "0075ca" \
           --description "Automated weekly lifecycle release PR" \
@@ -54,86 +46,163 @@ runs:
 
         # ── Step 2: Check divergence ──────────────────────────────────────────
         git fetch origin main dev
+        git fetch origin "$PROMOTE_BRANCH" 2>/dev/null || true
 
         AHEAD=$(git rev-list --right-only --count origin/main...origin/dev)
-
         if [ "$AHEAD" -eq 0 ]; then
           echo "dev is not ahead of main — nothing to do."
-          echo "has_changes=false"      >> "$GITHUB_OUTPUT"
-          echo "pr_number="             >> "$GITHUB_OUTPUT"
+          echo "has_changes=false"       >> "$GITHUB_OUTPUT"
+          echo "pr_number="              >> "$GITHUB_OUTPUT"
           echo "is_lifecycle_only=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-
         echo "dev is $AHEAD commit(s) ahead of main."
         echo "has_changes=true" >> "$GITHUB_OUTPUT"
 
-        # ── Step 3: Find or create the release PR ─────────────────────────────
+        # ── Step 3: Build conflict-free staging branch ────────────────────────
+        # Promote flow (dev->main): Keep DEV's version (theirs) to preserve RC suffix
+        git config user.name  "releasebot[bot]"
+        git config user.email "releasebot[bot]@users.noreply.github.com"
+
+        git checkout -B "$PROMOTE_BRANCH" origin/main
+
+        set +e
+        git merge --no-ff --no-edit origin/dev \
+          -m "chore(promote): merge dev into staging for main release"
+        MERGE_EXIT=$?
+        set -e
+
+        HAS_REAL_CONFLICTS=false
+        CONFLICT_FILES_LIST=""
+
+        if [ $MERGE_EXIT -ne 0 ]; then
+          CONFLICTS=$(git diff --name-only --diff-filter=U)
+          VERSION_FILES_PATTERN='^(package\.json|package-lock\.json|npm-shrinkwrap\.json)$'
+          VERSION_CONFLICTS=$(echo "$CONFLICTS"     | grep -E  "$VERSION_FILES_PATTERN" | grep -v '^$' || true)
+          NON_VERSION_CONFLICTS=$(echo "$CONFLICTS" | grep -vE "$VERSION_FILES_PATTERN" | grep -v '^$' || true)
+
+          if [ -n "$NON_VERSION_CONFLICTS" ]; then
+            echo "::warning::Real (non-version) conflicts block the promote — manual resolution required"
+            HAS_REAL_CONFLICTS=true
+            CONFLICT_FILES_LIST=$(echo "$NON_VERSION_CONFLICTS" | tr '\n' ',' | sed 's/,$//')
+            git merge --abort || true
+
+            # Park at safe tip (main) so PR target exists and avoids broken builds
+            git checkout -B "$PROMOTE_BRANCH" origin/main
+          else
+            # Resolve conflicting version files with dev's RC version (--theirs)
+            for f in package.json package-lock.json npm-shrinkwrap.json; do
+              if echo "$VERSION_CONFLICTS" | grep -qx "$f"; then
+                git checkout --theirs -- "$f"
+                git add "$f"
+              fi
+            done
+
+            # Force synchronization of the lockfile pair if only one conflicted
+            PKG_CONFLICTED=false;  echo "$VERSION_CONFLICTS" | grep -qx "package.json"      && PKG_CONFLICTED=true
+            LOCK_CONFLICTED=false; echo "$VERSION_CONFLICTS" | grep -qx "package-lock.json" && LOCK_CONFLICTED=true
+            if [ "$PKG_CONFLICTED" = "true" ] && [ "$LOCK_CONFLICTED" = "false" ] && [ -f package-lock.json ]; then
+              git checkout MERGE_HEAD -- package-lock.json
+              git add package-lock.json
+            elif [ "$LOCK_CONFLICTED" = "true" ] && [ "$PKG_CONFLICTED" = "false" ]; then
+              git checkout MERGE_HEAD -- package.json
+              git add package.json
+            fi
+
+            git commit -m "chore(promote): resolve version false-conflict — preserve dev RC version"
+          fi
+        fi
+
+        # Tree-diff / commit-count guard (verify real changes exist vs main)
+        if [ "$HAS_REAL_CONFLICTS" != "true" ]; then
+          DIFF_COUNT=$(git diff --name-only origin/main HEAD | wc -l | tr -d ' ')
+          COMMIT_AHEAD=$(git rev-list --count origin/main..HEAD)
+          if [ "$DIFF_COUNT" -eq 0 ] || [ "$COMMIT_AHEAD" -eq 0 ]; then
+            echo "Staging tree identical to main — nothing to promote."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "pr_number=" >> "$GITHUB_OUTPUT"
+            echo "is_lifecycle_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+        fi
+
+        git push --force origin "$PROMOTE_BRANCH"
+
+        # ── Step 4: Find or create the release PR ─────────────────────────────
+        if [ "$HAS_REAL_CONFLICTS" = "true" ]; then
+          {
+            echo "## ⚠️ Automated Release PR: dev → main — MANUAL CONFLICT RESOLUTION REQUIRED"
+            echo ""
+            echo "The merge was aborted cleanly. The staging branch is parked at the \`main\` tip."
+            echo "Resolve locally and push to unblock:"
+            echo ""
+            printf '%s' "$CONFLICT_FILES_LIST" | tr ',' '\n' | grep -v '^$' | sed 's|.*|- `&`|'
+            echo ""
+            echo "> _Auto-merge will **not** be enabled._"
+          } > /tmp/pr_body.md
+        else
+          {
+            echo "## Automated Release PR: dev → main"
+            echo ""
+            echo "Auto-merge is **not** enabled on creation. The scheduled-release workflow"
+            echo "runs weekly and enables auto-merge only when:"
+            echo "1. All commits since the last release are lifecycle/dependency updates."
+            echo "2. All required CI checks pass."
+            echo ""
+            echo "If \`feat:\` or \`fix:\` commits are detected this PR requires a manual promotion decision."
+          } > /tmp/pr_body.md
+        fi
+
         PR_NUMBER=$(gh pr list \
           --base main \
-          --head dev \
+          --head "$PROMOTE_BRANCH" \
           --state open \
           --json number \
           --jq '.[0].number')
 
-        if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-          echo "Release PR #$PR_NUMBER already exists."
-        else
-          gh pr create \
+        if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+          if ! gh pr create \
             --base main \
-            --head dev \
+            --head "$PROMOTE_BRANCH" \
             --title "chore: promote dev to main" \
-            --label "lifecycle-release" \
-            --body "$(cat <<'EOF'
-        ## Automated Release PR: dev → main
+            --body-file /tmp/pr_body.md 2>/tmp/pr_create_err; then
+            if grep -q "No commits between" /tmp/pr_create_err; then
+              echo "Race: branch already merged or superseded. Skipping."
+              echo "pr_number=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            cat /tmp/pr_create_err >&2
+            exit 1
+          fi
 
-        ⏳ **Auto-merge is NOT enabled on creation.**
-
-        The [scheduled-release workflow](.github/workflows/scheduled-release.yml)
-        runs every **Sunday at 00:00 UTC** and enables auto-merge only when:
-
-        1. ✅ All commits since the last release are lifecycle/dependency updates.
-        2. ✅ All required CI checks are passing.
-
-        If \`feat:\` or \`fix:\` commits are detected, this PR will **not** be
-        auto-merged and requires a manual promotion decision.
-        EOF
-        )"
-
-          PR_NUMBER=$(gh pr list \
-            --base main \
-            --head dev \
-            --state open \
-            --json number \
-            --jq '.[0].number')
+          # Retry for eventual consistency
+          for i in 1 2 3; do
+            PR_NUMBER=$(gh pr list --base main --head "$PROMOTE_BRANCH" --state open --json number --jq '.[0].number')
+            [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ] && break
+            sleep 3
+          done
           echo "Release PR #$PR_NUMBER created."
+        else
+          echo "Release PR #$PR_NUMBER already exists (staging branch updated)."
+          gh pr edit "$PR_NUMBER" --body-file /tmp/pr_body.md
         fi
 
         echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
-        # ── Step 4: Evaluate lifecycle label eligibility ──────────────────────
-        # Lifecycle = maintenance commits safe to auto-promote without review.
-        # Allowed: chore/build/ci/docs/style/refactor (any scope), fix(deps),
-        # sync/release/promote bot commits, and branch/tracking merges.
-        # NOT allowed: feat:, fix:, perf:, and "Merge pull request …"
-        # (those signal user-facing changes that need a human promotion decision).
-        LIFECYCLE_PATTERN='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?:|^fix\(deps\)|^chore\(sync\)|^chore\(release\)|^chore\(promote\):|^Merge branch|^Merge remote-tracking'
+        # ── Step 5: Evaluate lifecycle label eligibility ──────────────────────
+        LIFECYCLE_PATTERN='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?:|^fix\(deps\)|^chore\(sync\)|^chore\(release\)|^chore\(promote\):|^Merge branch|^Merge remote-tracking|^Merge pull request .* from [^/]+/automation/'
 
         MERGE_BASE=$(git merge-base origin/dev origin/main)
         COMMITS=$(git log "$MERGE_BASE"..origin/dev --pretty=tformat:"%s")
-
-        echo "Commits to evaluate:"
-        echo "$COMMITS"
-
         NON_LIFECYCLE=$(echo "$COMMITS" | grep -vE "$LIFECYCLE_PATTERN" || true)
 
-        if [ -z "$NON_LIFECYCLE" ]; then
-          echo "All commits are lifecycle-type. Applying 'automerge-lifecycle' label."
-          gh pr edit "$PR_NUMBER" --add-label "automerge-lifecycle"
+        if [ -z "$NON_LIFECYCLE" ] && [ "$HAS_REAL_CONFLICTS" != "true" ]; then
+          echo "All commits are lifecycle-type. Applying labels."
+          gh pr edit "$PR_NUMBER" --add-label "automerge-lifecycle" --add-label "lifecycle-release"
           echo "is_lifecycle_only=true" >> "$GITHUB_OUTPUT"
         else
-          echo "Non-lifecycle commits found (feat:/fix: detected). Label NOT applied."
-          echo "$NON_LIFECYCLE"
+          echo "Non-lifecycle commits or real conflicts found — labels removed."
           gh pr edit "$PR_NUMBER" --remove-label "automerge-lifecycle" 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --remove-label "lifecycle-release"   2>/dev/null || true
           echo "is_lifecycle_only=false" >> "$GITHUB_OUTPUT"
         fi
