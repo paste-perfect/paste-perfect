@@ -3,6 +3,7 @@ import { CodeHighlighterAssertions } from "../types/types";
 import { Theme } from "@types";
 import { getIndentationValueFromMode, getThemeValueFromTheme } from "./enum-mappers";
 import { IndentationMode } from "@constants/const";
+import { SELECTORS } from "./code-highlighter-actions";
 
 export function createAssertions(page: Page): CodeHighlighterAssertions {
   /**
@@ -65,6 +66,26 @@ export function createAssertions(page: Page): CodeHighlighterAssertions {
 
     async expectTheme(theme: Theme) {
       await expectTextContent("span#theme-selector:visible", getThemeValueFromTheme(theme));
+    },
+
+    async expectCopyButtonDisabled() {
+      await expect(page.locator(SELECTORS.copyButton)).toBeDisabled();
+    },
+
+    async expectCopyButtonEnabled() {
+      await expect(page.locator(SELECTORS.copyButton)).toBeEnabled();
+    },
+
+    async expectCopySettingsDialogHidden() {
+      await expect(page.locator("#copy-settings-dialog > div")).toBeHidden();
+    },
+
+    async expectCopySettingsDialogVisible() {
+      await expect(page.locator("#copy-settings-dialog > div")).toBeVisible();
+    },
+
+    async expectCopySettingsDialogContains(text: string) {
+      await expect(page.locator("#copy-settings-dialog > div")).toContainText(text);
     },
   };
 }

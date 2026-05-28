@@ -95,4 +95,53 @@ describe("InlineStyleApplier", () => {
       expect(target.getAttribute("style")).toBeNull();
     });
   });
+
+  describe("setFontSizeOverride", () => {
+    it("stores the override as a px string when a numeric size is provided", () => {
+      InlineStyleApplier.setFontSizeOverride(16);
+      expect(InlineStyleApplier["fontSizeOverride"]).toBe("16px");
+    });
+
+    it("clears the override when null is passed", () => {
+      InlineStyleApplier.setFontSizeOverride(16);
+      InlineStyleApplier.setFontSizeOverride(null);
+      expect(InlineStyleApplier["fontSizeOverride"]).toBeNull();
+    });
+
+    it("captureRootStyles stores the override font-size instead of the computed one", () => {
+      InlineStyleApplier.setFontSizeOverride(20);
+
+      const root = document.createElement("div");
+      container.appendChild(root);
+      InlineStyleApplier.captureRootStyles(root);
+
+      expect(InlineStyleApplier["rootStyleProperties"]["font-size"]).toBe("20px");
+    });
+
+    it("applyElementStyles applies the override font-size to the cloned element", () => {
+      InlineStyleApplier.setFontSizeOverride(18);
+
+      const original = document.createElement("span");
+      container.appendChild(original);
+      const cloned = document.createElement("span");
+
+      InlineStyleApplier.applyElementStyles(original, cloned);
+
+      expect(cloned.style.getPropertyValue("font-size")).toBe("18px");
+    });
+
+    it("applyElementStyles does not override font-size when the override is null", () => {
+      InlineStyleApplier.setFontSizeOverride(null);
+
+      const original = document.createElement("span");
+      original.style.fontSize = "12px";
+      container.appendChild(original);
+      const cloned = document.createElement("span");
+
+      InlineStyleApplier.applyElementStyles(original, cloned);
+
+      // Should use computed value (12px), not an override
+      expect(cloned.style.getPropertyValue("font-size")).toBe("12px");
+    });
+  });
 });
