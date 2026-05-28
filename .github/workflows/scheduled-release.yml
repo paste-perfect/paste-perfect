@@ -1,3 +1,4 @@
+# .github/workflows/scheduled-release.yml
 name: Scheduled Release — Weekly Auto-merge (dev → main)
 
 on:
@@ -5,15 +6,13 @@ on:
     - cron: "0 0 * * 0" # Every Sunday at 00:00 UTC
   workflow_dispatch:
 
-# Never cancel a release in progress — let it finish or fail cleanly.
 concurrency:
   group: scheduled-release
   cancel-in-progress: false
 
-permissions: {} # declared per-job
+permissions: {}
 
 jobs:
-
   semantic-verify-and-merge:
     name: Semantic Verification + Auto-merge
     runs-on: ubuntu-latest
@@ -29,40 +28,19 @@ jobs:
           app-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
 
-      - name: Checkout (full history for commit inspection)
+      - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      # ── Ensure PR exists + evaluate lifecycle eligibility ─────────────────
-      # The composite action:
-      #   1. Finds or creates the "chore: promote dev to main" PR.
-      #   2. Verifies every commit since the last stable release against the
-      #      lifecycle regex (chore/build/ci/docs/style/refactor, fix(deps),
-      #      sync/release/promote bot commits, branch/tracking merges).
-      #   3. Applies the "automerge-lifecycle" label if ALL commits pass,
-      #      or removes it if any feat:/fix:/perf: commit is present.
-      #   4. Outputs has_changes, pr_number, and is_lifecycle_only.
       - name: Ensure release PR exists and evaluate lifecycle eligibility
         id: release-pr
         uses: ./.github/actions/release-pr
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      # ── Enable auto-merge (merge commit — NOT squash) ─────────────────────
-      # CRITICAL: must be --merge, not --squash.
-      #   A squash collapses every commit into one whose subject is the PR title;
-      #   semantic-release on main would then see a single non-releasable commit
-      #   and skip the stable release.
-      #   A merge commit preserves individual feat:/fix: subjects so the version
-      #   bump is computed correctly.
-      #
-      # The merge commit subject must NOT start with "chore(release):".
-      #   The PR title is "chore: promote dev to main" (not "chore(release): …"),
-      #   which is safe under both "Default message" and "PR title" merge-message
-      #   settings. If the repo uses "Default message", GitHub produces
-      #   "Merge pull request #N …" — also not a chore(release): subject.
+      # Use merge commit (NOT squash) to preserve feat/fix commits for semantic-release
       - name: Enable auto-merge
         if: >
           steps.release-pr.outputs.has_changes == 'true' &&
@@ -74,16 +52,16 @@ jobs:
           gh pr merge "$PR_NUMBER" \
             --auto \
             --merge \
-            --delete-branch=false \
+            --delete-branch \
             || echo "Auto-merge already enabled or PR already merged."
           echo "Auto-merge (merge commit) enabled on PR #$PR_NUMBER."
 
-      - name: Report — no auto-merge (non-lifecycle commits present)
+      - name: Report — no auto-merge (non-lifecycle commits or conflicts present)
         if: >
           steps.release-pr.outputs.has_changes == 'true' &&
           steps.release-pr.outputs.is_lifecycle_only != 'true'
         run: |
-          echo "Semantic Verification FAILED — non-lifecycle commits detected."
+          echo "Semantic Verification FAILED — non-lifecycle commits or real conflicts detected."
           echo "Auto-merge aborted. Manual release decision required."
 
       - name: Report — dev == main
