@@ -111,6 +111,26 @@ jobs:
               fi
             done
 
+            # Ensure package.json and package-lock.json stay in sync: if one was
+            # resolved from dev side, force the other to dev too — even when it
+            # auto-merged without a visible conflict. This prevents version mismatch
+            # where package.json has dev's RC (e.g. 2.8.1-rc.1) but lockfile has
+            # main's stable version (e.g. 2.8.0), causing npm ci to fail.
+            PKG_CONFLICTED=$(echo "$VERSION_CONFLICTS" | grep -qx "package.json" && echo true || echo false)
+            LOCK_CONFLICTED=$(echo "$VERSION_CONFLICTS" | grep -qx "package-lock.json" && echo true || echo false)
+
+            if [ "$PKG_CONFLICTED" = "true" ] || [ "$LOCK_CONFLICTED" = "true" ]; then
+              if [ "$PKG_CONFLICTED" = "true" ] && [ "$LOCK_CONFLICTED" = "false" ]; then
+                echo "  → package-lock.json auto-merged; overriding with dev version for consistency"
+                git checkout HEAD -- package-lock.json
+                git add package-lock.json
+              elif [ "$LOCK_CONFLICTED" = "true" ] && [ "$PKG_CONFLICTED" = "false" ]; then
+                echo "  → package.json auto-merged; overriding with dev version for consistency"
+                git checkout HEAD -- package.json
+                git add package.json
+              fi
+            fi
+
             if [ -n "$NON_VERSION_CONFLICTS" ]; then
               echo "Real conflicts detected — aborting merge for manual resolution:"
               echo "$NON_VERSION_CONFLICTS"
@@ -331,6 +351,18 @@ jobs:
             fi
           fi
 
+          # ── Commit-count guard: verify the sync branch is actually ahead of dev.
+          # GitHub's PR create API rejects "no commits between" even when tree-diff > 0,
+          # so this guard (which matches GitHub's own check) prevents that error.
+          if [ "$HAS_CONFLICTS" != "true" ]; then
+            COMMIT_AHEAD=$(git rev-list --count origin/dev..origin/"$SYNC_BRANCH")
+            if [ "$COMMIT_AHEAD" -eq 0 ]; then
+              echo "Sync branch has no commits ahead of dev (race condition). Skipping PR creation."
+              echo "pr_number=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
           PR_NUMBER=$(gh pr list \
             --base dev \
             --head "$SYNC_BRANCH" \
@@ -350,11 +382,23 @@ jobs:
               TITLE="chore(sync): merge main into dev — manual conflict resolution required"
             fi
 
-            gh pr create \
+            # Attempt PR creation; catch "No commits between" errors gracefully
+            # (can occur in rare race conditions where dev is pushed between checks).
+            if ! gh pr create \
               --base dev \
               --head "$SYNC_BRANCH" \
               --title "$TITLE" \
-              --body-file /tmp/pr_body.md
+              --body-file /tmp/pr_body.md 2>/tmp/pr_create_err; then
+              if grep -q "No commits between" /tmp/pr_create_err; then
+                echo "PR creation failed: no commits between dev and sync branch (race condition)."
+                echo "Sync branch was likely already merged or superseded by a newer dev push."
+                echo "pr_number=" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              # Re-throw non-"No commits" errors
+              cat /tmp/pr_create_err >&2
+              exit 1
+            fi
 
             # Retry to handle GitHub API eventual-consistency after create.
             PR_NUMBER=""
