@@ -83,7 +83,6 @@ runs:
             --base main \
             --head dev \
             --title "chore: promote dev to main" \
-            --label "lifecycle-release" \
             --body "$(cat <<'EOF'
         ## Automated Release PR: dev → main
 
@@ -114,10 +113,11 @@ runs:
         # ── Step 4: Evaluate lifecycle label eligibility ──────────────────────
         # Lifecycle = maintenance commits safe to auto-promote without review.
         # Allowed: chore/build/ci/docs/style/refactor (any scope), fix(deps),
-        # sync/release/promote bot commits, and branch/tracking merges.
-        # NOT allowed: feat:, fix:, perf:, and "Merge pull request …"
+        # sync/release/promote bot commits, branch/tracking merges, and automation
+        # branch merges (e.g. sync PR merges).
+        # NOT allowed: feat:, fix:, perf:, and general "Merge pull request …"
         # (those signal user-facing changes that need a human promotion decision).
-        LIFECYCLE_PATTERN='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?:|^fix\(deps\)|^chore\(sync\)|^chore\(release\)|^chore\(promote\):|^Merge branch|^Merge remote-tracking'
+        LIFECYCLE_PATTERN='^(chore|build|ci|docs|style|refactor)(\([^)]+\))?!?:|^fix\(deps\)|^chore\(sync\)|^chore\(release\)|^chore\(promote\):|^Merge branch|^Merge remote-tracking|^Merge pull request .* from [^/]+/automation/'
 
         MERGE_BASE=$(git merge-base origin/dev origin/main)
         COMMITS=$(git log "$MERGE_BASE"..origin/dev --pretty=tformat:"%s")
@@ -128,12 +128,14 @@ runs:
         NON_LIFECYCLE=$(echo "$COMMITS" | grep -vE "$LIFECYCLE_PATTERN" || true)
 
         if [ -z "$NON_LIFECYCLE" ]; then
-          echo "All commits are lifecycle-type. Applying 'automerge-lifecycle' label."
+          echo "All commits are lifecycle-type. Applying 'automerge-lifecycle' and 'lifecycle-release' labels."
           gh pr edit "$PR_NUMBER" --add-label "automerge-lifecycle"
+          gh pr edit "$PR_NUMBER" --add-label "lifecycle-release"
           echo "is_lifecycle_only=true" >> "$GITHUB_OUTPUT"
         else
-          echo "Non-lifecycle commits found (feat:/fix: detected). Label NOT applied."
+          echo "Non-lifecycle commits found (feat:/fix: detected). Labels NOT applied."
           echo "$NON_LIFECYCLE"
           gh pr edit "$PR_NUMBER" --remove-label "automerge-lifecycle" 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --remove-label "lifecycle-release" 2>/dev/null || true
           echo "is_lifecycle_only=false" >> "$GITHUB_OUTPUT"
         fi
