@@ -23,6 +23,11 @@ export const LANGUAGE_STORAGE_KEY = "selected_language";
 export const THEME_STORAGE_KEY = "selected_theme";
 
 /**
+ * Session storage key used to save copy-to-clipboard settings.
+ */
+export const COPY_SETTINGS_STORAGE_KEY = "copy_settings";
+
+/**
  * CSS selector for the parent `<pre>` element wrapping the highlighted code.
  */
 export const HTML_CODE_PRE_SELECTOR = "pre#highlighted-code-wrapper";

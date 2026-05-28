@@ -73,6 +73,30 @@ export interface CodeHighlighterActions {
 
   /** Selects a theme from the theme dropdown. */
   setTheme(theme: Theme): Promise<void>;
+
+  /** Opens the copy settings dialog. */
+  openCopySettingsDialog(): Promise<void>;
+
+  /** Sets the copy mode (HTML or PLAIN_TEXT). */
+  setCopyMode(mode: "HTML" | "PLAIN_TEXT"): Promise<void>;
+
+  /** Sets the font size in the copy settings dialog. */
+  setFontSize(size: number): Promise<void>;
+
+  /** Sets the tab size in the copy settings dialog. */
+  setTabSize(size: number): Promise<void>;
+
+  /** Sets the inline styles for MS Office checkbox. */
+  setInlineStylesForOffice(enabled: boolean): Promise<void>;
+
+  /** Sets the adjust indentation for MS Office checkbox. */
+  setAdjustIndentationForOffice(enabled: boolean): Promise<void>;
+
+  /** Saves and closes the copy settings dialog. */
+  saveCopySettings(): Promise<void>;
+
+  /** Cancels and closes the copy settings dialog. */
+  cancelCopySettings(): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,6 +115,11 @@ export interface CodeHighlighterAssertions {
   expectSettingsDialogVisible(): Promise<void>;
   expectShowLineNumbers(showLineNumbers: boolean): Promise<void>;
   expectTheme(theme: Theme): Promise<void>;
+  expectCopyButtonDisabled(): Promise<void>;
+  expectCopyButtonEnabled(): Promise<void>;
+  expectCopySettingsDialogVisible(): Promise<void>;
+  expectCopySettingsDialogHidden(): Promise<void>;
+  expectCopySettingsDialogContains(text: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------

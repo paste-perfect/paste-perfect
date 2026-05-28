@@ -1,0 +1,132 @@
+<p-dialog
+  id="copy-settings-dialog"
+  [modal]="true"
+  [(visible)]="dialogVisible"
+  [closeOnEscape]="true"
+  [draggable]="false"
+  closeAriaLabel="Close Copy Settings"
+>
+  <ng-template #header>
+    <span class="dialog-title"> Copy Settings </span>
+  </ng-template>
+
+  <div class="copy-settings-form">
+    <!-- Copy Mode-->
+    <section class="settings-section">
+      <h3 class="section-title">
+        <i class="pi pi-copy"></i>
+        Copy Mode
+      </h3>
+
+      <p-selectButton
+        id="copy-mode-select"
+        [options]="copyModeOptions"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="pendingSettings.copyMode"
+        [allowEmpty]="false"
+        class="copy-mode-select-button"
+        styleClass="block"
+      ></p-selectButton>
+
+      <p class="section-description">
+        @if (isHtmlMode) {
+          Copies code with syntax highlighting and inline styles — ideal for pasting into Word or PowerPoint.
+        } @else {
+          Copies code as plain text without any formatting.
+        }
+      </p>
+    </section>
+
+    <!-- Display Options -->
+    <section class="settings-section">
+      <h3 class="section-title">
+        <i class="pi pi-sliders-h"></i>
+        Display Options
+      </h3>
+
+      <div class="settings-item">
+        <label for="font-size-select">Font Size</label>
+        <p-select
+          inputId="font-size-select"
+          [options]="fontSizeOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="pendingSettings.fontSize"
+          class="narrow-select"
+        ></p-select>
+      </div>
+    </section>
+
+    <!-- MS Office Optimization -->
+    <section class="settings-section" [class.section-disabled]="!isHtmlMode">
+      <h3 class="section-title">
+        <i class="pi pi-microsoft"></i>
+        Microsoft Office Optimizations
+        <span class="section-badge">HTML Mode Only</span>
+      </h3>
+
+      <!-- Office Tab Size -->
+      <div class="settings-item">
+        <label for="office-tab-size-select">Tab Width for Word/Office</label>
+        <p-select
+          inputId="office-tab-size-select"
+          [options]="officeTabSizeOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="pendingSettings.officeTabSizeCm"
+          [disabled]="!isHtmlMode"
+          class="narrow-select"
+        ></p-select>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="checkbox-group">
+        <div class="checkbox-item">
+          <p-checkbox
+            inputId="inline-styles-checkbox"
+            [(ngModel)]="pendingSettings.inlineStylesForOffice"
+            [binary]="true"
+            [disabled]="!isHtmlMode"
+          ></p-checkbox>
+          <div class="checkbox-label-group">
+            <label for="inline-styles-checkbox" [class.label-disabled]="!isHtmlMode"> Inline Styles for MS Office </label>
+            <span class="checkbox-description">
+              Embeds <code>mso-*</code> CSS properties so styles are preserved when pasting into Word or PowerPoint.
+            </span>
+          </div>
+        </div>
+
+        <div class="checkbox-item">
+          <p-checkbox
+            inputId="adjust-indentation-checkbox"
+            [(ngModel)]="pendingSettings.adjustIndentationForOffice"
+            [binary]="true"
+            [disabled]="!isHtmlMode"
+          ></p-checkbox>
+          <div class="checkbox-label-group">
+            <label for="adjust-indentation-checkbox" [class.label-disabled]="!isHtmlMode">
+              Adjust Leading Spaces / Tabs for Indentation
+            </label>
+            <span class="checkbox-description">
+              Converts leading whitespace to non-breaking spaces or Office-compatible tab spans so indentation survives the paste.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      @if (!isHtmlMode) {
+        <p class="disabled-hint">
+          <i class="pi pi-info-circle"></i>
+          These options are only available in <strong>HTML (Formatted)</strong> mode.
+        </p>
+      }
+    </section>
+
+    <!-- Actions -->
+    <div class="dialog-actions">
+      <p-button label="Cancel" severity="secondary" (click)="cancel()"></p-button>
+      <p-button label="Save" icon="pi pi-check" (click)="save()"></p-button>
+    </div>
+  </div>
+</p-dialog>
