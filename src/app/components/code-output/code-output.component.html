@@ -1,18 +1,58 @@
 @let hasCode = codeService.hasCode();
 
-<div class="highlighted-code-container">
-  <!-- Copy Button -->
-  <p-button
-    id="copy-to-clipboard-button"
-    icon="pi pi-copy"
-    [pTooltip]="hasCode ? 'Please enter code before copying' : 'Click to copy highlighted code'"
-    [tooltipOptions]="tooltipOptions"
-    [disabled]="!hasCode"
-    (click)="copyToClipboard()"
-  ></p-button>
+<!-- Copy Settings — owns its own dialog internally -->
+<app-copy-settings></app-copy-settings>
+
+<div class="code-output-wrapper">
+  <!-- Result header row: title | chips (right-aligned) | action buttons -->
+  <div class="result-header-row">
+    <span class="result-title">Result</span>
+
+    <!-- Active copy-settings chips, pushed to the right of the title -->
+    <div class="copy-settings-chips" role="list" aria-label="Active copy settings">
+      @for (chip of copySettingChips; track chip.key) {
+        <p-chip
+          [label]="chip.label"
+          class="copy-setting-chip"
+          role="listitem"
+          [pTooltip]="'Copy setting: ' + chip.label"
+          [tooltipOptions]="tooltipOptions"
+          [pt]="copySettingChipStyles"
+          [removable]="true"
+          (onRemove)="resetCopySetting(chip.key)"
+        ></p-chip>
+      }
+    </div>
+
+    <!-- Action buttons -->
+    <div class="result-actions">
+      <p-button
+        id="copy-settings-button"
+        icon="pi pi-sliders-h"
+        severity="secondary"
+        pTooltip="Copy Settings"
+        [tooltipOptions]="tooltipOptions"
+        [outlined]="copySettingsService.hasNonDefaultSettings()"
+        (click)="openCopySettings()"
+        aria-label="Open Copy Settings"
+      ></p-button>
+
+      <p-button
+        id="copy-to-clipboard-button"
+        icon="pi pi-copy"
+        [pTooltip]="!hasCode ? 'Please enter code before copying' : 'Click to copy highlighted code'"
+        [tooltipOptions]="tooltipOptions"
+        [disabled]="!hasCode"
+        (click)="copyToClipboard()"
+      ></p-button>
+    </div>
+  </div>
+
   <!-- Preformatted text where the highlighted code gets inserted -->
-  <pre id="highlighted-code-wrapper"><code
+  <div class="highlighted-code-container">
+    <pre id="highlighted-code-wrapper"><code
     [innerHTML]="codeService.highlightedCode"
     class="highlighted-code language-{{ languageService.selectedLanguage.value }}">
   </code></pre>
+  </div>
 </div>

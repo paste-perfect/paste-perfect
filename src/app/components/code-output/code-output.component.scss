@@ -1,22 +1,48 @@
+.code-output-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.result-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.result-title {
+  font-size: var(--p-card-title-font-size);
+  font-weight: var(--p-card-title-font-weight);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.copy-settings-chips {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  min-width: 0;
+}
+
+.result-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
 .highlighted-code-container {
-  position: relative;
-  overflow: hidden; /* Hide overflow */
-  flex: 1; // Fill all available space
+  overflow: hidden;
 
   pre#highlighted-code-wrapper {
     margin: 0;
     padding: var(--spacing-md);
     max-height: 100%;
-    overflow: auto; /* Make overflow scrollable */
+    overflow: auto;
     border-radius: var(--p-border-radius-md);
     border: 1px solid var(--p-select-border-color);
-  }
-
-  /* Position the copy-button on the top-right of the parent */
-  #copy-to-clipboard-button {
-    position: absolute;
-    right: var(--spacing-sm);
-    top: var(--spacing-sm);
-    z-index: 99;
   }
 }
