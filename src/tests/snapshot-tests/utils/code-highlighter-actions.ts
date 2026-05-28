@@ -83,10 +83,9 @@ export function createActions(page: Page): CodeHighlighterActions {
       await page.evaluate(() => {
         window.__copiedClipboardItem = null;
 
-        const original = navigator.clipboard.write.bind(navigator.clipboard);
         navigator.clipboard.write = async (items: ClipboardItem[]) => {
           window.__copiedClipboardItem = items[0] ?? null;
-          return original(items);
+          return Promise.resolve();
         };
       });
     },
