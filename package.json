@@ -69,8 +69,8 @@
     "@semantic-release/npm": "^13.1.5",
     "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^25.9.1",
-    "@vitest/browser": "^4.1.7",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@vitest/browser": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.8",
     "angular-eslint": "^21.4.0",
     "baseline-browser-mapping": "^2.10.32",
     "conventional-changelog-conventionalcommits": "^9.3.1",
@@ -82,7 +82,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.60.0",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.8"
   },
   "overrides": {
     "lodash": "^4.18.0",
