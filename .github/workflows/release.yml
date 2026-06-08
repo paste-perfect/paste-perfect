@@ -55,20 +55,8 @@ jobs:
       - name: Install dependencies (strict)
         run: npm ci --no-audit --fund=false
 
-      - name: Verify dependency provenance signatures (3x Retry)
-        run: |
-          for i in 1 2 3; do
-            if npm audit signatures; then
-              SUCCESS=true
-              break
-            fi
-            echo "::warning::npm audit signatures failed, retrying in 30s..."
-            sleep 30
-          done
-          if [ "${SUCCESS:-false}" != "true" ]; then
-            echo "::error::npm audit signatures failed after 3 attempts."
-            exit 1
-          fi
+      - name: Verify dependency provenance signatures
+        run: npm audit signatures
 
       - name: Fail on critical vulnerabilities only
         run: npm audit --audit-level=critical
