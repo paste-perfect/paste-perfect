@@ -320,8 +320,17 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          gh pr merge "${{ steps.pr.outputs.pr_number }}" \
-            --auto \
-            --merge \
-            --delete-branch \
-            || echo "Auto-merge already enabled or PR already merged."
+          set -uo pipefail
+          PR_NUMBER="${{ steps.pr.outputs.pr_number }}"
+          if gh pr merge "$PR_NUMBER" --auto --merge --delete-branch 2>/tmp/automerge_err; then
+            echo "Auto-merge enabled on PR #$PR_NUMBER."
+            exit 0
+          fi
+          if grep -qiE "already merged|already enabled|No commits between" /tmp/automerge_err; then
+            echo "::notice::PR #$PR_NUMBER already handled — nothing to do."
+            cat /tmp/automerge_err
+            exit 0
+          fi
+          echo "::error::Could not enable auto-merge on PR #$PR_NUMBER."
+          cat /tmp/automerge_err
+          exit 1
