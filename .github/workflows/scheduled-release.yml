@@ -48,13 +48,20 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          set -uo pipefail
           PR_NUMBER="${{ steps.release-pr.outputs.pr_number }}"
-          gh pr merge "$PR_NUMBER" \
-            --auto \
-            --merge \
-            --delete-branch \
-            || echo "Auto-merge already enabled or PR already merged."
-          echo "Auto-merge (merge commit) enabled on PR #$PR_NUMBER."
+          if gh pr merge "$PR_NUMBER" --auto --merge --delete-branch 2>/tmp/automerge_err; then
+            echo "Auto-merge enabled on PR #$PR_NUMBER."
+            exit 0
+          fi
+          if grep -qiE "already merged|already enabled|No commits between" /tmp/automerge_err; then
+            echo "::notice::PR #$PR_NUMBER already handled — nothing to do."
+            cat /tmp/automerge_err
+            exit 0
+          fi
+          echo "::error::Could not enable auto-merge on PR #$PR_NUMBER."
+          cat /tmp/automerge_err
+          exit 1
 
       - name: Report — no auto-merge (non-lifecycle commits or conflicts present)
         if: >
