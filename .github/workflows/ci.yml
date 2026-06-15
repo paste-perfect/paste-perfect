@@ -4,14 +4,16 @@ on:
   pull_request:
     branches: [main, dev]
     types: [opened, synchronize, reopened]
-  merge_group:
-    branches: [main, dev]
+  # Post-merge safety net: dev runs with strict:false (no required up-to-date / no merge
+  # queue), so a PR can land slightly behind dev. This validates the *merged* result.
+  push:
+    branches: [dev]
   workflow_dispatch:
 
-# Cancel stale runs on new PR pushes; use run_id as fallback so
-# merge-group and dispatch runs don't cancel each other.
+# Cancel stale PR runs on new pushes. For push (the dev post-merge build) and dispatch,
+# group by ref so a newer commit supersedes an in-flight run.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 # No workflow-wide permissions; each job declares its own (least privilege).
@@ -21,9 +23,8 @@ jobs:
 
   # ── JOB 1: PR Title Lint (PR events only) ───────────────────────────────────
   # Enforces Conventional Commit format so titles are parseable by semantic-release
-  # and the lifecycle guards. Skipped on merge_group and workflow_dispatch —
-  # GitHub treats a skipped required check as passing, and title validation is only
-  # meaningful for open PRs.
+  # and the lifecycle guards. Runs only on pull_request — skipped on the push: dev
+  # post-merge build and workflow_dispatch, where title validation is meaningless.
   pr-title:
     name: Lint PR Title (Conventional Commits)
     runs-on: ubuntu-latest
