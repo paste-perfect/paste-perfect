@@ -2,7 +2,7 @@
 
 These settings make the CI/CD pipeline behave correctly. The workflow files enforce
 loop-prevention and release logic, but a few behaviours can only be configured in the
-GitHub UI / API (merge strategies, branch protection, merge queue, secrets, App
+GitHub UI / API (merge strategies, branch protection / rulesets, secrets, App
 permissions). Apply everything below to `paste-perfect/paste-perfect`.
 
 > **Read this first — how loop prevention actually works.**
@@ -27,14 +27,14 @@ permissions). Apply everything below to `paste-perfect/paste-perfect`.
 
 ## Workflow inventory
 
-| File                    | Trigger                                         | Purpose                                                                                     |
-| ----------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PR, merge_group, dispatch                       | PR title lint, lint, lockfile, build, unit + snapshot tests, test reports                   |
-| `security.yml`          | PR, merge_group, schedule (Sun 04:00), dispatch | Trivy filesystem vulnerability scan (advisory)                                              |
-| `release.yml`           | push: main/dev, dispatch                        | semantic-release; on dev also ensures the dev→main release PR exists and labels are current |
-| `scheduled-release.yml` | schedule (Sun 00:00), dispatch                  | Verify lifecycle-only commits; enable auto-merge on dev→main PR                             |
-| `sync-main-to-dev.yml`  | push: main, dispatch                            | Backport main into dev (3-stage: staging-merge → validate → PR)                             |
-| `deploy.yml`            | release: prereleased/published                  | Build + deploy to GitHub Pages (preview/production)                                         |
+| File                    | Trigger                            | Purpose                                                                                     |
+| ----------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| `ci.yml`                | PR, push: dev, dispatch            | PR title lint, lint, lockfile, build, unit + snapshot tests, test reports                   |
+| `security.yml`          | PR, schedule (Sun 04:00), dispatch | Trivy filesystem vulnerability scan (advisory)                                              |
+| `release.yml`           | push: main/dev, dispatch           | semantic-release; on dev also ensures the dev→main release PR exists and labels are current |
+| `scheduled-release.yml` | schedule (Sun 00:00), dispatch     | Verify lifecycle-only commits; enable auto-merge on dev→main PR                             |
+| `sync-main-to-dev.yml`  | push: main, dispatch               | Backport main into dev (3-stage: staging-merge → validate → PR)                             |
+| `deploy.yml`            | release: prereleased/published     | Build + deploy to GitHub Pages (preview/production)                                         |
 
 Shared composite action: `.github/actions/release-pr/` — find/create/label the dev→main
 release PR and evaluate lifecycle eligibility. Used by both `release.yml` (promote job)
@@ -168,15 +168,15 @@ JSON
 
 `Settings → Branches → Add rule → dev`
 
-| Setting                               | Value                     | Rationale                                                |
-| ------------------------------------- | ------------------------- | -------------------------------------------------------- |
-| Require a pull request before merging | ✅                        | All work lands via PR.                                   |
-| Required approvals                    | 1                         | (Renovate + the App bypass this on their automated PRs.) |
-| Require status checks to pass         | ✅                        | CI gate on every PR.                                     |
-| Required checks                       | the ✅ rows in §2         | Same set as `main`.                                      |
-| Require branches up to date           | ✅ (via merge queue — §6) |                                                          |
-| Allow auto-merge                      | ✅                        | Renovate + sync PRs auto-merge once green.               |
-| Allow force pushes                    | ❌                        |                                                          |
+| Setting                               | Value             | Rationale                                                                                                                                                                                                                      |
+| ------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Require a pull request before merging | ✅                | All work lands via PR.                                                                                                                                                                                                         |
+| Required approvals                    | 1                 | (Renovate + the App bypass this on their automated PRs.)                                                                                                                                                                       |
+| Require status checks to pass         | ✅                | CI gate on every PR.                                                                                                                                                                                                           |
+| Required checks                       | the ✅ rows in §2 | Same set as `main`.                                                                                                                                                                                                            |
+| Require branches up to date           | ❌ — see §6       | `strict` is **off**; freshness is covered by native auto-merge + the post-merge CI run on `dev` (§6). `strict: true` here makes every concurrent lifecycle PR (Renovate + the sync PR) go _out-of-date_ the moment one merges. |
+| Allow auto-merge                      | ✅                | Renovate + sync PRs auto-merge once green.                                                                                                                                                                                     |
+| Allow force pushes                    | ❌                |                                                                                                                                                                                                                                |
 
 > **App / Renovate bypass for `dev`:** allow-list the `releasebot` App (pushes the RC
 > `chore(release):` bump) and `renovate[bot]` (auto-merges dependency PRs) so they
@@ -187,7 +187,7 @@ gh api -X PUT repos/paste-perfect/paste-perfect/branches/dev/protection \
   --input - <<'JSON'
 {
   "required_status_checks": {
-    "strict": true,
+    "strict": false,
     "contexts": [
       "CI — Test, Lint & Build / Lint PR Title (Conventional Commits)",
       "CI — Test, Lint & Build / Lint & Format",
@@ -209,6 +209,16 @@ gh api -X PUT repos/paste-perfect/paste-perfect/branches/dev/protection \
 JSON
 ```
 
+> **`strict: false` is intentional on `dev`.** With `strict: true`, the moment one PR
+> merges, _every_ other open PR against `dev` — all concurrent Renovate lifecycle PRs
+> **and** the `main → dev` sync PR — is flagged _out-of-date_ and demands a manual
+> _Update branch_, which defeats unattended auto-merge. Turning it off lets GitHub's
+> native auto-merge land each PR as soon as its own checks pass. The combined result is
+> then validated by the **post-merge CI run on `dev`** (§6), and real file conflicts still
+> force a Renovate rebase — so the only residual risk (a no-conflict semantic clash) is
+> caught immediately on `dev` and fixed forward. `main` keeps `strict: true` (§3) because
+> it only ever receives the single weekly promote PR, so there is no concurrency to thrash.
+
 ---
 
 ## 5. Branch Protection — `automation/*`
@@ -226,25 +236,30 @@ deletion — only add a rule if a broader pattern (e.g. `*`) would otherwise res
 
 ---
 
-## 6. Merge Queue (recommended for `dev`)
+## 6. Post-merge validation on `dev` (no merge queue)
 
-`Settings → Branches → dev rule → Require merge queue`
+`dev` runs with `strict: false` (§4) and **no merge queue**. A merge queue would also fix
+the out-of-date thrash, but GitHub's Rulesets merge queue proved unreliable to activate,
+and `strict: true`'s per-merge rebase storm is exactly what we want to avoid. Freshness is
+handled with a lighter, predictable mechanism instead:
 
-The merge queue (the `merge_group` event, already wired into `ci.yml`) solves the
-"PR check + post-merge push check" duplication structurally: CI runs once when a PR
-enters the queue.
+- **Pre-merge:** each PR's required checks (§2) must pass — validates the PR in isolation.
+- **Post-merge:** `ci.yml` runs the full suite on **`push: dev`**, validating the _merged_
+  result. With `strict: false` a PR can land while slightly behind `dev`, so this is the
+  net that catches a bad combination — within minutes, fix-forward.
+- **Conflicts:** Renovate's `rebaseWhen: "conflicted"` still rebases + re-tests any PR that
+  hits a real file conflict, so those never merge blind.
 
-| Setting                    | Recommended      | Rationale                                             |
-| -------------------------- | ---------------- | ----------------------------------------------------- |
-| Merge method               | **Merge commit** | Preserve individual commits for semantic-release.     |
-| Minimum PRs to merge       | 1                | Merge as soon as one is ready.                        |
-| Maximum PRs to merge       | 5                | Batch up to five Renovate PRs into one merge.         |
-| Wait time to build a batch | 5 min            | Lets Monday's Renovate PRs coalesce into one release. |
-| Status check timeout       | 60 min           | Playwright snapshots can be slow.                     |
+This is the standard "auto-merge + post-merge CI" pattern. Trade-off vs a merge queue: the
+queue would catch a bad combination _before_ it lands (so `dev` never breaks), whereas the
+post-merge run catches it _after_ (so `dev` can break briefly). For a dependency-bump-heavy
+repo where Renovate already groups non-majors into one PR, that residual risk is small and
+worth the large drop in complexity.
 
-No workflow changes are needed to adopt the queue — the `merge_group` trigger already
-exists in `ci.yml`. The Trivy job is advisory; keeping it non-required avoids the need
-for a stub job on docs-only merge-queue batches.
+> If the window where "behind" matters ever feels too large, lower Renovate's
+> `prConcurrentLimit` so fewer PRs are in flight against the same `dev` at once. Do **not**
+> switch Renovate to `rebaseWhen: "behind-base-branch"` — that reintroduces the per-merge
+> CI storm.
 
 ---
 
@@ -323,8 +338,8 @@ so editing it never blocks a PR on advisory checks.
   lint into `ci.yml` is natural — it is a code-correctness gate that belongs alongside
   lint and tests. Keeping the Trivy scan in its own `security.yml` maintains clear
   separation of concerns: CI is about correctness, security is about vulnerability posture.
-  The `pr-title` job is gated on `github.event_name == 'pull_request'` and is skipped on
-  `merge_group` events; GitHub treats a skipped required check as passing.
+  The `pr-title` job is gated on `github.event_name == 'pull_request'`, so it doesn't run
+  on the `push: dev` post-merge build — PR-title linting is only meaningful for open PRs.
 
 - **Problem 4 — promote stays serialised via `needs:`, not `workflow_run`.**
   A `workflow_run` trigger runs from the default branch with skipped-conclusion ambiguity
@@ -332,5 +347,16 @@ so editing it never blocks a PR on advisory checks.
   simpler, cleaner, and gives the correct serialisation guarantee.
 
 - **Renovate Monday batching** is handled by `group:allNonMajor` (one combined non-major
-  PR) plus `platformAutomerge`. Enable the merge queue (§6) to coalesce any remaining PRs
-  into a single release.
+  PR) plus `platformAutomerge`; remaining PRs auto-merge individually as their checks pass
+  (no merge queue — see §6).
+
+- **ADR-009 — `dev` uses `strict: false` + a post-merge CI run, not a merge queue.**
+  `strict: true` on `dev` made every concurrent lifecycle PR (Renovate + the `main → dev`
+  sync PR) go _out-of-date_ the instant one merged, forcing a manual _Update branch_ and
+  stalling unattended auto-merge. A GitHub merge queue would fix that, but on Rulesets it
+  was unreliable to activate, so `dev` instead runs with `strict: false` and validates the
+  merged result via `ci.yml` on `push: dev` (§6). Renovate stays on
+  `rebaseWhen: "conflicted"` + `platformAutomerge: true` (native auto-merge; real conflicts
+  still rebase). Trade-off: `dev` can break briefly on a no-conflict semantic clash and is
+  fixed forward, rather than being blocked pre-merge. `main` keeps `strict: true` (§3) — it
+  only receives the single weekly promote PR, so there is no concurrency to thrash.
