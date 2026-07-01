@@ -40,7 +40,7 @@
     "@types/prismjs": "^1.26.6",
     "angular-prism": "^0.1.20",
     "ngx-clipboard": "^16.0.0",
-    "prettier": "^3.8.4",
+    "prettier": "^3.8.5",
     "prettier-plugin-gherkin": "^4.0.0",
     "prettier-plugin-java": "2.8.1",
     "prettier-plugin-kotlin": "^2.1.0",
