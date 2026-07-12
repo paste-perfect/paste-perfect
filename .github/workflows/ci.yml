@@ -227,7 +227,7 @@ jobs:
           persist-credentials: false
 
       - name: Publish Vitest unit test report
-        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2.5.0
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
         with:
           artifact: test-reports-${{ github.run_id }}
           name: Vitest Unit Tests
@@ -236,7 +236,7 @@ jobs:
           fail-on-error: false
 
       - name: Publish Playwright snapshot test report
-        uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2.5.0
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
         with:
           artifact: snapshot-reports-${{ github.run_id }}
           name: Playwright Snapshot Tests
