@@ -40,7 +40,7 @@
     "@types/prismjs": "^1.26.6",
     "angular-prism": "^0.1.20",
     "ngx-clipboard": "^16.0.0",
-    "prettier": "^3.8.4",
+    "prettier": "^3.8.5",
     "prettier-plugin-gherkin": "^4.0.0",
     "prettier-plugin-java": "2.8.1",
     "prettier-plugin-kotlin": "^2.1.0",
@@ -67,11 +67,11 @@
     "@semantic-release/github": "^12.0.8",
     "@semantic-release/npm": "^13.1.5",
     "@semantic-release/release-notes-generator": "^14.1.1",
-    "@types/node": "^25.9.4",
+    "@types/node": "^25.9.5",
     "@vitest/browser": "^4.1.9",
     "@vitest/coverage-v8": "^4.1.9",
     "angular-eslint": "^21.4.0",
-    "baseline-browser-mapping": "^2.10.40",
+    "baseline-browser-mapping": "^2.10.44",
     "conventional-changelog-conventionalcommits": "^9.3.1",
     "eslint": "^10.6.0",
     "happy-dom": "^20.10.6",
@@ -86,7 +86,7 @@
   "overrides": {
     "lodash": "^4.18.0",
     "lodash-es": "^4.18.0",
-    "uuid": "^14.0.1"
+    "uuid": "^14.0.2"
   },
   "lint-staged": {
     "*.{ts,js}": [
