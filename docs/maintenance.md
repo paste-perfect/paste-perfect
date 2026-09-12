@@ -23,7 +23,7 @@ Releases create tags and release notes, not version commits. The header and `dep
 
 Source default branch: `dev`. Both `dev` and `main` require **CI Gate**, an up-to-date branch, and a PR; no automation bypass. Production promotions use merge commits so semantic-release retains the original commit history.
 
-Existing secrets: `RELEASEBOT_APP_ID`, `RELEASEBOT_PRIVATE_KEY`, and `DEPLOY_KEY_PREVIEW`. The App needs Contents and Pull requests write, plus Checks read. The preview key writes only to the test repository. Pages serves `gh-pages` in both repositories; the test repository's default branch is `main`.
+Existing secrets: `RELEASEBOT_APP_ID`, `RELEASEBOT_PRIVATE_KEY`, and `DEPLOY_KEY_PREVIEW`. The App needs Contents, Pull requests and Workflows write; checks use the read-only built-in token. The preview key writes only to the test repository. Pages serves `gh-pages` in both repositories; the test repository's default branch is `main`.
 
 Renovate groups the Angular/Optimus toolchain and refreshes stale branches. `config/framework-migrations.json` records applied migrations. Current compatibility limits are TypeScript 6.0 and Vitest 4 for Angular 22, and Node 24 types for Node 24. Revisit those limits when upgrading the framework; do not force incompatible peer dependencies.
 

@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  checks: read
+  statuses: read
 concurrency:
   group: branch-automation
   cancel-in-progress: false
@@ -25,9 +27,15 @@ jobs:
         with:
           client-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CHECKS_TOKEN: ${{ github.token }}
         with:
           github-token: ${{ steps.token.outputs.token }}
           script: |
             await require('./.github/scripts/sync-pr.cjs')({ github, context, core });
-            await require('./.github/scripts/merge-green.cjs')({ github, context, core });
+            const readGithub = new github.constructor({ auth: process.env.CHECKS_TOKEN });
+            await require('./.github/scripts/merge-green.cjs')({ github, readGithub, context, core });

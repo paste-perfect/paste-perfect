@@ -73,7 +73,7 @@ for (const mode of RENDER_MODES) {
         await page.expectScreenshot(`${slug}-fullpage.png`);
       });
 
-      test(`copies correct plain text and HTML to clipboard [${slug}]`, async ({ page }) => {
+      test(`copies correct plain text and HTML to clipboard [${slug}]`, async ({ page }, testInfo) => {
         await page.assertions.expectHasDesktopSettings();
 
         // Arrange
@@ -90,6 +90,7 @@ for (const mode of RENDER_MODES) {
 
         // Assert – HTML matches stored fixture
         const fixturePath = path.join(TEST_DATA_DIR, mode.fixtureDir, fixtureFilename);
+        if (testInfo.config.updateSnapshots === "all") fs.writeFileSync(fixturePath, clipboard!.htmlText + "\n");
 
         if (!fs.existsSync(fixturePath)) {
           throw new Error(`HTML fixture not found: ${fixturePath}`);

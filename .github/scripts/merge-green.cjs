@@ -1,13 +1,18 @@
 const { eligible, checksPass } = require("./merge-policy.cjs");
 
-module.exports = async ({ github, context, core }) => {
+module.exports = async ({ github, readGithub = github, context, core }) => {
   const { owner, repo } = context.repo;
   const prs = await github.paginate(github.rest.pulls.list, { owner, repo, state: "open", per_page: 100 });
   for (const candidate of prs) {
     const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: candidate.number });
     if (!eligible(pr)) continue;
-    const checks = await github.paginate(github.rest.checks.listForRef, { owner, repo, ref: pr.head.sha, per_page: 100 });
-    const statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, { owner, repo, ref: pr.head.sha, per_page: 100 });
+    const checks = await readGithub.paginate(readGithub.rest.checks.listForRef, { owner, repo, ref: pr.head.sha, per_page: 100 });
+    const statuses = await readGithub.paginate(readGithub.rest.repos.listCommitStatusesForRef, {
+      owner,
+      repo,
+      ref: pr.head.sha,
+      per_page: 100,
+    });
     if (!checksPass(checks, statuses)) continue;
     const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
       owner,
