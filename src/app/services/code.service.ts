@@ -98,26 +98,33 @@ export class CodeService {
    * when raw code or the selected language changes.
    */
   constructor() {
-    effect(async () => {
+    effect((onCleanup) => {
+      let cancelled = false;
+      onCleanup(() => {
+        cancelled = true;
+      });
       const selectedLanguage = this.languageService.selectedLanguage;
 
       // Sanitize input
       const escapedInput = SanitizerWrapper.escapeUmlauts(this.rawCode);
 
-      // Format the code using the PrettierService
-      const { code: formattedCode, formattingSuccessful } = await this.prettierService.formatCode(escapedInput, selectedLanguage);
-      this.formattingSuccessful = formattingSuccessful;
+      // Call synchronously so the effect tracks the formatter's settings signals.
+      const formatting = this.prettierService.formatCode(escapedInput, selectedLanguage);
+      void formatting
+        .then(async ({ code: formattedCode, formattingSuccessful }) => {
+          if (cancelled) return;
+          const highlightedCode = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
+          if (cancelled) return;
 
-      // Update the highlighted code
-      const highlightedCode = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
-
-      // Conditionally prepend line numbers
-      const codeWithLineNumbers = this.lineNumberingService.prependLineNumbers(highlightedCode);
-
-      // Remove unwanted characters
-      const sanitizedOutput = SanitizerWrapper.sanitizeOutput(codeWithLineNumbers);
-
-      this.highlightedCode = this.hasCode() ? sanitizedOutput : this.noCode;
+          const codeWithLineNumbers = this.lineNumberingService.prependLineNumbers(highlightedCode);
+          this.formattingSuccessful = formattingSuccessful;
+          this.highlightedCode = this.hasCode() ? SanitizerWrapper.sanitizeOutput(codeWithLineNumbers) : this.noCode;
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          this.formattingSuccessful = false;
+          console.error("Code processing failed", error);
+        });
     });
   }
 }

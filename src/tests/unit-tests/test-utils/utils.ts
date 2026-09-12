@@ -102,7 +102,7 @@ export const createStorageMock = (stored: unknown = null) => ({
   setItem: vi.fn(),
 });
 
-/** Minimal MessageService stub (PrimeNG). */
+/** Minimal MessageService stub (Optimus UI). */
 export const createMessageMock = () => ({
   add: vi.fn(),
 });

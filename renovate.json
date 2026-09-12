@@ -1,84 +1,75 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    ":automergeDigest",
-    ":automergeMinor",
-    ":automergePatch",
-    ":automergeRequireAllStatusChecks",
-    ":configMigration",
-    ":enablePreCommit",
-    ":enableVulnerabilityAlerts",
-    ":semanticCommitTypeAll(refactor)",
     "config:best-practices",
-    "customManagers:dockerfileVersions",
+    ":configMigration",
+    ":enableVulnerabilityAlerts",
     "group:allNonMajor",
-    "group:monorepos",
     "replacements:all",
-    "security:minimumReleaseAgeNpm",
-    "security:openssf-scorecard",
-    "workarounds:all"
+    "security:minimumReleaseAgeNpm"
   ],
   "baseBranchPatterns": ["dev"],
-  "schedule": ["before 6am on monday"],
   "timezone": "Europe/Berlin",
-  "prConcurrentLimit": 10,
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
   "prHourlyLimit": 5,
-  "ignorePaths": ["docker-compose.yml"],
+  "rebaseWhen": "behind-base-branch",
   "ignoreUnstable": true,
+  "rangeStrategy": "bump",
+  "automerge": false,
   "postUpdateOptions": ["npmDedupe"],
-  "rangeStrategy": "pin",
-  "automergeType": "pr",
-  "platformAutomerge": true,
-  "commitMessageTopic": "{{depName}}",
-  "rebaseWhen": "conflicted",
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am on monday"],
-    "automerge": true
-  },
-  "vulnerabilityAlerts": {
-    "schedule": ["at any time"],
-    "automerge": false
+    "schedule": ["before 6am on monday"]
   },
   "packageRules": [
     {
-      "description": "Auto-merge pinned digests and patches",
-      "matchUpdateTypes": ["pin", "digest"],
-      "automerge": true
+      "description": "Framework packages must migrate together",
+      "groupName": "angular framework",
+      "matchPackageNames": [
+        "@angular/**",
+        "@angular-devkit/**",
+        "@schematics/**",
+        "angular-eslint",
+        "@angular-eslint/**",
+        "@openng/optimus-ui",
+        "@openng/optimus-ui-*",
+        "typescript"
+      ],
+      "groupSlug": "angular-framework"
     },
     {
-      "description": "package.json: keep caret ranges, never pin",
-      "matchManagers": ["npm"],
-      "matchFileNames": ["package.json", "**/package.json"],
-      "rangeStrategy": "bump"
+      "description": "Angular 22 supports TypeScript 6.0",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": ">=6.0.0 <6.1.0"
     },
     {
-      "description": "Pin everything else (Actions SHAs, Docker digests)",
-      "matchManagers": ["github-actions", "dockerfile", "docker-compose"],
-      "rangeStrategy": "pin",
+      "description": "Angular build currently requires Vitest 4",
+      "groupName": "vitest",
+      "matchPackageNames": ["vitest", "@vitest/**"],
+      "allowedVersions": "<5"
+    },
+    {
+      "description": "Node type definitions follow the runtime",
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": "<25"
+    },
+    {
+      "description": "Playwright Docker version derives from the installed test package",
+      "matchPackageNames": ["@playwright/test"],
+      "rangeStrategy": "pin"
+    },
+    {
+      "matchManagers": ["github-actions"],
       "pinDigests": true
     },
     {
-      "description": "Never auto-merge majors — require human review",
       "matchUpdateTypes": ["major"],
-      "automerge": false,
       "minimumReleaseAge": "14 days"
     },
     {
-      "description": "Wait 3 days after stable release before auto-merging non-majors",
       "matchUpdateTypes": ["minor", "patch"],
       "minimumReleaseAge": "3 days"
-    },
-    {
-      "description": "Group all Angular packages together so they always bump in lock-step",
-      "groupName": "angular monorepo",
-      "matchPackageNames": ["@angular/**", "@angular-devkit/**", "@schematics/**", "zone.js"],
-      "rangeStrategy": "bump"
-    },
-    {
-      "description": "Block RC / pre-release upgrades on stable packages",
-      "matchPackageNames": ["*"],
-      "allowedVersions": "!/-(rc|alpha|beta|canary|next)\\./"
     }
   ]
 }

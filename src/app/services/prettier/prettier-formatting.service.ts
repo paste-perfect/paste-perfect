@@ -69,9 +69,8 @@ export class PrettierFormattingService {
         }),
         formattingSuccessful: true,
       };
-    } catch (error) {
+    } catch {
       console.warn("Code has issues, formatting failed.");
-      console.log(error);
       // Return the original code if formatting fails
       return { code, formattingSuccessful: false };
     }

@@ -4,5 +4,6 @@
     "outDir": "./dist/out-tsc/app"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/tests", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["src/tests", "src/**/*.spec.ts", "src/**/*.test.ts"],
+  "angularCompilerOptions": {}
 }

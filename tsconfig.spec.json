@@ -16,5 +16,6 @@
       "@utils/*": ["./src/app/utils/*"]
     }
   },
-  "include": ["src/tests/unit-tests/tests/**/*.spec.ts", "src/tests/unit-tests/tests/**/*.ts", "src/**/*.d.ts"]
+  "include": ["src/tests/unit-tests/tests/**/*.spec.ts", "src/tests/unit-tests/tests/**/*.ts", "src/**/*.d.ts"],
+  "angularCompilerOptions": {}
 }

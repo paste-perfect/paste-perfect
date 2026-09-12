@@ -1,7 +1,10 @@
-name: Weekly promotion
+name: Merge validated updates
 on:
+  workflow_run:
+    workflows: ["CI — Test, Lint & Build"]
+    types: [completed]
   schedule:
-    - cron: "0 0 * * 0"
+    - cron: "17 * * * *"
   workflow_dispatch:
 permissions:
   contents: read
@@ -9,9 +12,11 @@ concurrency:
   group: branch-automation
   cancel-in-progress: false
 jobs:
-  promote:
+  merge:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     steps:
+      # Trusted default-branch code only; never execute code from a dependency PR here.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -24,5 +29,5 @@ jobs:
         with:
           github-token: ${{ steps.token.outputs.token }}
           script: |
-            await require('./.github/scripts/sync-pr.cjs')({ github, context, core, weekly: true });
+            await require('./.github/scripts/sync-pr.cjs')({ github, context, core });
             await require('./.github/scripts/merge-green.cjs')({ github, context, core });

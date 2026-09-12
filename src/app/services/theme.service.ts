@@ -1,7 +1,7 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { StorageService } from "./storage.service";
 import { DarkThemes, LightThemes, SelectableTheme, Theme, ThemeLabel } from "@types";
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { getEntries } from "@utils/utils";
 import { THEME_STORAGE_KEY } from "@constants/const";
 import { DARK_THEME_MAP, LIGHT_THEME_MAP } from "@constants/themes";
@@ -20,14 +20,18 @@ export class ThemeService {
   /** Service for persisting the theme in localstorage */
   private storageService: StorageService = inject(StorageService);
 
-  /** PrimeNGs messages service for displaying toasts to the user   */
+  /** Optimus UI messages service for displaying toasts to the user   */
   private messageService: MessageService = inject(MessageService);
 
   /** Signal for the selected theme */
   private _selectedTheme: WritableSignal<SelectableTheme> = signal(this.loadInitialTheme());
 
   constructor() {
-    document.addEventListener("DOMContentLoaded", () => this.applyTheme(this.selectedTheme), { once: true });
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => this.applyTheme(this.selectedTheme), { once: true });
+    } else {
+      this.applyTheme(this.selectedTheme);
+    }
   }
 
   /** Gets the currently selected theme */
@@ -98,12 +102,10 @@ export class ThemeService {
    */
   private getThemes(themeMap: LightThemes | DarkThemes): SelectableTheme[] {
     return getEntries(themeMap)
-      .map(
-        ([value, label]: [Theme, ThemeLabel]): SelectableTheme => ({
-          value,
-          label,
-        })
-      )
+      .map(([value, label]: [Theme, ThemeLabel]): SelectableTheme => ({
+        value,
+        label,
+      }))
       .sort((a: SelectableTheme, b: SelectableTheme): number => a.label.localeCompare(b.label));
   }
 }

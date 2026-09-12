@@ -1,6 +1,6 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { SelectableTheme, Theme } from "@types";
 import { ThemeService } from "@services/theme.service";
 import { StorageService } from "@services/storage.service";
@@ -40,6 +40,12 @@ describe("ThemeService", () => {
   });
 
   describe("initial theme resolution", () => {
+    it("applies a restored theme when the document has already loaded", () => {
+      vi.spyOn(document, "readyState", "get").mockReturnValue("complete");
+      const target = ALL_THEMES[2];
+      createService(target.value);
+      expect((document.getElementById("prism-theme") as HTMLLinkElement).href).toContain(target.value);
+    });
     it("should default to the first sorted theme when storage is empty", () => {
       expect(createService(null).service.selectedTheme).toEqual(ALL_THEMES[0]);
     });

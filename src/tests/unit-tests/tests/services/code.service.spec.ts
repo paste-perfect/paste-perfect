@@ -121,6 +121,40 @@ describe("CodeService", () => {
   });
 
   describe("processing pipeline (effect)", () => {
+    it("keeps the latest result when older formatting finishes last", async () => {
+      let finishOlder!: (value: { code: string; formattingSuccessful: boolean }) => void;
+      prettierMock.formatCode.mockReturnValueOnce(new Promise((resolve) => (finishOlder = resolve)));
+      prismMock.highlightCode.mockImplementation(async (code: string) => code);
+      lineNumberMock.prependLineNumbers.mockImplementation((code: string) => code);
+      service.rawCode = "older";
+      await flushPromises();
+
+      prettierMock.formatCode.mockResolvedValueOnce({ code: "latest", formattingSuccessful: true });
+      service.rawCode = "latest";
+      await flushPromises();
+      expect(service.highlightedCode).toBe("latest");
+
+      finishOlder({ code: "older", formattingSuccessful: false });
+      await flushPromises();
+      expect(service.highlightedCode).toBe("latest");
+      expect(service.formattingSuccessful).toBe(true);
+    });
+
+    it("keeps the latest result when older highlighting finishes last", async () => {
+      let finishOlder!: (value: string) => void;
+      prismMock.highlightCode.mockReturnValueOnce(new Promise((resolve) => (finishOlder = resolve)));
+      lineNumberMock.prependLineNumbers.mockImplementation((code: string) => code);
+      service.rawCode = "older";
+      await flushPromises();
+
+      prismMock.highlightCode.mockResolvedValueOnce("latest");
+      service.rawCode = "latest";
+      await flushPromises();
+      finishOlder("older");
+      await flushPromises();
+      expect(service.highlightedCode).toBe("latest");
+    });
+
     it("should call PrettierFormattingService.formatCode when rawCode changes", async () => {
       service.rawCode = FORMATTED;
       await flushPromises();
