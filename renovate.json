@@ -24,6 +24,11 @@
   },
   "packageRules": [
     {
+      "description": "semantic-release's notes generator uses changelog writer 8",
+      "matchPackageNames": ["conventional-changelog-conventionalcommits"],
+      "allowedVersions": "<10"
+    },
+    {
       "description": "Framework packages must migrate together",
       "groupName": "angular framework",
       "matchPackageNames": [

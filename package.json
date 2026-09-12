@@ -22,7 +22,7 @@
     "test:snapshots": "node scripts/playwright-docker.mjs",
     "test:snapshots:ci": "playwright test --config=config/tests/playwright.config.ts",
     "test:snapshots:ui": "node scripts/playwright-docker.mjs --ui",
-    "test:snapshots:update": "node scripts/playwright-docker.mjs --update-snapshots",
+    "test:snapshots:update": "node scripts/playwright-docker.mjs --update-snapshots=all",
     "prepare": "husky",
     "test:automation": "node --test scripts/*.test.mjs",
     "test:snapshots:local": "playwright test --config=config/tests/playwright.config.ts"
@@ -63,7 +63,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "angular-eslint": "^22.5.0",
     "baseline-browser-mapping": "^2.11.22",
-    "conventional-changelog-conventionalcommits": "^10.4.0",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
     "eslint": "^10.10.0",
     "happy-dom": "^20.14.5",
     "husky": "^9.1.7",

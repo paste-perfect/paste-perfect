@@ -25,6 +25,6 @@ Source default branch: `dev`. Both `dev` and `main` require **CI Gate**, an up-t
 
 Existing secrets: `RELEASEBOT_APP_ID`, `RELEASEBOT_PRIVATE_KEY`, and `DEPLOY_KEY_PREVIEW`. The App needs Contents, Pull requests and Workflows write; checks use the read-only built-in token. The preview key writes only to the test repository. Pages serves `gh-pages` in both repositories; the test repository's default branch is `main`.
 
-Renovate groups the Angular/Optimus toolchain and refreshes stale branches. `config/framework-migrations.json` records applied migrations. Current compatibility limits are TypeScript 6.0 and Vitest 4 for Angular 22, and Node 24 types for Node 24. Revisit those limits when upgrading the framework; do not force incompatible peer dependencies.
+Renovate groups the Angular/Optimus toolchain and refreshes stale branches. `config/framework-migrations.json` records applied migrations. Compatibility limits: TypeScript 6.0 and Vitest 4 for Angular 22; Node 24 types; Conventional Commits preset 9 for semantic-release's writer. Revisit these limits with the corresponding toolchain upgrade.
 
 The Java formatter loads two WebAssembly assets. Its Node-only imports remain external because the browser never executes those paths. SQL uses the underlying formatter directly to avoid bundling unused parser engines.
