@@ -1,0 +1,11 @@
+name: Set up project
+description: Use the pinned Node version and install the exact dependency lockfile.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: .node-version
+        cache: npm
+    - run: npm ci --no-audit --fund=false
+      shell: bash

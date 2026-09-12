@@ -2,8 +2,8 @@
 
 > Easily highlight and copy your code with HTML formatting for seamless pasting into Word, PowerPoint, or plain text. Enjoy clean, professional-looking code in just a few clicks!
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/paste-perfect/paste-perfect/build.yml?logo=github&label=Build-CI)](https://github.com/paste-perfect/paste-perfect/actions/workflows/build.yml)
-[![Deploy Status](https://img.shields.io/github/actions/workflow/status/paste-perfect/paste-perfect/deploy.yml?logo=github&label=Deploy-CI)](https://github.com/paste-perfect/paste-perfect/actions/workflows/deploy.yml)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/paste-perfect/paste-perfect/ci.yml?logo=github&label=CI)](https://github.com/paste-perfect/paste-perfect/actions/workflows/ci.yml)
+[![Deploy Status](https://img.shields.io/github/actions/workflow/status/paste-perfect/paste-perfect/release.yml?logo=github&label=Deploy)](https://github.com/paste-perfect/paste-perfect/actions/workflows/release.yml)
 [![GitHub Stars](https://img.shields.io/github/stars/paste-perfect/paste-perfect?logo=github)](https://github.com/paste-perfect/paste-perfect/stargazers)
 
 [![Issues](https://img.shields.io/github/issues/paste-perfect/paste-perfect?label=Open%20Issues)](https://github.com/paste-perfect/paste-perfect/issues)
@@ -14,7 +14,7 @@
 Check out the [**Paste Perfect Website**](https://paste-perfect.github.io/paste-perfect/) to start with the formatting
 
 Here’s a quick look at Paste Perfect in action:
-![Paste Perfect Screenshot](highlighting-screenshots/sample-highlightings.gif)
+![Paste Perfect Screenshot](docs/highlighting-screenshots/sample-highlightings.gif)
 
 ## Table of Contents
 
@@ -66,7 +66,7 @@ See our [Contributing Guidelines](CONTRIBUTING.md). We appreciate your help in m
 
 ## Development Environment
 
-The `dev` branch gets automatically pushed and deployed to GitHub Pages in a separate Repo: https://github.com/paste-perfect/paste-perfect-test
+Successful `dev` builds deploy to the [test environment](https://paste-perfect.github.io/paste-perfect-test/). Production is promoted weekly after validation. See [maintenance](docs/maintenance.md) for the short operating guide.
 
 ## License
 

@@ -1,76 +1,36 @@
-# .github/workflows/scheduled-release.yml
-name: Scheduled Release — Weekly Auto-merge (dev → main)
-
+name: Weekly promotion
 on:
   schedule:
-    - cron: "0 0 * * 0" # Every Sunday at 00:00 UTC
+    - cron: "0 0 * * 0"
   workflow_dispatch:
-
+permissions:
+  contents: read
+  checks: read
+  statuses: read
 concurrency:
-  group: scheduled-release
+  group: branch-automation
   cancel-in-progress: false
-
-permissions: {}
-
 jobs:
-  semantic-verify-and-merge:
-    name: Semantic Verification + Auto-merge
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-
+  promote:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: token
         with:
           client-id: ${{ secrets.RELEASEBOT_APP_ID }}
           private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
-
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Ensure release PR exists and evaluate lifecycle eligibility
-        id: release-pr
-        uses: ./.github/actions/release-pr
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-
-      # Use merge commit (NOT squash) to preserve feat/fix commits for semantic-release
-      - name: Enable auto-merge
-        if: >
-          steps.release-pr.outputs.has_changes == 'true' &&
-          steps.release-pr.outputs.is_lifecycle_only == 'true'
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -uo pipefail
-          PR_NUMBER="${{ steps.release-pr.outputs.pr_number }}"
-          if gh pr merge "$PR_NUMBER" --auto --merge --delete-branch 2>/tmp/automerge_err; then
-            echo "Auto-merge enabled on PR #$PR_NUMBER."
-            exit 0
-          fi
-          if grep -qiE "already merged|already enabled|No commits between" /tmp/automerge_err; then
-            echo "::notice::PR #$PR_NUMBER already handled — nothing to do."
-            cat /tmp/automerge_err
-            exit 0
-          fi
-          echo "::error::Could not enable auto-merge on PR #$PR_NUMBER."
-          cat /tmp/automerge_err
-          exit 1
-
-      - name: Report — no auto-merge (non-lifecycle commits or conflicts present)
-        if: >
-          steps.release-pr.outputs.has_changes == 'true' &&
-          steps.release-pr.outputs.is_lifecycle_only != 'true'
-        run: |
-          echo "Semantic Verification FAILED — non-lifecycle commits or real conflicts detected."
-          echo "Auto-merge aborted. Manual release decision required."
-
-      - name: Report — dev == main
-        if: steps.release-pr.outputs.has_changes != 'true'
-        run: echo "dev is not ahead of main — nothing to release."
+          CHECKS_TOKEN: ${{ github.token }}
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            await require('./.github/scripts/sync-pr.cjs')({ github, context, core, weekly: true });
+            const readGithub = new github.constructor({ auth: process.env.CHECKS_TOKEN });
+            await require('./.github/scripts/merge-green.cjs')({ github, readGithub, context, core });

@@ -6,7 +6,7 @@ import { CodeHighlighterPage } from "../types/types";
 
 export const test = base.extend<{ page: CodeHighlighterPage }>({
   page: async ({ page }, use) => {
-    await page.goto("/");
+    await page.goto("./");
 
     // Disable spellcheck on every DOM element to prevent red squiggly
     // underlines from appearing in snapshot tests.

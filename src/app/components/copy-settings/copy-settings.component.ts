@@ -1,10 +1,10 @@
-import { Component, inject } from "@angular/core";
+import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { Button } from "primeng/button";
-import { Dialog } from "primeng/dialog";
-import { SelectButton } from "primeng/selectbutton";
-import { Select } from "primeng/select";
-import { Checkbox } from "primeng/checkbox";
+import { Button } from "@openng/optimus-ui/button";
+import { Dialog } from "@openng/optimus-ui/dialog";
+import { SelectButton } from "@openng/optimus-ui/selectbutton";
+import { Select } from "@openng/optimus-ui/select";
+import { Checkbox } from "@openng/optimus-ui/checkbox";
 import { CopyMode, CopySettings, DEFAULT_COPY_SETTINGS } from "@types";
 import { CopySettingsService } from "@services/copy-settings.service";
 
@@ -30,8 +30,8 @@ interface SelectOption<T> {
 export class CopySettingsComponent {
   protected readonly copySettingsService: CopySettingsService = inject(CopySettingsService);
 
-  /** Controls the PrimeNG dialog visibility. */
-  protected dialogVisible = false;
+  /** Controls the Optimus UI dialog visibility. */
+  protected readonly dialogVisible = signal(false);
 
   // ── Copy Mode ────────────────────────────────────────────────────────────
   protected readonly copyModeOptions: SelectOption<CopyMode>[] = [
@@ -68,17 +68,17 @@ export class CopySettingsComponent {
    */
   openDialog(): void {
     this.pendingSettings = { ...this.copySettingsService.copySettings };
-    this.dialogVisible = true;
+    this.dialogVisible.set(true);
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
   protected save(): void {
     this.copySettingsService.updateSettings(this.pendingSettings);
-    this.dialogVisible = false;
+    this.dialogVisible.set(false);
   }
 
   protected cancel(): void {
-    this.dialogVisible = false;
+    this.dialogVisible.set(false);
   }
 }

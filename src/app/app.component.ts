@@ -1,7 +1,7 @@
 import { Component } from "@angular/core";
 
-import { Card } from "primeng/card";
-import { Toast } from "primeng/toast";
+import { Card } from "@openng/optimus-ui/card";
+import { Toast } from "@openng/optimus-ui/toast";
 import { SettingsComponent } from "@components/settings/settings.component";
 import { CodeInputComponent } from "@components/code-input/code-input.component";
 import { CodeOutputComponent } from "@components/code-output/code-output.component";

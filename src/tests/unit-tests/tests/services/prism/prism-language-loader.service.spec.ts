@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { TestBed } from "@angular/core/testing";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { LocationStrategy } from "@angular/common";
 import { LanguageDefinition } from "@types";
 import { createMessageMock, useStandardTeardown } from "../../../test-utils/utils";

@@ -1,5 +1,5 @@
 import { inject, Injectable } from "@angular/core";
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { LanguageDefinition, PrettierParserNames, PrettierPluginType } from "@types";
 import { Plugin as PrettierPlugin } from "prettier";
 
@@ -21,7 +21,7 @@ const unwrapPlugin = (m: unknown): PrettierPlugin => {
 })
 export class PrettierPluginLoaderService {
   /**
-   * PrimeNG's messages service for displaying toasts to the user
+   * Optimus UI messages service for displaying toasts to the user
    */
   private readonly messageService = inject(MessageService);
 
@@ -37,9 +37,17 @@ export class PrettierPluginLoaderService {
     "prettier-plugin-java": () => import("prettier-plugin-java").then(unwrapPlugin),
     "prettier-plugin-gherkin": () => import("prettier-plugin-gherkin").then(unwrapPlugin),
     "prettier-plugin-nginx": () => import("prettier-plugin-nginx").then(unwrapPlugin),
-    "prettier-plugin-sql": () => import("prettier-plugin-sql").then(unwrapPlugin),
+    "prettier-plugin-sql": () => import("./sql-plugin").then(unwrapPlugin),
     "prettier-plugin-toml": () => import("prettier-plugin-toml").then(unwrapPlugin),
     "prettier-plugin-sort-json": () => import("prettier-plugin-sort-json").then(unwrapPlugin),
+    babel: () => import("prettier/plugins/babel").then(unwrapPlugin),
+    estree: () => import("prettier/plugins/estree").then(unwrapPlugin),
+    graphql: () => import("prettier/plugins/graphql").then(unwrapPlugin),
+    html: () => import("prettier/plugins/html").then(unwrapPlugin),
+    markdown: () => import("prettier/plugins/markdown").then(unwrapPlugin),
+    postcss: () => import("prettier/plugins/postcss").then(unwrapPlugin),
+    typescript: () => import("prettier/plugins/typescript").then(unwrapPlugin),
+    yaml: () => import("prettier/plugins/yaml").then(unwrapPlugin),
   };
 
   /**
@@ -112,7 +120,7 @@ export class PrettierPluginLoaderService {
       if (isPluginInRegistry && this.pluginRegistry[pluginName]) {
         plugin = await this.pluginRegistry[pluginName]();
       } else {
-        plugin = await import(/* @vite-ignore */ `../../../../node_modules/prettier/plugins/${pluginName}.mjs`);
+        throw new Error(`Unsupported Prettier plugin: ${pluginName}`);
       }
 
       // Store in cache

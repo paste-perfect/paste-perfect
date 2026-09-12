@@ -1,0 +1,41 @@
+name: Merge validated updates
+on:
+  workflow_run:
+    workflows: ["CI — Test, Lint & Build"]
+    types: [completed]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: read
+  statuses: read
+concurrency:
+  group: branch-automation
+  cancel-in-progress: false
+jobs:
+  merge:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      # Trusted default-branch code only; never execute code from a dependency PR here.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: token
+        with:
+          client-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CHECKS_TOKEN: ${{ github.token }}
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            await require('./.github/scripts/sync-pr.cjs')({ github, context, core });
+            const readGithub = new github.constructor({ auth: process.env.CHECKS_TOKEN });
+            await require('./.github/scripts/merge-green.cjs')({ github, readGithub, context, core });

@@ -1,12 +1,7 @@
 name: Security — Vulnerability Scan (Trivy)
 
-# Runs on every non-draft PR, a weekly cron for repo-wide visibility, and manually.
-# Advisory only — not a required check so a finding never blocks a merge; the team
-# decides whether to act on each result.
+# Scheduled vulnerability reporting supplements the required CI scan.
 on:
-  pull_request:
-    branches: [main, dev]
-    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: "0 4 * * 0" # Every Sunday at 04:00 UTC
   workflow_dispatch:
@@ -20,7 +15,6 @@ concurrency:
 permissions: {} # declared per-job
 
 jobs:
-
   trivy-fs-scan:
     name: Trivy — Filesystem Vulnerability Scan
     runs-on: ubuntu-latest
@@ -32,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -46,13 +40,13 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         if: ${{ !cancelled() && hashFiles('trivy-results-fs.sarif') != '' }}
         with:
           sarif_file: "trivy-results-fs.sarif"
 
       - name: Upload raw results as artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() && hashFiles('trivy-results-fs.sarif') != '' }}
         with:
           name: trivy-fs-results-${{ github.run_id }}
