@@ -39,6 +39,7 @@ function fixture({ behind = 0, mergeError, green = true } = {}) {
             status: "completed",
             conclusion: green ? "success" : "failure",
             app: { slug: "github-actions" },
+            pull_requests: [{ number: 1 }, { number: 2 }],
           }))
         : [],
   };

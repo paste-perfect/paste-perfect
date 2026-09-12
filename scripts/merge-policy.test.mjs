@@ -49,3 +49,20 @@ test("additional failures and pending statuses also block merging", () => {
 test("a successful retry supersedes the older failed run", () => {
   assert.equal(checksPass([...green(), { ...green()[0], conclusion: "failure" }], []), true);
 });
+
+test("push results cannot authorize a PR or hide its failed checks", () => {
+  const prChecks = green().map((check) => ({ ...check, pull_requests: [{ number: 7 }] }));
+  assert.equal(checksPass(green(), [], 7), false);
+  assert.equal(checksPass([...green(), ...prChecks], [], 7), true);
+  prChecks[0].conclusion = "failure";
+  assert.equal(checksPass([...green(), ...prChecks], [], 7), false);
+});
+
+test("a skipped push title does not mask the PR title, and failed pushes still block", () => {
+  const prChecks = green().map((check) => ({ ...check, pull_requests: [{ number: 7 }] }));
+  const pushChecks = green();
+  pushChecks.find((check) => check.name === "Lint PR Title (Conventional Commits)").conclusion = "skipped";
+  assert.equal(checksPass([...pushChecks, ...prChecks], [], 7), true);
+  pushChecks[0].conclusion = "failure";
+  assert.equal(checksPass([...prChecks, ...pushChecks], [], 7), false);
+});

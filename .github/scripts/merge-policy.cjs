@@ -18,16 +18,22 @@ function eligible(pr) {
   return pr.base.ref === "dev" && pr.head.ref.startsWith("renovate/") && pr.user.login === "renovate[bot]";
 }
 
-function checksPass(checks, statuses) {
-  // The API returns newest runs first. Ignore superseded attempts of the same check.
+function checksPass(checks, statuses, prNumber) {
+  // Push and PR runs can share names on dev. Require the PR's own validation.
   const latest = new Map();
-  for (const check of checks) if (!latest.has(check.name)) latest.set(check.name, check);
+  const required = new Map();
+  for (const check of checks) {
+    const prs = check.pull_requests?.map((pr) => pr.number) ?? [];
+    const scope = `${check.name}:${check.app?.slug}:${prs.sort((a, b) => a - b).join(",") || "push"}`;
+    if (!latest.has(scope)) latest.set(scope, check);
+    if ((prNumber === undefined || prs.includes(prNumber)) && !required.has(check.name)) required.set(check.name, check);
+  }
   if (
     !requiredChecks.every(
       (name) =>
-        latest.get(name)?.conclusion === "success" &&
-        latest.get(name)?.status === "completed" &&
-        latest.get(name)?.app?.slug === "github-actions"
+        required.get(name)?.conclusion === "success" &&
+        required.get(name)?.status === "completed" &&
+        required.get(name)?.app?.slug === "github-actions"
     )
   )
     return false;

@@ -13,7 +13,7 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
       ref: pr.head.sha,
       per_page: 100,
     });
-    if (!checksPass(checks, statuses)) continue;
+    if (!checksPass(checks, statuses, pr.number)) continue;
     const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
       owner,
       repo,
