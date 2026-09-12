@@ -6,20 +6,17 @@ on:
     - cron: "0 4 * * 0" # Every Sunday at 04:00 UTC
   workflow_dispatch:
 
-# Cancel stale runs per PR; use run_id as fallback for scheduled/dispatch so
-# those never cancel each other.
 concurrency:
-  group: security-${{ github.event.pull_request.number || github.run_id }}
+  group: security-${{ github.ref }}
   cancel-in-progress: true
 
 permissions: {} # declared per-job
 
 jobs:
   trivy-fs-scan:
-    name: Trivy — Filesystem Vulnerability Scan
-    runs-on: ubuntu-latest
-    # Skip draft PRs — only scan when the PR is ready for review.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    name: Scheduled vulnerability report
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write # upload SARIF to the Security tab

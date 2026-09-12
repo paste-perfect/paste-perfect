@@ -11,6 +11,8 @@ Sync PRs are reused while open and recreated when new changes exist. Commits add
 
 Releases create tags and release notes, not version commits. The header and `deployment.json` identify the exact source commit. Deployments download artifacts from the successful CI run, verify the source SHA and target, and serialize per environment. Superseded runs are ignored.
 
+Preview verification runs here after deployment and hourly: allow Pages to propagate, verify the published commit and assets, then smoke-test that exact source revision. The test repository only stores built files on `gh-pages` and documentation on `main`; it has no dependencies or workflows.
+
 ## Routine operations
 
 - **Deploy:** merge a green PR into `dev`; preview deployment follows automatically. Production follows the weekly sync.

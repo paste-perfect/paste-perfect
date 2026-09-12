@@ -1,0 +1,50 @@
+name: Verify deployed preview
+on:
+  workflow_call:
+    inputs:
+      expected_sha:
+        type: string
+        default: ""
+  schedule:
+    - cron: "37 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - run: node scripts/verify-deployment.mjs
+        id: deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.deployment.outputs.sha }}
+          path: deployed-source
+          persist-credentials: false
+      - run: npm ci --no-audit --fund=false
+        working-directory: deployed-source
+      - run: npx playwright install --with-deps chromium
+        working-directory: deployed-source
+      - name: Smoke-test the published source revision
+        working-directory: deployed-source
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: https://paste-perfect.github.io/paste-perfect-test/
+        run: npm run test:snapshots:local -- code-highlighter-smoke copy-settings-dialog-opens formatter-migrations --ignore-snapshots
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() && hashFiles('deployed-source/reports/playwright/**') != '' }}
+        with:
+          name: deployed-preview-report
+          path: deployed-source/reports/playwright/
+          retention-days: 7
