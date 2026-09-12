@@ -62,7 +62,7 @@
     "@types/prismjs": "^1.26.6",
     "@vitest/coverage-v8": "^4.1.11",
     "angular-eslint": "^22.5.0",
-    "baseline-browser-mapping": "^2.11.22",
+    "baseline-browser-mapping": "^2.11.23",
     "conventional-changelog-conventionalcommits": "^9.3.1",
     "eslint": "^10.10.0",
     "happy-dom": "^20.14.5",
