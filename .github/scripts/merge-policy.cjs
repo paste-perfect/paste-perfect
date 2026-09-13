@@ -8,6 +8,7 @@ const requiredChecks = [
   "Snapshot Tests (Playwright)",
   "Trivy — Filesystem Vulnerability Scan",
 ];
+const orchestrationChecks = new Set(["Merge validated updates", "Authorize weekly promotion"]);
 
 function eligible(pr) {
   if (pr.draft || pr.state !== "open" || pr.head.repo?.full_name !== pr.base.repo?.full_name) return false;
@@ -23,6 +24,8 @@ function checksPass(checks, statuses, prNumber, requirePreview = false) {
   const latest = new Map();
   const required = new Map();
   for (const check of checks) {
+    // These jobs inspect dev's checks while running on dev themselves.
+    if (check.app?.slug === "github-actions" && orchestrationChecks.has(check.name)) continue;
     const prs = check.pull_requests?.map((pr) => pr.number) ?? [];
     const scope = `${check.name}:${check.app?.slug}:${prs.sort((a, b) => a - b).join(",") || "push"}`;
     if (!latest.has(scope)) latest.set(scope, check);

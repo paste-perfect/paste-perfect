@@ -46,6 +46,17 @@ test("additional failures and pending statuses also block merging", () => {
   assert.equal(checksPass(green(), [{ context: "external", state: "pending" }]), false);
   assert.equal(checksPass(green(), [{ context: "external", state: "success" }]), true);
 });
+test("merge orchestration cannot block itself while validation failures still block", () => {
+  for (const name of ["Merge validated updates", "Authorize weekly promotion"]) {
+    const running = { name, status: "in_progress", conclusion: null, app: { slug: "github-actions" } };
+    assert.equal(checksPass([...green(), running], []), true);
+    assert.equal(
+      checksPass([...green(), running, { name: "Preview browser tests", status: "completed", conclusion: "failure" }], []),
+      false
+    );
+    assert.equal(checksPass([...green(), { ...running, app: { slug: "untrusted" } }], []), false);
+  }
+});
 test("a successful retry supersedes the older failed run", () => {
   assert.equal(checksPass([...green(), { ...green()[0], conclusion: "failure" }], []), true);
 });
