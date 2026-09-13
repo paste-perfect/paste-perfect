@@ -1,8 +1,8 @@
 import { Component, inject } from "@angular/core";
-import { Textarea } from "primeng/textarea";
+import { Textarea } from "@openng/optimus-ui/textarea";
 import { FormsModule } from "@angular/forms";
 import { CodeService } from "@services/code.service";
-import { Message } from "primeng/message";
+import { Message } from "@openng/optimus-ui/message";
 import { SettingsService } from "@services/settings.service";
 import { LanguageService } from "@services/language.service";
 

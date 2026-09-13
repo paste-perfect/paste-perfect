@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, type MockedFunction } from "vitest";
 import { TestBed } from "@angular/core/testing";
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { LanguageDefinition } from "@types";
 import { PrettierPluginLoaderService } from "@services/prettier/prettier-plugin-loader.service";
 import { makeMockPlugin, useStandardTeardown } from "../../../test-utils/utils";

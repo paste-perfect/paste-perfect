@@ -5,7 +5,7 @@ import { PrettierLanguageConfiguration } from "@types";
  */
 export const PRETTIER_LANGUAGE_MAP: Record<string, PrettierLanguageConfiguration> = {
   // Angular
-  angular: { parser: "angular", plugins: [] },
+  angular: { parser: "angular", plugins: ["html"] },
 
   // Configuration formats
   toml: { parser: "toml", plugins: ["prettier-plugin-toml"] },

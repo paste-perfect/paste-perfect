@@ -33,11 +33,11 @@
 
     <!-- GitHub Repo Link -->
     <a
-      href="https://github.com/paste-perfect/paste-perfect/releases/tag/v{{ version }}"
+      [href]="versionUrl"
       target="_blank"
       rel="noopener noreferrer"
       class="p-button p-button-secondary github-link"
-      pTooltip="Go to the GitHub release page"
+      pTooltip="View this version on GitHub"
       [tooltipOptions]="tooltipOptions"
     >
       <i class="pi pi-github"></i><span>{{ version }}</span>

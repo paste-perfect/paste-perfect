@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TestBed } from "@angular/core/testing";
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 import { PrismLanguageLoaderService } from "@services/prism/prism-language-loader.service";
 import { SettingsService } from "@services/settings.service";

@@ -1,7 +1,7 @@
 import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { CopyMode, DEFAULT_COPY_FONT_SIZE, LanguageDefinition } from "@types";
 import { LinesCollector } from "@utils/line-collector";
 import { InlineStyleApplier } from "@utils/inline-style-applier";
@@ -35,7 +35,7 @@ export class PrismHighlightService {
   private prismLanguageLoaderService: PrismLanguageLoaderService = inject(PrismLanguageLoaderService);
 
   /**
-   * PrimeNGs messages service for displaying toasts to the user
+   * Optimus UI messages service for displaying toasts to the user
    */
   private messageService: MessageService = inject(MessageService);
 

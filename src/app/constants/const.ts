@@ -1,4 +1,4 @@
-import { TooltipOptions } from "primeng/api";
+import { TooltipOptions } from "@openng/optimus-ui/api";
 
 /**
  * Default tooltip options for the application.

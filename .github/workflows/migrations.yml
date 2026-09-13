@@ -1,0 +1,48 @@
+name: Apply framework migrations
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+concurrency:
+  group: migrations-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  migrate:
+    if: github.event.pull_request.user.login == 'renovate[bot]' && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'renovate/')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: node scripts/framework-migrations.mjs
+      - id: changed
+        run: |
+          echo "value=$(git status --porcelain | wc -l)" >> "$GITHUB_OUTPUT"
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        if: steps.changed.outputs.value != '0'
+        id: token
+        with:
+          client-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+      - name: Commit migrations to the dependency PR
+        if: steps.changed.outputs.value != '0'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$PR_BRANCH" --jq .object.sha)
+          if [ "$current" != "$EXPECTED_SHA" ]; then
+            echo "Dependency branch advanced; the next run will apply migrations."
+            exit 0
+          fi
+          git config user.name 'releasebot[bot]'
+          git config user.email 'releasebot[bot]@users.noreply.github.com'
+          git add src config angular.json 'tsconfig*.json' package.json package-lock.json
+          git commit -m 'chore(deps): apply framework migrations'
+          gh auth setup-git
+          git push "https://github.com/$GITHUB_REPOSITORY.git" "HEAD:$PR_BRANCH"

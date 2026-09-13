@@ -1,0 +1,6 @@
+{
+  "@angular/core": "22.1.6",
+  "@angular/cli": "22.1.8",
+  "angular-eslint": "22.5.0",
+  "@openng/optimus-ui": "2.0.2"
+}
