@@ -45,12 +45,14 @@ jobs:
   gate:
     name: ${{ github.event.action == 'edited' && !github.event.changes.base && 'Metadata only' || github.event_name == 'push' && 'Branch validation' || 'CI Gate' }}
     needs: [validate, sync-validation]
-    if: always() && !(github.event.action == 'edited' && !github.event.changes.base)
+    if: always()
     runs-on: ubuntu-24.04
     steps:
       - env:
+          METADATA_ONLY: ${{ github.event.action == 'edited' && !github.event.changes.base }}
           REUSE_DEV: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'dev' && github.event.pull_request.base.ref == 'main' }}
           VALIDATION: ${{ needs.validate.result }}
           SYNC_VALIDATION: ${{ needs.sync-validation.result }}
         run: |
+          if [ "$METADATA_ONLY" = "true" ]; then echo "PR metadata changed; existing code validation is retained."; exit 0; fi
           if [ "$REUSE_DEV" = "true" ]; then test "$SYNC_VALIDATION" = success; else test "$VALIDATION" = success; fi
