@@ -1,0 +1,147 @@
+name: Validation jobs
+on:
+  workflow_call:
+    inputs:
+      update_snapshots:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npm run lint:check
+      - run: npm run format:check
+      - run: npm run test:automation
+      - name: Verify framework migrations are committed
+        run: |
+          node scripts/framework-migrations.mjs
+          git diff --exit-code
+
+  lockfile-integrity:
+    name: Lockfile Integrity
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: git diff --exit-code -- package-lock.json
+      - run: npm ls --all > /dev/null
+      - run: npm audit signatures
+      - run: npm audit --audit-level=critical
+
+  build:
+    name: Build (production)
+    if: ${{ !inputs.update_snapshots }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npm run build-prod
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production
+          include-hidden-files: true
+          path: dist/paste-perfect/browser
+          if-no-files-found: error
+          retention-days: 7
+      - run: npm run build-preview
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: preview
+          include-hidden-files: true
+          path: dist/paste-perfect/browser
+          if-no-files-found: error
+          retention-days: 7
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npm run test:unit:coverage
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() && hashFiles('reports/vitest/**') != '' }}
+        with:
+          name: unit-reports
+          path: reports/vitest/
+          retention-days: 7
+
+  snapshots:
+    name: Snapshot Tests (Playwright)
+    needs: build
+    if: ${{ !cancelled() && (needs.build.result == 'success' || inputs.update_snapshots) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: ${{ !inputs.update_snapshots }}
+        with:
+          name: production
+          path: dist/paste-perfect/browser
+      - name: Test the production artifact
+        if: ${{ !inputs.update_snapshots }}
+        run: npx playwright test --config=config/tests/playwright.production.config.ts
+      - run: npm run test:snapshots:ci
+        if: ${{ !inputs.update_snapshots }}
+      - run: npm run test:snapshots:ci -- --update-snapshots=all
+        if: ${{ inputs.update_snapshots }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() && inputs.update_snapshots }}
+        with:
+          name: visual-baselines
+          path: |
+            src/tests/snapshot-tests/snapshots/
+            src/tests/snapshot-tests/test-data/dark-tabs/
+            src/tests/snapshot-tests/test-data/light-spaces/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() && hashFiles('reports/playwright/**') != '' }}
+        with:
+          name: browser-reports
+          path: reports/playwright/
+          retention-days: 7
+
+  security:
+    name: Trivy — Filesystem Vulnerability Scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+  result:
+    name: Validation result
+    runs-on: ubuntu-24.04
+    needs: [lint, lockfile-integrity, build, test, snapshots, security]
+    if: always()
+    steps:
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+          UPDATE_SNAPSHOTS: ${{ inputs.update_snapshots }}
+        run: |
+          if [ "$UPDATE_SNAPSHOTS" = "true" ]; then echo "Baseline generation requires review and normal CI."; exit 1; fi
+          node -e 'for (const [name, job] of Object.entries(JSON.parse(process.env.RESULTS))) { if (job.result !== "success") { console.error(name + ": " + job.result); process.exitCode = 1; } }'

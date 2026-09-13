@@ -3,7 +3,8 @@ import config from "./playwright.config";
 import path from "node:path";
 export default defineConfig({
   ...config,
-  testMatch: /(?:formatter-migrations|code-highlighter-smoke|copy-settings-dialog-opens)\.spec\.ts/,
+  testMatch: /(?:formatter-migrations|code-highlighter-smoke|copy-settings-dialog-opens|release-version)\.spec\.ts/,
+  metadata: { productionArtifact: true },
   ignoreSnapshots: true,
   use: { ...config.use, baseURL: "http://127.0.0.1:4201/paste-perfect/" },
   webServer: {

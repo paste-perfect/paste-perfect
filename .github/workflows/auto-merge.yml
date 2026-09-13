@@ -1,7 +1,7 @@
 name: Merge validated updates
 on:
   workflow_run:
-    workflows: ["CI — Test, Lint & Build", "Release validated commit"]
+    workflows: ["CI — Test, Lint & Build", "PR title", "Release validated commit"]
     types: [completed]
   schedule:
     - cron: "15 6,18 * * *"

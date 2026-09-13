@@ -6,12 +6,20 @@ const valid = {
   sha: "a".repeat(40),
   target: "preview",
   base: "/paste-perfect-test/",
+  version: "v2.10.0-rc.1",
 };
 test("accepts only the expected source, commit and preview target", () => {
   assert.equal(validateMetadata(valid), valid.sha);
   assert.throws(() => validateMetadata(valid, "b".repeat(40)));
   assert.equal(validateMetadata(valid, valid.sha), valid.sha);
-  for (const change of [{ sha: "dev" }, { repository: "fork/app" }, { target: "production" }, { base: "/paste-perfect/" }]) {
+  for (const change of [
+    { sha: "dev" },
+    { repository: "fork/app" },
+    { target: "production" },
+    { base: "/paste-perfect/" },
+    { version: "d44c424" },
+    { version: undefined },
+  ]) {
     assert.throws(() => validateMetadata({ ...valid, ...change }));
   }
 });

@@ -44,7 +44,7 @@ jobs:
         env:
           CI: "true"
           PLAYWRIGHT_BASE_URL: https://paste-perfect.github.io/paste-perfect-test/
-        run: npm run test:snapshots:local -- code-highlighter-smoke copy-settings-dialog-opens formatter-migrations --ignore-snapshots
+        run: npm run test:snapshots:local -- code-highlighter-smoke copy-settings-dialog-opens formatter-migrations release-version --ignore-snapshots
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() && hashFiles('deployed-source/reports/playwright/**') != '' }}
         with:
