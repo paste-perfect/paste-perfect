@@ -14,6 +14,10 @@ jobs:
   release:
     if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      statuses: write
     outputs:
       preview_sha: ${{ github.event.workflow_run.head_branch == 'dev' && steps.current.outputs.deploy == 'true' && github.event.workflow_run.head_sha || '' }}
     steps:
@@ -31,6 +35,17 @@ jobs:
         run: |
           latest=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$BRANCH" --jq .object.sha)
           echo "deploy=$([ "$latest" = "$TESTED_SHA" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - name: Mark preview verification pending
+        if: steps.current.outputs.deploy == 'true' && github.event.workflow_run.head_branch == 'dev'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              ...context.repo, sha: context.payload.workflow_run.head_sha,
+              context: 'Preview verified', state: 'pending',
+              description: 'Waiting for deployment and live browser checks',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
       - uses: ./.github/actions/setup
         if: steps.current.outputs.deploy == 'true'
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -87,3 +102,23 @@ jobs:
     uses: ./.github/workflows/verify-preview.yml
     with:
       expected_sha: ${{ needs.release.outputs.preview_sha }}
+
+  preview-status:
+    needs: [release, verify-preview]
+    if: always() && needs.release.outputs.preview_sha != ''
+    runs-on: ubuntu-24.04
+    permissions:
+      statuses: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PREVIEW_SHA: ${{ needs.release.outputs.preview_sha }}
+          VERIFIED: ${{ needs.release.result == 'success' && needs.verify-preview.result == 'success' }}
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              ...context.repo, sha: process.env.PREVIEW_SHA,
+              context: 'Preview verified', state: process.env.VERIFIED === 'true' ? 'success' : 'failure',
+              description: 'Preview deployment and live browser verification',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });

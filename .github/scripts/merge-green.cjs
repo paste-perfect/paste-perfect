@@ -33,7 +33,7 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
       ref: pr.head.sha,
       per_page: 100,
     });
-    if (!checksPass(checks, statuses, pr.number)) continue;
+    if (!checksPass(checks, statuses, pr.number, pr.base.ref === "main")) continue;
     // Use the expected head SHA and protected branches; never bypass required checks.
     try {
       const { data } = await github.rest.pulls.merge({

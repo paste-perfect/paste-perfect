@@ -50,6 +50,17 @@ test("a successful retry supersedes the older failed run", () => {
   assert.equal(checksPass([...green(), { ...green()[0], conclusion: "failure" }], []), true);
 });
 
+test("production promotion requires a successful deployed preview from Actions", () => {
+  const verified = { context: "Preview verified", state: "success", creator: { login: "github-actions[bot]" } };
+  assert.equal(checksPass(green(), [], undefined, true), false);
+  assert.equal(checksPass(green(), [verified], undefined, true), true);
+  assert.equal(checksPass(green(), [{ ...verified, creator: { login: "someone" } }], undefined, true), false);
+  for (const state of ["pending", "failure", "error"]) {
+    assert.equal(checksPass(green(), [{ ...verified, state }, verified], undefined, true), false);
+    assert.equal(checksPass(green(), [verified, { ...verified, state }], undefined, true), true);
+  }
+});
+
 test("push results cannot authorize a PR or hide its failed checks", () => {
   const prChecks = green().map((check) => ({ ...check, pull_requests: [{ number: 7 }] }));
   assert.equal(checksPass(green(), [], 7), false);

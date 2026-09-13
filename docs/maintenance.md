@@ -7,7 +7,7 @@
 | Sunday, 00:00 UTC | Authorize the current `dev` commit for the `dev` → `main` sync PR; merge after checks pass. |
 | Green `main` push | Publish the tested production artifact and sync main history back into dev.                 |
 
-Sync PRs are reused while open and recreated when new changes exist. Commits added after weekly authorization wait until the next weekly run. Conflicts stop automation without discarding files. Failed, cancelled, missing or stale required checks block merging.
+Sync PRs are reused while open and recreated when new changes exist. Commits added after weekly authorization wait until the next weekly run. Production also requires a successful `Preview verified` status on that exact commit, set only after deployment and live browser tests. Conflicts stop automation without discarding files. Failed, cancelled, missing or stale required checks block merging.
 
 Releases create tags and release notes, not version commits: `dev` gets `rc` prereleases and `main` stable releases. This private app has no separate package version to drift. Dependency ranges, lockfiles and migrations travel together through normal Git merges in both directions; conflicting edits stop for resolution. The header and `deployment.json` identify the exact source commit. Deployments download artifacts from the successful CI run, verify the source SHA and target, and serialize per environment. Superseded runs are ignored.
 
@@ -28,6 +28,6 @@ Source default branch: `dev`. Both `dev` and `main` require **CI Gate**, an up-t
 
 Existing secrets: `RELEASEBOT_APP_ID`, `RELEASEBOT_PRIVATE_KEY`, and `DEPLOY_KEY_PREVIEW`. The App needs Contents, Pull requests and Workflows write; checks use the read-only built-in token. The preview key writes only to the test repository. Pages serves `gh-pages` in both repositories; the test repository's default branch is `main`.
 
-Renovate groups the Angular/Optimus toolchain. Merge automation runs after successful CI and hourly; it also refreshes outdated dependency branches while preserving migration commits, then waits for fresh checks. `config/framework-migrations.json` records applied migrations. Compatibility limits: TypeScript 6.0 and Vitest 4 for Angular 22; Node 24 types; Conventional Commits preset 9 for semantic-release's writer. Revisit these limits with the corresponding toolchain upgrade.
+Renovate groups the Angular/Optimus toolchain. Merge automation runs after successful CI, delivery and hourly; it also refreshes outdated dependency branches while preserving migration commits, then waits for fresh checks. `config/framework-migrations.json` records applied migrations. Compatibility limits: TypeScript 6.0 and Vitest 4 for Angular 22; Node 24 types; Conventional Commits preset 9 for semantic-release's writer. Revisit these limits with the corresponding toolchain upgrade.
 
 The Java formatter loads two WebAssembly assets. Its Node-only imports remain external because the browser never executes those paths. SQL uses the underlying formatter directly to avoid bundling unused parser engines.

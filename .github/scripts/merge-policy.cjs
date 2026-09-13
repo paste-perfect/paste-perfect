@@ -18,7 +18,7 @@ function eligible(pr) {
   return pr.base.ref === "dev" && pr.head.ref.startsWith("renovate/") && pr.user.login === "renovate[bot]";
 }
 
-function checksPass(checks, statuses, prNumber) {
+function checksPass(checks, statuses, prNumber, requirePreview = false) {
   // Push and PR runs can share names on dev. Require the PR's own validation.
   const latest = new Map();
   const required = new Map();
@@ -41,6 +41,11 @@ function checksPass(checks, statuses, prNumber) {
     return false;
   const contexts = new Map();
   for (const status of statuses) if (!contexts.has(status.context)) contexts.set(status.context, status);
+  if (
+    requirePreview &&
+    (contexts.get("Preview verified")?.state !== "success" || contexts.get("Preview verified")?.creator?.login !== "github-actions[bot]")
+  )
+    return false;
   return [...contexts.values()].every((status) => status.state === "success");
 }
 module.exports = { eligible, checksPass, requiredChecks };
