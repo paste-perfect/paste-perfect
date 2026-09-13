@@ -9,7 +9,15 @@ const pr = (head = "renovate/angular", base = "dev") => ({
   head: { ref: head, sha: "abc", repo: { full_name: "org/repo" } },
   base: { ref: base, repo: { full_name: "org/repo" } },
 });
-const green = () => requiredChecks.map((name) => ({ name, status: "completed", conclusion: "success", app: { slug: "github-actions" } }));
+const green = () =>
+  requiredChecks.map((name) => ({
+    name,
+    event: "pull_request",
+    workflow_id: 1,
+    status: "completed",
+    conclusion: "success",
+    app: { slug: "github-actions" },
+  }));
 test("only authenticated dependency authors and designated sync branches qualify", () => {
   assert.equal(eligible(pr()), true);
   assert.equal(eligible({ ...pr(), user: { login: "someone" } }), false);
@@ -74,15 +82,17 @@ test("production promotion requires a successful deployed preview from Actions",
 
 test("push results cannot authorize a PR or hide its failed checks", () => {
   const prChecks = green().map((check) => ({ ...check, pull_requests: [{ number: 7 }] }));
-  assert.equal(checksPass(green(), [], 7), false);
-  assert.equal(checksPass([...green(), ...prChecks], [], 7), true);
+  // GitHub can associate push/manual checks with the open PR too.
+  const pushChecks = prChecks.map((check) => ({ ...check, event: "push" }));
+  assert.equal(checksPass(pushChecks, [], 7), false);
+  assert.equal(checksPass([...pushChecks, ...prChecks], [], 7), true);
   prChecks[0].conclusion = "failure";
-  assert.equal(checksPass([...green(), ...prChecks], [], 7), false);
+  assert.equal(checksPass([...pushChecks, ...prChecks], [], 7), false);
 });
 
 test("a skipped push title does not mask the PR title, and failed pushes still block", () => {
   const prChecks = green().map((check) => ({ ...check, pull_requests: [{ number: 7 }] }));
-  const pushChecks = green();
+  const pushChecks = prChecks.map((check) => ({ ...check, event: "push" }));
   pushChecks.find((check) => check.name === "Lint PR Title (Conventional Commits)").conclusion = "skipped";
   assert.equal(checksPass([...pushChecks, ...prChecks], [], 7), true);
   pushChecks[0].conclusion = "failure";

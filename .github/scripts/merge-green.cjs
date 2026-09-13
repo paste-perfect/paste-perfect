@@ -27,6 +27,18 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
       continue;
     }
     const checks = await readGithub.paginate(readGithub.rest.checks.listForRef, { owner, repo, ref: pr.head.sha, per_page: 100 });
+    const runs = await readGithub.paginate(readGithub.rest.actions.listWorkflowRunsForRepo, {
+      owner,
+      repo,
+      head_sha: pr.head.sha,
+      per_page: 100,
+    });
+    const workflows = new Map(runs.map((run) => [String(run.id), run]));
+    for (const check of checks) {
+      const run = workflows.get(check.details_url?.match(/\/actions\/runs\/(\d+)/)?.[1]);
+      check.workflow_id = run?.workflow_id;
+      check.event = run?.event;
+    }
     const statuses = await readGithub.paginate(readGithub.rest.repos.listCommitStatusesForRef, {
       owner,
       repo,

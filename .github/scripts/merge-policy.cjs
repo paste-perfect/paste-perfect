@@ -27,9 +27,10 @@ function checksPass(checks, statuses, prNumber, requirePreview = false) {
     // These jobs inspect dev's checks while running on dev themselves.
     if (check.app?.slug === "github-actions" && orchestrationChecks.has(check.name)) continue;
     const prs = check.pull_requests?.map((pr) => pr.number) ?? [];
-    const scope = `${check.name}:${check.app?.slug}:${prs.sort((a, b) => a - b).join(",") || "push"}`;
+    const scope = `${check.name}:${check.app?.slug}:${check.workflow_id ?? "external"}:${check.event ?? "external"}:${prs.sort((a, b) => a - b).join(",")}`;
     if (!latest.has(scope)) latest.set(scope, check);
-    if ((prNumber === undefined || prs.includes(prNumber)) && !required.has(check.name)) required.set(check.name, check);
+    if (check.event === "pull_request" && (prNumber === undefined || prs.includes(prNumber)) && !required.has(check.name))
+      required.set(check.name, check);
   }
   if (
     !requiredChecks.every(

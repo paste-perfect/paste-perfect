@@ -35,8 +35,9 @@ function fixture({ behind = 0, mergeError, updateError, green = true } = {}) {
     },
   };
   const checks = () => {};
+  const runs = () => {};
   const readGithub = {
-    rest: { checks: { listForRef: checks }, repos: { listCommitStatusesForRef: () => {} } },
+    rest: { checks: { listForRef: checks }, actions: { listWorkflowRunsForRepo: runs }, repos: { listCommitStatusesForRef: () => {} } },
     paginate: async (method) =>
       method === checks
         ? policy.requiredChecks.map((name) => ({
@@ -45,8 +46,11 @@ function fixture({ behind = 0, mergeError, updateError, green = true } = {}) {
             conclusion: green ? "success" : "failure",
             app: { slug: "github-actions" },
             pull_requests: [{ number: 1 }, { number: 2 }],
+            details_url: "https://github.com/org/repo/actions/runs/10/job/100",
           }))
-        : [],
+        : method === runs
+          ? [{ id: 10, workflow_id: 20, event: "pull_request" }]
+          : [],
   };
   return {
     merges,
