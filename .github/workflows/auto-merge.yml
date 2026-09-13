@@ -4,7 +4,7 @@ on:
     workflows: ["CI — Test, Lint & Build", "Release validated commit"]
     types: [completed]
   schedule:
-    - cron: "17 6,18 * * *"
+    - cron: "0 6,18 * * *"
   workflow_dispatch:
 permissions:
   contents: read
