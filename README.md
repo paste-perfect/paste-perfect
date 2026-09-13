@@ -66,7 +66,7 @@ See our [Contributing Guidelines](CONTRIBUTING.md). We appreciate your help in m
 
 ## Development Environment
 
-Successful `dev` builds deploy to the [test environment](https://paste-perfect.github.io/paste-perfect-test/). Production is promoted weekly after validation. See [maintenance](docs/maintenance.md) for the short operating guide.
+Successful `dev` builds deploy to the [test environment](https://paste-perfect.github.io/paste-perfect-test/). Lifecycle-only changes are promoted weekly after validation; features require manual promotion. See the [release and deployment guide](docs/maintenance.md) for workflows, scripts and routine operations.
 
 ## License
 
