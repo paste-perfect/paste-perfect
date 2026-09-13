@@ -4,10 +4,12 @@
 | ----------------- | ------------------------------------------------------------------------------------------- |
 | Dependency PR     | Framework migrations run when needed; all checks must pass before merging into `dev`.       |
 | Green `dev` push  | Publish the tested preview artifact to `paste-perfect-test/gh-pages`.                       |
-| Sunday, 00:00 UTC | Authorize the current `dev` commit for the `dev` → `main` sync PR; merge after checks pass. |
+| Sunday, 00:00 UTC | Authorize lifecycle-only `dev` → `main` syncs; merge after CI and live preview checks pass. |
 | Green `main` push | Publish the tested production artifact and sync main history back into dev.                 |
 
 Sync PRs are reused while open and recreated when new changes exist. Commits added after weekly authorization wait until the next weekly run. Production also requires a successful `Preview verified` status on that exact commit, set only after deployment and live browser tests. Conflicts stop automation without discarding files. Failed, cancelled, missing or stale required checks block merging.
+
+Automatic production promotion requires every unreleased change to come from a merged Renovate PR or a maintenance PR explicitly labeled `lifecycle`. Apply that label only to maintenance-only PRs, not the sync PR. `feat:` PRs remain manual even if labeled. History-only merges are ignored; mixed feature/maintenance changes and unclassified commits keep the sync PR open for manual review. Eligibility and current labels are checked again before merging.
 
 Releases create tags and release notes, not version commits: `dev` gets `rc` prereleases and `main` stable releases. This private app has no separate package version to drift. Dependency ranges, lockfiles and migrations travel together through normal Git merges in both directions; conflicting edits stop for resolution. The header and `deployment.json` identify the exact source commit. Deployments download artifacts from the successful CI run, verify the source SHA and target, and serialize per environment. Superseded runs are ignored.
 
@@ -15,8 +17,8 @@ Preview verification runs here after deployment and hourly: allow Pages to propa
 
 ## Routine operations
 
-- **Deploy:** merge a green PR into `dev`; preview deployment follows automatically. Production follows the weekly sync.
-- **Promote early:** run **Weekly promotion** manually. The same checks still apply.
+- **Deploy:** merge a green PR into `dev`; preview deployment follows automatically. Lifecycle-only changes reach production through the weekly sync.
+- **Promote early:** run **Weekly promotion** for lifecycle-only changes. For features or mixed changes, review and merge the green `dev` → `main` PR manually using a merge commit. The workflow button does not override eligibility.
 - **Retry:** rerun the failed workflow. If its commit is no longer current, rerun CI on the latest branch instead.
 - **Check credentials:** run CI manually with `verify_delivery` enabled. It verifies both artifacts, App access, release generation and SSH write authentication without creating branches, releases or deployments.
 - **Roll back:** revert through a PR into `dev`; promote the validated revert early if production is affected.

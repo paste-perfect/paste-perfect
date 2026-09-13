@@ -1,4 +1,5 @@
 const { eligible, checksPass } = require("./merge-policy.cjs");
+const promotionPolicy = require("./promotion-policy.cjs");
 
 module.exports = async ({ github, readGithub = github, context, core }) => {
   const { owner, repo } = context.repo;
@@ -46,6 +47,13 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
       per_page: 100,
     });
     if (!checksPass(checks, statuses, pr.number, pr.base.ref === "main")) continue;
+    if (pr.base.ref === "main") {
+      const promotion = await promotionPolicy({ github, context, head: pr.head.sha });
+      if (!promotion.allowed) {
+        core.info(`#${pr.number}: ${promotion.reason}`);
+        continue;
+      }
+    }
     // Use the expected head SHA and protected branches; never bypass required checks.
     try {
       const { data } = await github.rest.pulls.merge({

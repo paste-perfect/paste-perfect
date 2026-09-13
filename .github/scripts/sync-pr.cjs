@@ -1,3 +1,5 @@
+const promotionPolicy = require("./promotion-policy.cjs");
+
 module.exports = async ({ github, context, core, weekly = false }) => {
   const { owner, repo } = context.repo;
   const ensure = async (head, base) => {
@@ -26,20 +28,23 @@ module.exports = async ({ github, context, core, weekly = false }) => {
     const body =
       `Sync ${head} into ${base}. Required checks must pass on the current merge result.\n\n` +
       (base === "main"
-        ? "Production promotion is authorized once per week. New commits after that authorization wait for the next weekly run."
+        ? "Weekly automatic promotion is limited to Renovate PRs and maintenance PRs labeled lifecycle. Features and unclassified changes require a manual merge. New commits after authorization wait for the next weekly run."
         : "Preserve main history in dev after production promotion. Conflicts require resolution; no files are discarded automatically.");
     if (!pr) {
       ({ data: pr } = await github.rest.pulls.create({ owner, repo, head, base, title: `chore(sync): merge ${head} into ${base}`, body }));
       core.info(`Created ${pr.html_url}`);
     }
     if (weekly && base === "main") {
+      const promotion = await promotionPolicy({ github, context, head: headRef.object.sha });
       await github.rest.pulls.update({
         owner,
         repo,
         pull_number: pr.number,
-        body: `${body}\n\n<!-- promotion-head: ${headRef.object.sha} -->`,
+        body: promotion.allowed
+          ? `${body}\n\n<!-- promotion-head: ${headRef.object.sha} -->`
+          : `${body}\n\nAutomatic promotion blocked: ${promotion.reason}`,
       });
-      core.info(`Weekly promotion authorized for ${headRef.object.sha}.`);
+      core.info(promotion.allowed ? `Weekly promotion authorized for ${headRef.object.sha}.` : promotion.reason);
     }
   };
   // Finish the reverse sync first to avoid testing a forward PR against stale history.
