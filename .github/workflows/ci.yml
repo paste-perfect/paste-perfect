@@ -13,6 +13,10 @@ on:
         description: Generate Linux visual and clipboard baselines for review
         type: boolean
         default: false
+      verify_delivery:
+        description: Check deployment credentials and artifacts without publishing
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -158,10 +162,73 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
 
+  delivery-preflight:
+    name: Deployment preflight
+    if: github.event_name == 'workflow_dispatch' && inputs.verify_delivery
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+      statuses: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: "{production,preview}"
+          path: artifacts
+      - name: Verify both artifacts
+        env:
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          EXPECTED_TARGET=production node scripts/verify-artifact.mjs artifacts/production
+          EXPECTED_TARGET=preview node scripts/verify-artifact.mjs artifacts/preview
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: token
+        with:
+          client-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+      - name: Verify automation API access
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs" --silent
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/statuses" --silent
+          GH_TOKEN="$APP_TOKEN" gh api "repos/$GITHUB_REPOSITORY/pulls" --silent
+          echo "Check/status reader and App pull-request access verified."
+      - name: Dry-run production write and release
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          gh auth setup-git
+          git push --dry-run "https://github.com/$GITHUB_REPOSITORY.git" "HEAD:refs/heads/automation/deployment-check-$GITHUB_RUN_ID"
+          npx semantic-release --dry-run --no-ci --branches "$GITHUB_REF_NAME"
+      - name: Dry-run preview write
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_KEY: ${{ secrets.DEPLOY_KEY_PREVIEW }}
+        run: |
+          umask 077
+          key=$(mktemp)
+          hosts=$(mktemp)
+          trap 'rm -f "$key" "$hosts"' EXIT
+          printf '%s\n' "$PREVIEW_KEY" > "$key"
+          gh api meta --jq '.ssh_keys[] | "github.com " + .' > "$hosts"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$hosts -o StrictHostKeyChecking=yes"
+          git push --dry-run git@github.com:paste-perfect/paste-perfect-test.git "HEAD:refs/heads/automation/deployment-check-$GITHUB_RUN_ID"
+          echo "Preview write authenticated; no branches or deployments created."
+
   gate:
     name: CI Gate
     runs-on: ubuntu-24.04
-    needs: [pr-title, lint, lockfile-integrity, build, test, snapshots, security]
+    needs: [pr-title, lint, lockfile-integrity, build, test, snapshots, security, delivery-preflight]
     if: always()
     steps:
       - name: Require every validation job to succeed
@@ -169,6 +236,7 @@ jobs:
           RESULTS: ${{ toJSON(needs) }}
           EVENT_NAME: ${{ github.event_name }}
           UPDATE_SNAPSHOTS: ${{ inputs.update_snapshots }}
+          VERIFY_DELIVERY: ${{ inputs.verify_delivery }}
         run: |
           if [ "$UPDATE_SNAPSHOTS" = "true" ]; then echo "Baseline generation requires review and a new normal CI run."; exit 1; fi
-          node -e 'const jobs = JSON.parse(process.env.RESULTS); for (const [name, job] of Object.entries(jobs)) { if (name === "pr-title" && process.env.EVENT_NAME !== "pull_request") continue; if (job.result !== "success") { console.error(name + ": " + job.result); process.exitCode = 1; } }'
+          node -e 'const jobs = JSON.parse(process.env.RESULTS); for (const [name, job] of Object.entries(jobs)) { if (name === "pr-title" && process.env.EVENT_NAME !== "pull_request") continue; if (name === "delivery-preflight" && process.env.VERIFY_DELIVERY !== "true") continue; if (job.result !== "success") { console.error(name + ": " + job.result); process.exitCode = 1; } }'

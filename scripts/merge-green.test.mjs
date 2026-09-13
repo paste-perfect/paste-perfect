@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import mergeGreen from "../.github/scripts/merge-green.cjs";
 import policy from "../.github/scripts/merge-policy.cjs";
 
-function fixture({ behind = 0, mergeError, green = true } = {}) {
+function fixture({ behind = 0, mergeError, updateError, green = true } = {}) {
   const merges = [];
+  const updates = [];
   const pr = {
     number: 1,
     state: "open",
@@ -20,6 +21,10 @@ function fixture({ behind = 0, mergeError, green = true } = {}) {
       pulls: {
         list: () => {},
         get: async ({ pull_number }) => ({ data: { ...pr, number: pull_number } }),
+        updateBranch: async (request) => {
+          updates.push(request);
+          if (updateError) throw Object.assign(new Error("Cannot update branch"), { status: updateError });
+        },
         merge: async (request) => {
           merges.push(request);
           if (mergeError) throw Object.assign(new Error("Branch changed"), { status: mergeError });
@@ -43,7 +48,11 @@ function fixture({ behind = 0, mergeError, green = true } = {}) {
           }))
         : [],
   };
-  return { merges, args: { github, readGithub, context: { repo: { owner: "org", repo: "repo" } }, core: { info() {} } } };
+  return {
+    merges,
+    updates,
+    args: { github, readGithub, context: { repo: { owner: "org", repo: "repo" } }, core: { info() {}, warning() {} } },
+  };
 }
 
 test("uses the read-only client for checks and merges only one validated head", async () => {
@@ -65,4 +74,21 @@ test("outdated branches and failed checks are never submitted for merging", asyn
 test("a changed head is left unmerged, but permission failures remain visible", async () => {
   await mergeGreen(fixture({ mergeError: 409 }).args);
   await assert.rejects(mergeGreen(fixture({ mergeError: 403 }).args), { status: 403 });
+});
+
+test("refreshes outdated Renovate branches even when old checks failed", async () => {
+  const { args, merges, updates } = fixture({ behind: 1, green: false });
+  await mergeGreen(args);
+  assert.deepEqual(merges, []);
+  assert.equal(updates.length, 2);
+  assert.deepEqual(updates[0], { owner: "org", repo: "repo", pull_number: 1, expected_head_sha: "tested-sha" });
+});
+
+test("branch update conflicts never merge and permission errors remain visible", async () => {
+  for (const updateError of [405, 409, 422]) {
+    const { args, merges } = fixture({ behind: 1, updateError });
+    await mergeGreen(args);
+    assert.deepEqual(merges, []);
+  }
+  await assert.rejects(mergeGreen(fixture({ behind: 1, updateError: 403 }).args), { status: 403 });
 });

@@ -6,6 +6,26 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
   for (const candidate of prs) {
     const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: candidate.number });
     if (!eligible(pr)) continue;
+    const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
+      owner,
+      repo,
+      basehead: `${pr.base.ref}...${pr.head.sha}`,
+    });
+    if (comparison.behind_by && pr.head.ref.startsWith("renovate/")) {
+      // Migration commits can prevent Renovate's own rebase. Preserve them and rerun CI.
+      try {
+        await github.rest.pulls.updateBranch({ owner, repo, pull_number: pr.number, expected_head_sha: pr.head.sha });
+        core.info(`#${pr.number}: updated from dev; waiting for new checks.`);
+      } catch (error) {
+        if (![405, 409, 422].includes(error.status)) throw error;
+        core.warning(`#${pr.number}: branch update deferred: ${error.message}`);
+      }
+      continue;
+    }
+    if (comparison.behind_by || pr.mergeable !== true) {
+      core.info(`#${pr.number} needs a base update or conflict resolution.`);
+      continue;
+    }
     const checks = await readGithub.paginate(readGithub.rest.checks.listForRef, { owner, repo, ref: pr.head.sha, per_page: 100 });
     const statuses = await readGithub.paginate(readGithub.rest.repos.listCommitStatusesForRef, {
       owner,
@@ -14,15 +34,6 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
       per_page: 100,
     });
     if (!checksPass(checks, statuses, pr.number)) continue;
-    const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
-      owner,
-      repo,
-      basehead: `${pr.base.ref}...${pr.head.sha}`,
-    });
-    if (comparison.behind_by || pr.mergeable !== true) {
-      core.info(`#${pr.number} needs a base update or conflict resolution.`);
-      continue;
-    }
     // Use the expected head SHA and protected branches; never bypass required checks.
     try {
       const { data } = await github.rest.pulls.merge({
