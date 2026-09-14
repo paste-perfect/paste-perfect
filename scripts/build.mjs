@@ -6,13 +6,7 @@ if (!base) throw new Error("Expected production, preview or docker build target.
 const sha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const result = spawnSync(
   process.execPath,
-  [
-    "node_modules/@angular/cli/bin/ng.js",
-    "build",
-    "--configuration=production",
-    `--base-href=${base}`,
-    `--define=BUILD_VERSION=${JSON.stringify(sha.slice(0, 7))}`,
-  ],
+  ["node_modules/@angular/cli/bin/ng.js", "build", "--configuration=production", `--base-href=${base}`],
   { stdio: "inherit" }
 );
 if (result.error) throw result.error;

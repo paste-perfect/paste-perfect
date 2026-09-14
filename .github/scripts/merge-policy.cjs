@@ -1,13 +1,5 @@
-const requiredChecks = [
-  "CI Gate",
-  "Lint PR Title (Conventional Commits)",
-  "Lint & Format",
-  "Lockfile Integrity",
-  "Build (production)",
-  "Unit Tests",
-  "Snapshot Tests (Playwright)",
-  "Trivy — Filesystem Vulnerability Scan",
-];
+// CI Gate requires either the full suite or proven dev validation reuse.
+const requiredChecks = ["CI Gate", "Lint PR Title (Conventional Commits)"];
 const orchestrationChecks = new Set(["Merge validated updates", "Authorize weekly promotion"]);
 
 function eligible(pr) {

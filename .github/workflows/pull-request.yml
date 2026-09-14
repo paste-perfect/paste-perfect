@@ -1,0 +1,82 @@
+name: PR validation
+# The immutable run name identifies which head/base pair received full validation.
+run-name: "${{ github.event.action == 'edited' && !github.event.changes.base && 'Metadata' || 'Validation' }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+on:
+  pull_request:
+    branches: [main, dev]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  merge_group:
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'edited' && !github.event.changes.base && 'metadata' || 'code' }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  title:
+    name: Lint PR Title (Conventional Commits)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  route:
+    name: Select validation
+    runs-on: ubuntu-24.04
+    outputs:
+      reuse: ${{ steps.route.outputs.reuse }}
+    steps:
+      - id: route
+        env:
+          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+          SYNC: ${{ github.event.pull_request.head.ref == 'dev' && github.event.pull_request.base.ref == 'main' }}
+          METADATA: ${{ github.event.action == 'edited' && !github.event.changes.base }}
+        run: |
+          if [ "$SAME_REPO" = true ] && { [ "$SYNC" = true ] || [ "$METADATA" = true ]; }; then
+            echo "reuse=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "reuse=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  validate:
+    name: Validate
+    needs: route
+    if: needs.route.outputs.reuse == 'false'
+    uses: ./.github/workflows/validation.yml
+
+  reuse:
+    name: Reuse validation
+    needs: route
+    if: needs.route.outputs.reuse == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: await require('./.github/scripts/reuse-validation.cjs')({ github, context, core });
+
+  gate:
+    # Keep the required check name fixed on every PR event, including metadata edits.
+    name: CI Gate
+    needs: [route, validate, reuse]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          ROUTE: ${{ needs.route.result }}
+          REUSE: ${{ needs.route.outputs.reuse }}
+          VALIDATION: ${{ needs.validate.result }}
+          REUSED: ${{ needs.reuse.result }}
+        run: |
+          test "$ROUTE" = success
+          if [ "$REUSE" = true ]; then test "$REUSED" = success; else test "$VALIDATION" = success; fi

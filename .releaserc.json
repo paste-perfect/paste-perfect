@@ -15,6 +15,15 @@
         "preset": "conventionalcommits",
         "releaseRules": [
           {
+            "breaking": true,
+            "release": "major"
+          },
+          {
+            "type": "chore",
+            "scope": "deps*",
+            "release": "patch"
+          },
+          {
             "type": "docs",
             "scope": "README",
             "release": "patch"

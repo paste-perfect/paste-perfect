@@ -7,6 +7,7 @@ export function validateMetadata(metadata, expectedSha) {
   if (metadata.target !== "preview" || metadata.base !== "/paste-perfect-test/") {
     throw new Error("Expected a preview build with the test base path.");
   }
+  if (!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(metadata.version ?? "")) throw new Error("Preview is missing its release version tag.");
   if (expectedSha && metadata.sha !== expectedSha) throw new Error("Pages has not published the expected source commit yet.");
   return metadata.sha;
 }

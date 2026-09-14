@@ -1,5 +1,6 @@
 {
   "name": "paste-perfect",
+  "packageManager": "npm@11.19.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
