@@ -26,6 +26,8 @@ Sync PRs are reused while open and recreated for later changes. Production requi
 | [delivery-preflight.yml](../.github/workflows/delivery-preflight.yml) | Manual artifact and credential dry run, using an existing successful push CI run. No rebuild or publishing.                                                                                                                       |
 | [security.yml](../.github/workflows/security.yml)                     | Sunday **04:00 UTC**, or manually, publishes the GitHub Security report. CI also has a required vulnerability scan.                                                                                                               |
 
+**Scheduled times are requests, not guarantees.** GitHub queues cron workflows on a best-effort basis; runs here have started several hours after their slot, and a slot can be skipped entirely. Treat every schedule above as a backstop — the event-driven triggers are the path that must work. Merge queues are not enabled on this repository, so the `merge_group` trigger stays inactive until a ruleset turns one on.
+
 **Avoiding duplicate validation:** dev → main reuses successful dev push CI for the exact head, provided main is already included in dev. Same-repository title/body edits reuse code validation identified by the immutable PR number, head and base in its run name. They keep a real **CI Gate** and never cancel code validation. Retargeting the base runs validation again. Fork PRs always run the full suite. A push after merging validates the new branch commit and produces its delivery artifacts.
 
 ## Scripts and versions
