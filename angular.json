@@ -44,12 +44,23 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "baseHref": "/paste-perfect/",
-            "polyfills": ["zone.js"],
+            "polyfills": [],
+            "externalDependencies": ["fs/promises", "module"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "web-tree-sitter.wasm",
+                "input": "node_modules/web-tree-sitter",
+                "output": "/"
+              },
+              {
+                "glob": "tree-sitter-java_orchard.wasm",
+                "input": "node_modules/prettier-plugin-java/dist",
+                "output": "/"
               }
             ],
             "styles": ["src/styles.scss"],

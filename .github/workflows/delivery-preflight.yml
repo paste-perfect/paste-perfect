@@ -1,0 +1,91 @@
+name: Deployment preflight
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful dev/main push CI run ID containing the deployment artifacts
+        required: true
+        type: string
+permissions: {}
+jobs:
+  delivery-preflight:
+    name: Deployment preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      statuses: read
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        id: source
+        env:
+          RUN_ID: ${{ inputs.run_id }}
+        with:
+          script: |
+            const { data: run } = await github.rest.actions.getWorkflowRun({ ...context.repo, run_id: Number(process.env.RUN_ID) });
+            if (run.path !== '.github/workflows/ci.yml' || run.event !== 'push' || run.conclusion !== 'success' ||
+                run.head_repository.full_name !== context.payload.repository.full_name || !['dev', 'main'].includes(run.head_branch)) {
+              throw new Error('Select a successful dev/main push CI run from this repository.');
+            }
+            core.setOutput('sha', run.head_sha);
+            core.setOutput('branch', run.head_branch);
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+          pattern: "{production,preview}"
+          path: artifacts
+      - name: Verify both artifacts
+        env:
+          TESTED_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          EXPECTED_TARGET=production node scripts/verify-artifact.mjs artifacts/production
+          EXPECTED_TARGET=preview node scripts/verify-artifact.mjs artifacts/preview
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: token
+        with:
+          client-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+      - name: Verify automation API access
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_TOKEN: ${{ steps.token.outputs.token }}
+          TESTED_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/commits/$TESTED_SHA/check-runs" --silent
+          gh api "repos/$GITHUB_REPOSITORY/commits/$TESTED_SHA/statuses" --silent
+          GH_TOKEN="$APP_TOKEN" gh api "repos/$GITHUB_REPOSITORY/pulls" --silent
+          echo "Check/status reader and App pull-request access verified."
+      - name: Dry-run production write and release
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+          RELEASE_BRANCH: ${{ steps.source.outputs.branch }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          gh auth setup-git
+          git push --dry-run "https://github.com/$GITHUB_REPOSITORY.git" "HEAD:refs/heads/automation/deployment-check-$GITHUB_RUN_ID"
+          export GITHUB_REF="refs/heads/$RELEASE_BRANCH" GITHUB_SHA="$RELEASE_SHA" GITHUB_EVENT_NAME=push
+          npx semantic-release --dry-run --no-ci --branches "$RELEASE_BRANCH"
+      - name: Dry-run preview write
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_KEY: ${{ secrets.DEPLOY_KEY_PREVIEW }}
+        run: |
+          umask 077
+          key=$(mktemp)
+          hosts=$(mktemp)
+          trap 'rm -f "$key" "$hosts"' EXIT
+          printf '%s\n' "$PREVIEW_KEY" > "$key"
+          gh api meta --jq '.ssh_keys[] | "github.com " + .' > "$hosts"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$hosts -o StrictHostKeyChecking=yes"
+          git push --dry-run git@github.com:paste-perfect/paste-perfect-test.git "HEAD:refs/heads/automation/deployment-check-$GITHUB_RUN_ID"
+          echo "Preview write authenticated; no branches or deployments created."

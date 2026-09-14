@@ -1,5 +1,5 @@
 import { LanguageDefinition } from "@types";
-import { MessageService } from "primeng/api";
+import { MessageService } from "@openng/optimus-ui/api";
 import { inject, Injectable } from "@angular/core";
 import * as Prism from "prismjs";
 import { LocationStrategy } from "@angular/common";
@@ -10,7 +10,7 @@ import { searchLanguageByValue } from "@utils/languages-utils";
 })
 export class PrismLanguageLoaderService {
   /**
-   * PrimeNGs messages service for displaying toasts to the user
+   * Optimus UI messages service for displaying toasts to the user
    */
   private messageService: MessageService = inject(MessageService);
 
@@ -27,7 +27,6 @@ export class PrismLanguageLoaderService {
    */
   public async loadPrismLanguage(language: LanguageDefinition): Promise<void> {
     const grammarId = language?.prismConfiguration?.grammar;
-    console.log(Prism.languages);
 
     if (!grammarId || Prism.languages[grammarId]) {
       return;

@@ -2,7 +2,6 @@ import { defineConfig, devices } from "@playwright/test";
 import type { PlaywrightTestConfig } from "@playwright/test";
 import path from "path";
 import env from "./playwright.env-vars";
-import fs from "fs";
 
 // ---------------------------------------------------------------------------
 // Paths & URLs
@@ -14,15 +13,6 @@ const BASE_URL = env.PLAYWRIGHT_BASE_URL || `http://${REACH_HOST}:${WEB_SERVER_P
 
 const REPO_ROOT = path.resolve(__dirname, "../../");
 const TEST_DIR = path.join(REPO_ROOT, "src/tests/snapshot-tests");
-
-if (!fs.existsSync(REPO_ROOT)) {
-  throw new Error(`\n❌ CRITICAL ERROR: Repository root directory not found at: ${REPO_ROOT}\n`);
-}
-if (!fs.existsSync(TEST_DIR)) {
-  throw new Error(
-    `\n❌ CRITICAL ERROR: Test directory not found at: ${TEST_DIR}\n👉 Ensure you are mapping the volumes correctly in docker-compose-new.yml.\n`
-  );
-}
 
 const HTML_REPORT_DIR = path.join(REPO_ROOT, "reports/playwright/html-report");
 const JUNIT_REPORT_FILE = path.join(REPO_ROOT, "reports/playwright/report.xml");
@@ -64,6 +54,7 @@ export default defineConfig({
   snapshotPathTemplate: "{testDir}/snapshots/{testFileName}/{arg}{ext}",
   fullyParallel: true,
   forbidOnly: env.CI,
+  updateSnapshots: env.CI ? "none" : "missing",
   retries: env.CI ? 1 : 0,
   workers: env.CI ? 1 : undefined,
   reporter,

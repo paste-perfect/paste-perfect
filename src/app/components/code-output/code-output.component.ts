@@ -1,8 +1,8 @@
 import { Component, inject, Signal, viewChild } from "@angular/core";
-import { Button } from "primeng/button";
-import { Tooltip } from "primeng/tooltip";
-import { Chip, ChipPassThroughOptions } from "primeng/chip";
-import { TooltipOptions } from "primeng/api";
+import { Button } from "@openng/optimus-ui/button";
+import { Tooltip } from "@openng/optimus-ui/tooltip";
+import { Chip, ChipPassThroughOptions } from "@openng/optimus-ui/chip";
+import { TooltipOptions } from "@openng/optimus-ui/api";
 import { CodeService } from "@services/code.service";
 import { LanguageService } from "@services/language.service";
 import { PrismHighlightService } from "@services/prism/prism-highlight.service";
