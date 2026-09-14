@@ -2,10 +2,22 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import syncPr from "../.github/scripts/sync-pr.cjs";
 
-function fixture({ reverse = false, forward = true, existing = false, conflict = false, lifecycle = true } = {}) {
+const syncBranch = "automation/main-to-dev-sync";
+
+function fixture({
+  reverse = false,
+  forward = true,
+  existing = false,
+  conflict = false,
+  lifecycle = true,
+  missing = false,
+  unreadable = 0,
+} = {}) {
   const created = [],
     updated = [],
-    merged = [];
+    merged = [],
+    refs = [];
+  let unreadableLeft = unreadable;
   const github = {
     paginate: async () => [{ number: 8 }],
     rest: {
@@ -20,12 +32,19 @@ function fixture({ reverse = false, forward = true, existing = false, conflict =
         }),
         merge: async ({ head }) => {
           if (conflict) throw Object.assign(new Error("Merge conflict"), { status: 409 });
+          if (unreadableLeft-- > 0) throw Object.assign(new Error("Base does not exist"), { status: 404 });
           merged.push(head);
         },
         listPullRequestsAssociatedWithCommit() {},
       },
       git: {
-        getRef: async ({ ref }) => ({ data: { object: { sha: ref === "heads/main" ? "main-sha" : "current-dev-sha" } } }),
+        getRef: async ({ ref }) => {
+          if (missing && ref === `heads/${syncBranch}` && !refs.length) throw Object.assign(new Error("Not Found"), { status: 404 });
+          return { data: { object: { sha: ref === "heads/main" ? "main-sha" : "current-dev-sha" } } };
+        },
+        createRef: async (request) => {
+          refs.push(request);
+        },
       },
       pulls: {
         get: async () => ({
@@ -50,7 +69,7 @@ function fixture({ reverse = false, forward = true, existing = false, conflict =
       },
     },
   };
-  return { created, updated, merged, args: { github, context: { repo: { owner: "org", repo: "repo" } }, core: { info() {} } } };
+  return { created, updated, merged, refs, args: { github, context: { repo: { owner: "org", repo: "repo" } }, core: { info() {} } } };
 }
 
 test("regular runs open a sync PR without authorizing production", async () => {
@@ -95,4 +114,28 @@ test("identical branches do not create empty PRs", async () => {
   await syncPr({ ...state.args, weekly: true });
   assert.deepEqual(state.created, []);
   assert.deepEqual(state.updated, []);
+});
+
+test("a sync branch deleted with the previous PR is recreated without a redundant dev merge", async () => {
+  const state = fixture({ reverse: true, forward: false, missing: true });
+  await syncPr(state.args);
+  assert.deepEqual(state.refs, [{ owner: "org", repo: "repo", ref: `refs/heads/${syncBranch}`, sha: "current-dev-sha" }]);
+  assert.deepEqual(state.merged, ["main"]);
+  assert.equal(state.created[0].head, syncBranch);
+});
+
+test("a recreated sync branch that is not readable yet is retried instead of failing the run", async () => {
+  const state = fixture({ reverse: true, forward: false, missing: true, unreadable: 2 });
+  const waits = [];
+  await syncPr({ ...state.args, wait: async (ms) => void waits.push(ms) });
+  assert.deepEqual(state.merged, ["main"]);
+  assert.deepEqual(waits, [2000, 2000]);
+  assert.equal(state.created[0].head, syncBranch);
+});
+
+test("a sync branch that stays unreadable fails without opening a PR", async () => {
+  const state = fixture({ reverse: true, forward: false, missing: true, unreadable: 99 });
+  await assert.rejects(syncPr({ ...state.args, wait: async () => {}, attempts: 3 }), { status: 404 });
+  assert.deepEqual(state.created, []);
+  assert.deepEqual(state.merged, []);
 });
