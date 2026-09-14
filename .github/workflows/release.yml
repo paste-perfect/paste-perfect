@@ -89,6 +89,8 @@ jobs:
           branch: gh-pages
           folder: site
           clean: true
+          # github.sha is this workflow_run's default-branch commit, not the deployed revision.
+          commit-message: "Deploy preview ${{ github.event.workflow_run.head_sha }}"
           ssh-key: ${{ secrets.DEPLOY_KEY_PREVIEW }}
       - name: Deploy production
         if: steps.current.outputs.deploy == 'true' && github.event.workflow_run.head_branch == 'main'
@@ -98,6 +100,7 @@ jobs:
           branch: gh-pages
           folder: site
           clean: true
+          commit-message: "Deploy production ${{ github.event.workflow_run.head_sha }}"
 
   verify-preview:
     needs: release
