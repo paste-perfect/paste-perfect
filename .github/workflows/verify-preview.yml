@@ -32,11 +32,9 @@ jobs:
           ref: ${{ steps.deployment.outputs.sha }}
           path: deployed-source
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: ./.github/actions/setup
         with:
-          node-version-file: deployed-source/.node-version
-      - run: npm ci --no-audit --fund=false
-        working-directory: deployed-source
+          directory: deployed-source
       - run: npx playwright install --with-deps chromium
         working-directory: deployed-source
       - name: Smoke-test the published source revision

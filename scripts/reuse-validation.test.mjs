@@ -10,6 +10,7 @@ const successfulRun = {
   head_repository: { full_name: "org/repo" },
   status: "completed",
   conclusion: "success",
+  run_attempt: 1,
 };
 function fixture({ runs = [[successfulRun]], behind = 0, changedHead = false, changedBase = false, foreign = false } = {}) {
   const outputs = [],
@@ -17,6 +18,10 @@ function fixture({ runs = [[successfulRun]], behind = 0, changedHead = false, ch
   let reads = 0;
   const pr = { number: 7, head: { sha: "head", ref: "dev", repo: { full_name: "org/repo" } }, base: { ref: "main", sha: "base" } };
   const github = {
+    paginate: async (_method, request) => {
+      assert.equal(request.attempt_number, 1);
+      return [{ name: "CI Gate", status: "completed", conclusion: "failure" }];
+    },
     rest: {
       pulls: {
         get: async () => ({
@@ -33,7 +38,10 @@ function fixture({ runs = [[successfulRun]], behind = 0, changedHead = false, ch
           return { data: { behind_by: typeof behind === "function" ? behind(comparisons.length) : behind } };
         },
       },
-      actions: { listWorkflowRuns: async () => ({ data: { workflow_runs: runs[Math.min(reads++, runs.length - 1)] } }) },
+      actions: {
+        listWorkflowRuns: async () => ({ data: { workflow_runs: runs[Math.min(reads++, runs.length - 1)] } }),
+        listJobsForWorkflowRunAttempt() {},
+      },
     },
   };
   return {
@@ -142,4 +150,37 @@ test("retargeting a normal PR requires code validation", async () => {
   const state = metadataFixture();
   state.args.context.payload.changes.base = { ref: { from: "main" } };
   await assert.rejects(reuseValidation(state.args), /Only sync PRs and metadata edits/);
+});
+
+test("correcting a failed title reuses the successful code gate from that exact attempt", async () => {
+  const state = metadataFixture({ runs: [[{ ...prRun, conclusion: "failure", run_attempt: 2 }]] });
+  state.args.github.paginate = async (_method, request) => {
+    assert.equal(request.run_id, prRun.id);
+    assert.equal(request.attempt_number, 2);
+    return [
+      { name: "CI Gate", status: "completed", conclusion: "success" },
+      { name: "Validate / Validation result", status: "completed", conclusion: "success" },
+      { name: "Lint PR Title (Conventional Commits)", status: "completed", conclusion: "failure" },
+    ];
+  };
+  await reuseValidation(state.args);
+  assert.deepEqual(state.outputs, [["run-id", prRun.id]]);
+});
+
+test("title recovery cannot hide another failing job or a cancelled code run", async () => {
+  for (const conclusion of ["failure", "cancelled"]) {
+    const state = metadataFixture({ runs: [[{ ...prRun, conclusion }]] });
+    state.args.github.paginate = async () => [
+      { name: "CI Gate", status: "completed", conclusion: "success" },
+      { name: "Lint PR Title (Conventional Commits)", status: "completed", conclusion: "failure" },
+      { name: "Extra validation", status: "completed", conclusion: "failure" },
+    ];
+    await assert.rejects(reuseValidation(state.args), /Validation run 10/);
+  }
+});
+
+test("an unexplained failed run cannot be treated as a title-only failure", async () => {
+  const state = metadataFixture({ runs: [[{ ...prRun, conclusion: "failure" }]] });
+  state.args.github.paginate = async () => [{ name: "CI Gate", status: "completed", conclusion: "success" }];
+  await assert.rejects(reuseValidation(state.args), /Validation run 10/);
 });

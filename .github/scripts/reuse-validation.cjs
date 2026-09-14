@@ -44,8 +44,25 @@ module.exports = async ({ github, context, core, wait = setTimeout, attempts = 4
       )
       .sort((a, b) => b.id - a.id)[0];
     if (run?.status === "completed") {
-      if (run.conclusion !== "success")
-        throw new Error(`Validation run ${run.id} is ${run.conclusion}; rerun that validation after resolving the failure.`);
+      let codePassed = run.conclusion === "success";
+      if (!sync && run.conclusion === "failure") {
+        // A corrected PR title must not rerun already-passing code checks.
+        // Read only this attempt: an earlier successful gate cannot hide a failed retry.
+        const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+          owner,
+          repo,
+          run_id: run.id,
+          attempt_number: run.run_attempt,
+          per_page: 100,
+        });
+        codePassed =
+          jobs.some((job) => job.name === "Lint PR Title (Conventional Commits)" && job.conclusion === "failure") &&
+          jobs.some((job) => job.name === "CI Gate" && job.status === "completed" && job.conclusion === "success") &&
+          jobs
+            .filter((job) => job.name !== "Lint PR Title (Conventional Commits)")
+            .every((job) => job.status === "completed" && ["success", "skipped"].includes(job.conclusion));
+      }
+      if (!codePassed) throw new Error(`Validation run ${run.id} is ${run.conclusion}; rerun that validation after resolving the failure.`);
       await assertCurrent();
       core.info(`Reused successful ${sync ? "dev push" : "PR"} validation ${run.id} for ${expected.head.sha}.`);
       core.setOutput("run-id", run.id);

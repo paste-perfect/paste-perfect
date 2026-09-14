@@ -31,3 +31,17 @@ test("CI changes make patch releases while history syncs do not release", async 
     assert.equal(await analyzeCommits(optionsFor("@semantic-release/commit-analyzer"), { ...context, commits: [{ message }] }), expected);
   }
 });
+
+test("dependency updates release patches and explicit breaking changes remain major", async () => {
+  for (const [message, expected] of [
+    ["chore(deps): update Angular", "patch"],
+    ["chore(deps-dev): update Playwright", "patch"],
+    ["chore(deps): lock file maintenance", "patch"],
+    ["chore(deps)!: require a new runtime", "major"],
+    ["ci!: remove a supported deployment target", "major"],
+    ["feat: add a formatter", "minor"],
+    ["chore(sync): merge main into dev", null],
+  ]) {
+    assert.equal(await analyzeCommits(optionsFor("@semantic-release/commit-analyzer"), { ...context, commits: [{ message }] }), expected);
+  }
+});

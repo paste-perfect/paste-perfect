@@ -1,6 +1,6 @@
 # Contributing
 
-Use Node from `.node-version` and npm 11. Run `npm ci`, then `npm start`.
+Use Node from `.node-version` and the npm version in `package.json`'s `packageManager`. Run `npm ci`, then `npm start`.
 
 Open PRs against `dev` with a Conventional Commit title, for example `fix: preserve clipboard indentation`. CI checks the merged result before automation can merge it.
 
