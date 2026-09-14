@@ -33,6 +33,14 @@ jobs:
         with:
           github-token: ${{ steps.token.outputs.token }}
           script: |
-            await require('./.github/scripts/sync-pr.cjs')({ github, context, core, weekly: true });
+            // Report a failed sync, but still evaluate the dependency PRs it does not affect.
+            let syncError;
+            try {
+              await require('./.github/scripts/sync-pr.cjs')({ github, context, core, weekly: true });
+            } catch (error) {
+              syncError = error;
+              core.error(`Sync branch maintenance failed: ${error.message}`);
+            }
             const readGithub = new github.constructor({ auth: process.env.CHECKS_TOKEN });
             await require('./.github/scripts/merge-green.cjs')({ github, readGithub, context, core });
+            if (syncError) throw syncError;
