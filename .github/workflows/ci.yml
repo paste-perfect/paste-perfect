@@ -1,11 +1,7 @@
 name: CI — Test, Lint & Build
 on:
-  pull_request:
-    branches: [main, dev]
-    types: [opened, synchronize, reopened, edited, ready_for_review]
   push:
     branches: [main, dev]
-  merge_group:
   workflow_dispatch:
     inputs:
       update_snapshots:
@@ -13,46 +9,22 @@ on:
         type: boolean
         default: false
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'edited' && !github.event.changes.base && 'metadata' || 'code' }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   validate:
     name: Validate
-    if: ${{ !(github.event.action == 'edited' && !github.event.changes.base) && !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'dev' && github.event.pull_request.base.ref == 'main') }}
     uses: ./.github/workflows/validation.yml
     with:
       update_snapshots: ${{ inputs.update_snapshots || false }}
-
-  sync-validation:
-    name: Verify dev validation
-    if: github.event_name == 'pull_request' && !(github.event.action == 'edited' && !github.event.changes.base) && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'dev' && github.event.pull_request.base.ref == 'main'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 12
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: await require('./.github/scripts/reuse-validation.cjs')({ github, context, core });
-
   gate:
-    name: ${{ github.event.action == 'edited' && !github.event.changes.base && 'Metadata only' || github.event_name == 'push' && 'Branch validation' || 'CI Gate' }}
-    needs: [validate, sync-validation]
+    name: Branch validation
+    needs: validate
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - env:
-          METADATA_ONLY: ${{ github.event.action == 'edited' && !github.event.changes.base }}
-          REUSE_DEV: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'dev' && github.event.pull_request.base.ref == 'main' }}
           VALIDATION: ${{ needs.validate.result }}
-          SYNC_VALIDATION: ${{ needs.sync-validation.result }}
-        run: |
-          if [ "$METADATA_ONLY" = "true" ]; then echo "PR metadata changed; existing code validation is retained."; exit 0; fi
-          if [ "$REUSE_DEV" = "true" ]; then test "$SYNC_VALIDATION" = success; else test "$VALIDATION" = success; fi
+        run: test "$VALIDATION" = success
