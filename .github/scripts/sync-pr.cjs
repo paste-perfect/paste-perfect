@@ -1,7 +1,20 @@
+const { setTimeout: sleep } = require("node:timers/promises");
 const promotionPolicy = require("./promotion-policy.cjs");
 
-module.exports = async ({ github, context, core, weekly = false }) => {
+module.exports = async ({ github, context, core, weekly = false, wait = sleep, attempts = 5 }) => {
   const { owner, repo } = context.repo;
+  // A branch created moments ago can still 404 on the merge API until GitHub replicates the ref.
+  const merge = async (base, head, commit_message) => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await github.rest.repos.merge({ owner, repo, base, head, commit_message });
+      } catch (error) {
+        if (error.status !== 404 || attempt >= attempts) throw error;
+        core.info(`${base} is not readable yet; retrying the ${head} merge.`);
+        await wait(2000);
+      }
+    }
+  };
   const ensure = async (head, base) => {
     const comparison = await github.rest.repos.compareCommitsWithBasehead({ owner, repo, basehead: `${base}...${head}` });
     if (!comparison.data.ahead_by || (base === "main" && !comparison.data.files?.length)) {
@@ -10,16 +23,20 @@ module.exports = async ({ github, context, core, weekly = false }) => {
     }
     if (base === "dev") {
       const branch = "automation/main-to-dev-sync";
+      // Merging the previous sync PR deletes this branch, so recreate it from dev before every reverse sync.
+      let recreated = false;
       try {
         await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
       } catch (error) {
         if (error.status !== 404) throw error;
         const { data: dev } = await github.rest.git.getRef({ owner, repo, ref: "heads/dev" });
         await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: dev.object.sha });
+        recreated = true;
       }
       // Preserve both histories. A conflict fails explicitly instead of choosing whole files.
-      await github.rest.repos.merge({ owner, repo, base: branch, head: "dev", commit_message: "chore(sync): update sync branch from dev" });
-      await github.rest.repos.merge({ owner, repo, base: branch, head: "main", commit_message: "chore(sync): merge main into dev" });
+      // A branch just recreated from dev already carries it.
+      if (!recreated) await merge(branch, "dev", "chore(sync): update sync branch from dev");
+      await merge(branch, "main", "chore(sync): merge main into dev");
       head = branch;
     }
     const { data: headRef } = await github.rest.git.getRef({ owner, repo, ref: `heads/${head}` });
