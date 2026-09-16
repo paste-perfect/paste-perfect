@@ -53,3 +53,41 @@ test("metadata from another source commit cannot be stamped for deployment", (t)
   state.write({ sha: "wrong" });
   assert.throws(() => stampRelease(state.dir, state), /checked-out deployment commit/);
 });
+
+// Reproduces the real branch shape: main publishes a stable tag that is merged back into dev,
+// leaving that tag closer to HEAD than the last rc, then a non-releasing commit lands on dev.
+function syncedFixture(t) {
+  const state = fixture(t);
+  const { git } = state;
+  git("commit", "--allow-empty", "-m", "chore(deps): dependency maintenance");
+  git("branch", "release-line", "v2.10.0-rc.1");
+  git("checkout", "release-line");
+  git("commit", "--allow-empty", "-m", "chore(sync): merge dev into main");
+  git("tag", "v2.10.0");
+  git("checkout", "main");
+  git("merge", "--no-ff", "-m", "chore(sync): merge main into dev", "release-line");
+  git("commit", "--allow-empty", "-m", "chore(ci): tooling only, no release");
+  state.metadata.sha = git("rev-parse", "HEAD");
+  return state;
+}
+
+test("a stable tag synced back into dev does not become the preview version", (t) => {
+  const state = syncedFixture(t);
+  assert.equal(state.git("describe", "--tags", "--abbrev=0", "HEAD"), "v2.10.0", "fixture must park the stable tag nearest");
+  state.write();
+  assert.equal(stampRelease(state.dir, state), "v2.10.0-rc.1");
+  assert.equal(JSON.parse(readFileSync(join(state.dir, "deployment.json"), "utf8")).version, "v2.10.0-rc.1");
+});
+
+test("production still selects the stable tag from the same synced history", (t) => {
+  const state = syncedFixture(t);
+  state.write({ target: "production", base: "/paste-perfect/" });
+  assert.equal(stampRelease(state.dir, state), "v2.10.0");
+});
+
+test("preview falls back to a stable tag when no prerelease is reachable", (t) => {
+  const state = fixture(t);
+  state.git("tag", "-d", "v2.10.0-rc.1");
+  state.write();
+  assert.equal(stampRelease(state.dir, state), "v2.9.4");
+});

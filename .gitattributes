@@ -1,0 +1,12 @@
+# Normalize to LF in the repository and in every checkout.
+# Without this, core.autocrlf produces CRLF working copies that fail the
+# endOfLine: "lf" Prettier rule that CI enforces on Linux.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.gif binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
