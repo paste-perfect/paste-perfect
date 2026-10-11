@@ -1,0 +1,8 @@
+{
+  "name": "@semantic-release/npm",
+  "version": "0.0.0-unused",
+  "description": "Replaces semantic-release's default npm plugin, which .releaserc.json does not use, so its bundled npm copy is not installed.",
+  "private": true,
+  "type": "module",
+  "exports": "./index.js"
+}

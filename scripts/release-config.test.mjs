@@ -16,6 +16,13 @@ const context = {
   commits: [{ hash: "a".repeat(40), message: "fix: preserve clipboard indentation" }],
 };
 
+test("release plugins are explicit, so the stubbed npm plugin is never loaded", async () => {
+  // semantic-release falls back to its default plugins, including @semantic-release/npm, only without this list.
+  assert.ok(config.plugins.length > 0);
+  assert.ok(config.plugins.every(([plugin]) => plugin !== "@semantic-release/npm"));
+  await assert.rejects(import("@semantic-release/npm"), /replaced by a stub/);
+});
+
 test("the installed preset and writer render release notes together", async () => {
   const notes = await generateNotes(optionsFor("@semantic-release/release-notes-generator"), context);
   assert.match(notes, /Bug Fixes/);

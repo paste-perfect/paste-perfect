@@ -57,6 +57,7 @@
     "@playwright/test": "1.64.0",
     "@semantic-release/commit-analyzer": "13.0.1",
     "@semantic-release/github": "12.0.10",
+    "@semantic-release/npm": "file:stubs/semantic-release-npm",
     "@semantic-release/release-notes-generator": "14.1.1",
     "@types/node": "24.19.1",
     "@types/prismjs": "1.26.6",
@@ -72,6 +73,9 @@
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.1",
     "vitest": "4.1.11"
+  },
+  "overrides": {
+    "@semantic-release/npm": "$@semantic-release/npm"
   },
   "lint-staged": {
     "*.{ts,js}": [
