@@ -1,6 +1,6 @@
 # Contributing
 
-Use Node from `.node-version` and the npm version in `package.json`'s `packageManager`. Run `npm ci`, then `npm start`.
+Use Node from `.node-version` and the npm version in `package.json`'s `packageManager`. Run `npm ci`, then `npm start`. After changing dependencies, run `npm install` with that npm version and commit `package-lock.json`; CI rejects a lockfile npm would rewrite.
 
 Open PRs against `dev` with a Conventional Commit title, for example `fix: preserve clipboard indentation`. CI checks the merged result before automation can merge it.
 
