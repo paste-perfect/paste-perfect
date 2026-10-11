@@ -17,6 +17,8 @@
   "ignoreUnstable": true,
   "rangeStrategy": "bump",
   "automerge": false,
+  "npmrc": "allow-remote=all",
+  "npmrcMerge": true,
   "postUpdateOptions": ["npmDedupe"],
   "lockFileMaintenance": {
     "enabled": true,

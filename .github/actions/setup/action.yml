@@ -1,9 +1,12 @@
 name: Set up project
-description: Use the pinned Node version and install the exact dependency lockfile.
+description: Use the pinned Node and npm versions and install the dependency lockfile.
 inputs:
   directory:
     description: Checked-out project directory
     default: .
+  lockfile:
+    description: "strict installs the exact lockfile (npm ci); repair regenerates it from package.json when they disagree"
+    default: strict
 runs:
   using: composite
   steps:
@@ -20,6 +23,23 @@ runs:
         if [ "npm@$(npm --version)" != "$npm_spec" ]; then
           npm install --global "$npm_spec" --no-audit --fund=false
         fi
-    - run: npm ci --no-audit --fund=false
+    - name: Install dependencies
       working-directory: ${{ inputs.directory }}
       shell: bash
+      env:
+        MODE: ${{ inputs.lockfile }}
+      run: |
+        case "$MODE" in
+          strict)
+            log="$RUNNER_TEMP/npm-ci.log"
+            if ! npm ci --no-audit --fund=false 2>&1 | tee "$log"; then
+              if grep -q 'package.json and package-lock.json are in sync' "$log"; then
+                echo "::error file=package-lock.json,title=Lockfile out of sync::package-lock.json does not match package.json. Run 'npm install' with npm $(npm --version) and commit package-lock.json. Renovate and sync PRs are repaired automatically by the dependency maintenance workflow."
+              fi
+              exit 1
+            fi
+            ;;
+          # A full install avoids npm 12's lock-only bundled-dependency bug and keeps allow-remote at its default.
+          repair) npm install --no-audit --fund=false ;;
+          *) echo "::error::Unknown lockfile mode '$MODE'."; exit 1 ;;
+        esac
