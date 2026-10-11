@@ -17,7 +17,6 @@
   "ignoreUnstable": true,
   "rangeStrategy": "bump",
   "automerge": false,
-  "gitIgnoredAuthors": ["275831972+paste-perfect-releasebot[bot]@users.noreply.github.com", "releasebot[bot]@users.noreply.github.com"],
   "npmrc": "allow-remote=all",
   "npmrcMerge": true,
   "postUpdateOptions": ["npmDedupe"],

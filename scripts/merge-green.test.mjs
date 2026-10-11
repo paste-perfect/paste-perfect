@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import mergeGreen from "../.github/scripts/merge-green.cjs";
 import policy from "../.github/scripts/merge-policy.cjs";
 
-function fixture({ behind = 0, mergeError, green = true, promotion = false, lifecycle = true } = {}) {
+function fixture({ behind = 0, mergeError, green = true, promotion = false, lifecycle = true, rebaseRequested = false } = {}) {
   const merges = [];
   const updates = [];
+  const labels = [];
   const pr = {
     number: 1,
     state: "open",
@@ -15,6 +16,7 @@ function fixture({ behind = 0, mergeError, green = true, promotion = false, life
     base: { ref: promotion ? "main" : "dev", repo: { full_name: "org/repo" } },
     head: { ref: promotion ? "dev" : "renovate/update", sha: "tested-sha", repo: { full_name: "org/repo" } },
     body: "<!-- promotion-head: tested-sha -->",
+    labels: rebaseRequested ? [{ name: "rebase" }] : [],
   };
   const github = {
     paginate: async (method) => (method === github.rest.pulls.list ? [pr, { ...pr, number: 2 }] : [{ number: 42 }]),
@@ -53,6 +55,7 @@ function fixture({ behind = 0, mergeError, green = true, promotion = false, life
         listPullRequestsAssociatedWithCommit() {},
       },
       git: { getRef: async () => ({ data: { object: { sha: "main-sha" } } }) },
+      issues: { addLabels: async (request) => labels.push(request) },
     },
   };
   const checks = () => {};
@@ -78,6 +81,7 @@ function fixture({ behind = 0, mergeError, green = true, promotion = false, life
   return {
     merges,
     updates,
+    labels,
     args: { github, readGithub, context: { repo: { owner: "org", repo: "repo" } }, core: { info() {}, warning() {} } },
   };
 }
@@ -103,13 +107,21 @@ test("a changed head is left unmerged, but permission failures remain visible", 
   await assert.rejects(mergeGreen(fixture({ mergeError: 403 }).args), { status: 403 });
 });
 
-test("outdated Renovate branches wait for Renovate's rebase instead of a server-side merge", async () => {
+test("outdated Renovate branches request Renovate's rebase instead of a server-side merge", async () => {
   for (const green of [true, false]) {
-    const { args, merges, updates } = fixture({ behind: 1, green });
+    const { args, merges, updates, labels } = fixture({ behind: 1, green });
     await mergeGreen(args);
     assert.deepEqual(merges, []);
     assert.deepEqual(updates, []);
+    assert.deepEqual(labels[0], { owner: "org", repo: "repo", issue_number: 1, labels: ["rebase"] });
   }
+});
+
+test("a pending rebase request is not repeated", async () => {
+  const { args, merges, labels } = fixture({ behind: 1, rebaseRequested: true });
+  await mergeGreen(args);
+  assert.deepEqual(merges, []);
+  assert.deepEqual(labels, []);
 });
 
 test("production rechecks lifecycle eligibility despite a weekly marker and green preview", async () => {

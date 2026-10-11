@@ -1,5 +1,7 @@
 const { eligible, checksPass } = require("./merge-policy.cjs");
 const promotionPolicy = require("./promotion-policy.cjs");
+// Renovate's default rebaseLabel.
+const rebaseLabel = "rebase";
 
 module.exports = async ({ github, readGithub = github, context, core }) => {
   const { owner, repo } = context.repo;
@@ -13,8 +15,12 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
       basehead: `${pr.base.ref}...${pr.head.sha}`,
     });
     if (comparison.behind_by && pr.head.ref.startsWith("renovate/")) {
-      // Renovate rebases its own branches and regenerates the lockfile; a merge here would combine two lockfiles textually.
-      core.info(`#${pr.number}: waiting for Renovate to rebase onto ${pr.base.ref}.`);
+      // A merge here would combine two lockfiles textually. Maintenance commits stop Renovate's automatic rebase,
+      // so request one explicitly; Renovate regenerates the branch from the base and removes the label.
+      if (!pr.labels?.some((label) => label.name === rebaseLabel)) {
+        await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [rebaseLabel] });
+        core.info(`#${pr.number}: requested a Renovate rebase onto ${pr.base.ref}.`);
+      } else core.info(`#${pr.number}: waiting for the requested Renovate rebase.`);
       continue;
     }
     if (comparison.behind_by || pr.mergeable !== true) {
