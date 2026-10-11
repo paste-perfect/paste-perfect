@@ -1,0 +1,83 @@
+name: Maintain dependency PRs
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+concurrency:
+  group: dependency-maintenance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  maintain:
+    name: Repair lockfile and apply migrations
+    # Renovate PRs and the reverse-sync PR only: their branches are written by automation, never by people.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository && (
+        (github.event.pull_request.user.login == 'renovate[bot]' && startsWith(github.event.pull_request.head.ref, 'renovate/')) ||
+        (github.event.pull_request.user.login == 'paste-perfect-releasebot[bot]' && github.event.pull_request.head.ref == 'automation/main-to-dev-sync')
+      )
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      # Regenerates package-lock.json when Renovate's artifact update failed or a branch merge combined two lockfiles.
+      - uses: ./.github/actions/setup
+        with:
+          lockfile: repair
+      - name: Apply in-range fixes when the critical audit gate would fail
+        run: |
+          if ! npm audit --audit-level=critical > /dev/null; then
+            npm audit fix --ignore-scripts --fund=false || echo "::warning::npm audit fix could not resolve every advisory; validation reports what remains."
+          fi
+      - run: node scripts/framework-migrations.mjs
+      - id: changed
+        run: |
+          files=$(git status --porcelain | wc -l)
+          echo "value=$files" >> "$GITHUB_OUTPUT"
+          git status --short
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        if: steps.changed.outputs.value != '0'
+        id: token
+        with:
+          client-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_PRIVATE_KEY }}
+      - name: Commit to the dependency PR
+        if: steps.changed.outputs.value != '0'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          APP_SLUG: ${{ steps.token.outputs.app-slug }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$PR_BRANCH" --jq .object.sha)
+          if [ "$current" != "$EXPECTED_SHA" ]; then
+            echo "Branch advanced; the run for the new head maintains it."
+            exit 0
+          fi
+          # Renovate ignores this author (gitIgnoredAuthors), so it keeps rebasing and the next run reapplies these changes.
+          name="$APP_SLUG[bot]"
+          email="$(gh api "users/$name" --jq .id)+$name@users.noreply.github.com"
+          # Sync merges share this author, so recognize a previous maintenance commit by its subject.
+          if [ "$(git log -1 --format=%ae)" = "$email" ] && git log -1 --format=%s | grep -Eq '^chore\(deps\): (regenerate lockfile|apply framework migrations)'; then
+            echo "::error::The previous maintenance commit did not converge; inspect the changes below."
+            git diff --stat
+            exit 1
+          fi
+          lockfile=$(git status --porcelain -- package-lock.json)
+          others=$(git status --porcelain -- . ':!package-lock.json')
+          if [ -n "$lockfile" ] && [ -n "$others" ]; then
+            message='chore(deps): regenerate lockfile and apply framework migrations'
+          elif [ -n "$lockfile" ]; then
+            message='chore(deps): regenerate lockfile'
+          else
+            message='chore(deps): apply framework migrations'
+          fi
+          git add src config angular.json 'tsconfig*.json' package.json package-lock.json
+          # Never run hooks from the checked-out branch while a write token is in the environment.
+          git -c core.hooksPath=/dev/null -c user.name="$name" -c user.email="$email" commit -m "$message"
+          gh auth setup-git
+          git push "https://github.com/$GITHUB_REPOSITORY.git" "HEAD:refs/heads/$PR_BRANCH"

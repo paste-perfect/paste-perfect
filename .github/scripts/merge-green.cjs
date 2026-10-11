@@ -13,14 +13,8 @@ module.exports = async ({ github, readGithub = github, context, core }) => {
       basehead: `${pr.base.ref}...${pr.head.sha}`,
     });
     if (comparison.behind_by && pr.head.ref.startsWith("renovate/")) {
-      // Migration commits can prevent Renovate's own rebase. Preserve them and rerun CI.
-      try {
-        await github.rest.pulls.updateBranch({ owner, repo, pull_number: pr.number, expected_head_sha: pr.head.sha });
-        core.info(`#${pr.number}: updated from dev; waiting for new checks.`);
-      } catch (error) {
-        if (![405, 409, 422].includes(error.status)) throw error;
-        core.warning(`#${pr.number}: branch update deferred: ${error.message}`);
-      }
+      // Renovate rebases its own branches and regenerates the lockfile; a merge here would combine two lockfiles textually.
+      core.info(`#${pr.number}: waiting for Renovate to rebase onto ${pr.base.ref}.`);
       continue;
     }
     if (comparison.behind_by || pr.mergeable !== true) {
