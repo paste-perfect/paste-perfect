@@ -66,6 +66,11 @@ export class RegexPatterns {
   public static readonly NEWLINE_REGEX = new RegExp(/\r?\n/, RegexFlags.GLOBAL);
 
   /**
+   * Regular expression to find any non-whitespace character. Not global, so `test` keeps no state.
+   */
+  public static readonly NON_WHITESPACE_REGEX = /\S/;
+
+  /**
    * Regular expression to match one or more marker characters at the beginning of a string.
    */
   public static readonly MARKER_ONLY_REGEX = new RegExp(`^${SpecialCharacters.MARKER}+`);

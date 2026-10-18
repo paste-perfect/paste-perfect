@@ -7,6 +7,8 @@ import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
 import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
+import { SettingsService } from "@services/settings.service";
+import { LARGE_INPUT_DEBOUNCE_MS, LARGE_INPUT_LENGTH } from "@constants/const";
 import { flushPromises, useStandardTeardown } from "../../test-utils/utils";
 
 const HIGHLIGHTED = '<span class="token">hello</span>';
@@ -219,6 +221,41 @@ describe("CodeService", () => {
       await flushPromises();
 
       expect(prismMock.highlightCode.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+
+    describe("large inputs", () => {
+      const large = (suffix: string) => "x".repeat(LARGE_INPUT_LENGTH) + suffix;
+      const waitForDebounce = () => new Promise((resolve) => setTimeout(resolve, LARGE_INPUT_DEBOUNCE_MS + 50));
+
+      it("processes only the last of several quick changes once typing pauses", async () => {
+        service.rawCode = large("a");
+        TestBed.tick();
+        service.rawCode = large("ab");
+        TestBed.tick();
+        service.rawCode = large("abc");
+        TestBed.tick();
+        await flushPromises();
+        expect(prettierMock.formatCode).not.toHaveBeenCalled();
+
+        await waitForDebounce();
+        await flushPromises();
+        expect(prettierMock.formatCode).toHaveBeenCalledTimes(1);
+        expect(prettierMock.formatCode).toHaveBeenCalledWith(large("abc"), expect.anything());
+        expect(service.highlightedCode).toBe(WITH_LINES);
+      });
+
+      it("reprocesses when the editor settings change", async () => {
+        service.rawCode = large("a");
+        await waitForDebounce();
+        await flushPromises();
+        expect(prettierMock.formatCode).toHaveBeenCalledTimes(1);
+
+        TestBed.inject(SettingsService).updateSettings({ showLineNumbers: true });
+        TestBed.tick();
+        await waitForDebounce();
+        await flushPromises();
+        expect(prettierMock.formatCode).toHaveBeenCalledTimes(2);
+      });
     });
 
     it("should pass the escaped input to PrettierFormattingService", async () => {

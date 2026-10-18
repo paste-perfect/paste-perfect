@@ -1,9 +1,12 @@
-import { effect, inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { PrismHighlightService } from "@services/prism/prism-highlight.service";
 import { LanguageService } from "@services/language.service";
 import { PrettierFormattingService } from "@services/prettier/prettier-formatting.service";
 import { SanitizerWrapper } from "@utils/sanitizer";
 import { LineNumberingService } from "@services/line-numbering/line-numbering.service";
+import { SettingsService } from "@services/settings.service";
+import { RegexPatterns } from "../regex/regex-patterns";
+import { LARGE_INPUT_DEBOUNCE_MS, LARGE_INPUT_LENGTH } from "@constants/const";
 
 /**
  * CodeService is responsible for managing and processing source code,
@@ -24,6 +27,9 @@ export class CodeService {
 
   /** Injected service for prepending line numbers */
   private readonly lineNumberingService: LineNumberingService = inject(LineNumberingService);
+
+  /** Injected service for the editor settings that affect processing */
+  private readonly settingsService: SettingsService = inject(SettingsService);
 
   /** Default message when no code is provided */
   private readonly noCode: string = "<span>The highlighted code will appear here after pasting some code!</span>";
@@ -87,44 +93,55 @@ export class CodeService {
 
   /**
    * Determines whether meaningful highlighted code is present.
-   * @returns True if highlighted code exists and is not the default placeholder.
+   * Computed once per input change instead of on every change detection pass.
    */
-  public hasCode(): boolean {
-    return this.rawCode.trim() !== "";
-  }
+  public readonly hasCode: Signal<boolean> = computed(() => RegexPatterns.NON_WHITESPACE_REGEX.test(this._rawCode()));
 
   /**
    * Constructor initializes an effect that automatically updates highlighted code
-   * when raw code or the selected language changes.
+   * when raw code, the selected language or the editor settings change.
+   * Large inputs wait until typing pauses, so each keystroke does not re-render the whole output.
    */
   constructor() {
     effect((onCleanup) => {
       let cancelled = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
       onCleanup(() => {
         cancelled = true;
+        clearTimeout(timer);
       });
       const selectedLanguage = this.languageService.selectedLanguage;
+      const rawCode = this.rawCode;
+      // Track the settings explicitly; processing of large inputs runs outside this reactive context.
+      void this.settingsService.editorSettings;
 
-      // Sanitize input
-      const escapedInput = SanitizerWrapper.escapeUmlauts(this.rawCode);
+      const process = (): void => {
+        // Sanitize input
+        const escapedInput = SanitizerWrapper.escapeUmlauts(rawCode);
 
-      // Call synchronously so the effect tracks the formatter's settings signals.
-      const formatting = this.prettierService.formatCode(escapedInput, selectedLanguage);
-      void formatting
-        .then(async ({ code: formattedCode, formattingSuccessful }) => {
-          if (cancelled) return;
-          const highlightedCode = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
-          if (cancelled) return;
+        void this.prettierService
+          .formatCode(escapedInput, selectedLanguage)
+          .then(async ({ code: formattedCode, formattingSuccessful }) => {
+            if (cancelled) return;
+            const highlightedCode = await this.syntaxHighlightService.highlightCode(formattedCode, selectedLanguage);
+            if (cancelled) return;
 
-          const codeWithLineNumbers = this.lineNumberingService.prependLineNumbers(highlightedCode);
-          this.formattingSuccessful = formattingSuccessful;
-          this.highlightedCode = this.hasCode() ? SanitizerWrapper.sanitizeOutput(codeWithLineNumbers) : this.noCode;
-        })
-        .catch((error: unknown) => {
-          if (cancelled) return;
-          this.formattingSuccessful = false;
-          console.error("Code processing failed", error);
-        });
+            const codeWithLineNumbers = this.lineNumberingService.prependLineNumbers(highlightedCode);
+            this.formattingSuccessful = formattingSuccessful;
+            this.highlightedCode = this.hasCode() ? SanitizerWrapper.sanitizeOutput(codeWithLineNumbers) : this.noCode;
+          })
+          .catch((error: unknown) => {
+            if (cancelled) return;
+            this.formattingSuccessful = false;
+            console.error("Code processing failed", error);
+          });
+      };
+
+      if (rawCode.length < LARGE_INPUT_LENGTH) {
+        process();
+      } else {
+        timer = setTimeout(process, LARGE_INPUT_DEBOUNCE_MS);
+      }
     });
   }
 }
