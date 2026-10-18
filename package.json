@@ -60,7 +60,7 @@
     "@semantic-release/release-notes-generator": "14.1.1",
     "@types/node": "24.19.1",
     "@types/prismjs": "1.26.6",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "angular-eslint": "22.5.0",
     "baseline-browser-mapping": "2.11.28",
     "conventional-changelog-conventionalcommits": "9.3.1",
@@ -71,7 +71,7 @@
     "semantic-release": "25.0.9",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.1",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "lint-staged": {
     "*.{ts,js}": [
