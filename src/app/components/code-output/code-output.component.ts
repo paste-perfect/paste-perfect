@@ -1,4 +1,5 @@
-import { Component, inject, Signal, viewChild } from "@angular/core";
+import { Component, computed, inject, Signal, viewChild } from "@angular/core";
+import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import { Button } from "@openng/optimus-ui/button";
 import { Tooltip } from "@openng/optimus-ui/tooltip";
 import { Chip, ChipPassThroughOptions } from "@openng/optimus-ui/chip";
@@ -67,9 +68,22 @@ export class CodeOutputComponent {
   protected readonly copySettingsService: CopySettingsService = inject(CopySettingsService);
 
   /**
+   * Angular's sanitizer, used to mark the highlighted output as trusted.
+   */
+  private readonly domSanitizer: DomSanitizer = inject(DomSanitizer);
+
+  /**
    * Reference to the CopySettingsComponent placed directly in this template.
    */
   private copySettingsForm: Signal<CopySettingsComponent | undefined> = viewChild(CopySettingsComponent);
+
+  /**
+   * Highlighted code marked as trusted. Prism escapes all code text (`&`, `<`) and attribute
+   * values (`"`), so Angular's sanitizer would only re-parse the large output on every update.
+   */
+  protected readonly highlightedHtml: Signal<SafeHtml> = computed(() =>
+    this.domSanitizer.bypassSecurityTrustHtml(this.codeService.highlightedCode)
+  );
 
   /**
    * Chips representing non-default copy settings, displayed in the result toolbar.

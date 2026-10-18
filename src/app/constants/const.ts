@@ -32,6 +32,17 @@ export const COPY_SETTINGS_STORAGE_KEY = "copy_settings";
  */
 export const HTML_CODE_PRE_SELECTOR = "pre#highlighted-code-wrapper";
 
+/**
+ * Input length (in characters) from which code is only reprocessed once typing pauses.
+ * Smaller inputs are processed on every change.
+ */
+export const LARGE_INPUT_LENGTH = 20_000;
+
+/**
+ * Typing pause (in ms) after which a large input is reprocessed.
+ */
+export const LARGE_INPUT_DEBOUNCE_MS = 250;
+
 export enum IndentationMode {
   Spaces = "SPACE_INDENTATION",
   Tabs = "TAB_INDENTATION",
