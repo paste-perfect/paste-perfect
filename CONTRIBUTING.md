@@ -17,6 +17,6 @@ npm run build-prod
 
 To update visual and clipboard baselines, run CI manually with `update_snapshots` enabled. Download `visual-baselines` into `src/tests/snapshot-tests`, review the changes and commit them. Generation intentionally fails CI Gate; a normal run must pass before merging.
 
-The app uses Angular's zoneless change detection and default OnPush strategy. State changed asynchronously or through another component must notify Angular, usually through a signal. Formatters and syntax grammars load on demand.
+The app uses Angular's zoneless change detection and default OnPush strategy. State changed asynchronously or through another component must notify Angular, usually through a signal. Formatters and syntax grammars load on demand. Inputs from `LARGE_INPUT_LENGTH` characters are reprocessed only after a short typing pause. The highlighted output is bound as trusted HTML because Prism escapes all code text; anything added to that output must stay escaped.
 
 See [maintenance](docs/maintenance.md) for deployment and dependency automation.
