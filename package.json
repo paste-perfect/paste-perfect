@@ -1,6 +1,6 @@
 {
   "name": "paste-perfect",
-  "packageManager": "npm@12.2.0",
+  "packageManager": "npm@12.2.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -62,15 +62,15 @@
     "@types/prismjs": "1.26.6",
     "@vitest/coverage-v8": "4.1.12",
     "angular-eslint": "22.6.0",
-    "baseline-browser-mapping": "2.11.29",
+    "baseline-browser-mapping": "2.11.31",
     "conventional-changelog-conventionalcommits": "9.3.1",
-    "eslint": "10.12.0",
+    "eslint": "10.13.0",
     "happy-dom": "21.0.4",
     "husky": "9.1.7",
     "lint-staged": "17.6.0",
     "semantic-release": "25.0.9",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.2",
+    "typescript-eslint": "8.72.0",
     "vitest": "4.1.12"
   },
   "lint-staged": {
@@ -83,7 +83,7 @@
     ]
   },
   "engines": {
-    "node": "^24.22.0",
-    "npm": "^12.2.0"
+    "node": "^24.22.1",
+    "npm": "^12.2.1"
   }
 }
