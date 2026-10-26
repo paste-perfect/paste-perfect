@@ -15,7 +15,7 @@ jobs:
   title:
     name: Lint PR Title (Conventional Commits)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       pull-requests: read
     steps:
@@ -25,7 +25,7 @@ jobs:
 
   route:
     name: Select validation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       reuse: ${{ steps.route.outputs.reuse }}
     steps:
@@ -51,7 +51,7 @@ jobs:
     name: Reuse validation
     needs: route
     if: needs.route.outputs.reuse == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 12
     permissions:
       contents: read
@@ -70,7 +70,7 @@ jobs:
     name: CI Gate
     needs: [route, validate, reuse]
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - env:
           ROUTE: ${{ needs.route.result }}
