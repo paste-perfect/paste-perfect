@@ -23,7 +23,7 @@ jobs:
     name: Branch validation
     needs: validate
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - env:
           VALIDATION: ${{ needs.validate.result }}

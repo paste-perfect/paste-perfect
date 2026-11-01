@@ -17,7 +17,7 @@ jobs:
         (github.event.pull_request.user.login == 'renovate[bot]' && startsWith(github.event.pull_request.head.ref, 'renovate/')) ||
         (github.event.pull_request.user.login == 'paste-perfect-releasebot[bot]' && github.event.pull_request.head.ref == 'automation/main-to-dev-sync')
       )
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     outputs:
       changed: ${{ steps.patch.outputs.changed }}
@@ -54,7 +54,7 @@ jobs:
     name: Commit maintenance changes
     needs: prepare
     if: needs.prepare.outputs.changed == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     # Fresh runner that executes nothing from the PR or its dependencies; the patch is untrusted data.
     steps:
