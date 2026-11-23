@@ -1,6 +1,6 @@
 {
   "name": "paste-perfect",
-  "packageManager": "npm@12.2.2",
+  "packageManager": "npm@12.2.3",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -40,13 +40,13 @@
     "@openng/optimus-ui-themes": "^2.0.2",
     "prettier": "^3.10.1",
     "prettier-plugin-gherkin": "^4.0.0",
-    "prettier-plugin-java": "^2.11.0",
+    "prettier-plugin-java": "^2.12.0",
     "prettier-plugin-nginx": "^2.0.0",
     "prettier-plugin-sort-json": "^4.2.0",
     "prettier-plugin-toml": "^2.0.6",
     "prismjs": "^1.30.0",
     "rxjs": "^7.8.2",
-    "sql-formatter": "^15.9.0",
+    "sql-formatter": "^15.9.1",
     "tslib": "^2.9.1"
   },
   "devDependencies": {
@@ -54,7 +54,7 @@
     "@angular/cli": "22.2.7",
     "@angular/compiler-cli": "22.2.6",
     "@eslint/js": "10.0.1",
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.65.1",
     "@semantic-release/commit-analyzer": "13.0.1",
     "@semantic-release/github": "12.0.11",
     "@semantic-release/release-notes-generator": "14.1.1",
@@ -62,15 +62,15 @@
     "@types/prismjs": "1.26.6",
     "@vitest/coverage-v8": "4.1.12",
     "angular-eslint": "22.6.0",
-    "baseline-browser-mapping": "2.11.37",
+    "baseline-browser-mapping": "2.11.39",
     "conventional-changelog-conventionalcommits": "9.3.1",
-    "eslint": "10.14.0",
+    "eslint": "10.15.0",
     "happy-dom": "21.0.4",
     "husky": "9.1.7",
-    "lint-staged": "17.6.0",
+    "lint-staged": "17.6.1",
     "semantic-release": "25.0.9",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.2",
+    "typescript-eslint": "8.73.0",
     "vitest": "4.1.12"
   },
   "lint-staged": {
@@ -84,6 +84,6 @@
   },
   "engines": {
     "node": "^24.22.3",
-    "npm": "^12.2.2"
+    "npm": "^12.2.3"
   }
 }
